@@ -43,9 +43,8 @@
 <!-- MOVIE CARD fragment -->
 <div th:fragment="movieCard(movie)" class="movie-card"
      th:if="${movie != null}"
-     th:attr="onclick=|window.location='/movies/${movie.movieId}'|"
-     role="button" tabindex="0"
-     th:attr="aria-label=${movie.title}">
+     th:attr="onclick=|window.location='/movies/${movie.movieId}'|, aria-label=${movie.title}"
+     role="button" tabindex="0">
   <div class="card-inner">
     <div class="movie-poster">
       <img th:if="${movie.posterUrl != null and !#strings.isEmpty(movie.posterUrl)}"
