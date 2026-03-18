@@ -5,50 +5,9 @@
   <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="description" th:content="${movie.title} + ' – Watch trailer, rate and review on MovieRec.'"/>
   <title th:text="${movie.title} + ' – MovieRec'">Movie Detail</title>
   <link rel="stylesheet" th:href="@{/css/style.css}"/>
-  <style>
-    /* Trailer Modal */
-    .trailer-modal {
-      display:none; position:fixed; inset:0; z-index:999999;
-      background:rgba(0,0,0,.92); align-items:center; justify-content:center;
-    }
-    .trailer-modal.active { display:flex; }
-    .trailer-wrap {
-      position:relative; width:90vw; max-width:960px;
-      aspect-ratio:16/9; border-radius:12px; overflow:hidden;
-    }
-    .trailer-wrap iframe { width:100%; height:100%; border:none; }
-    .trailer-close {
-      position:absolute; top:-40px; right:0;
-      background:none; border:none; color:#fff;
-      font-size:1.8rem; cursor:pointer; line-height:1;
-    }
-    /* Hero backdrop */
-    .movie-hero-backdrop {
-      position:relative; min-height:560px;
-      background-size:cover; background-position:center 20%;
-      display:flex; align-items:flex-end; overflow:hidden;
-    }
-    .movie-hero-backdrop::before {
-      content:''; position:absolute; inset:0;
-      background: linear-gradient(to right, rgba(14,14,14,.98) 35%, rgba(14,14,14,.5) 65%, transparent 100%),
-                  linear-gradient(to top, rgba(14,14,14,1) 0%, rgba(14,14,14,.4) 50%, transparent 100%);
-    }
-    .detail-grid { display:grid; grid-template-columns:1fr 360px; gap:2rem; padding:2.5rem 4%; max-width:1400px; margin:0 auto; }
-    .watch-btn {
-      display:inline-flex; align-items:center; gap:.5rem;
-      padding:.6rem 1.4rem; border-radius:6px; font-size:.9rem; font-weight:600;
-      cursor:pointer; border:none; transition:all .2s; text-decoration:none;
-    }
-    .watch-btn.netflix { background:#e50914; color:#fff; }
-    .watch-btn.netflix:hover { background:#b81d24; transform:translateY(-2px); }
-    .watch-btn.fpt { background:#ff6600; color:#fff; }
-    .watch-btn.fpt:hover { background:#e55a00; transform:translateY(-2px); }
-    .watch-btn.trailer { background:rgba(255,255,255,.15); color:#fff; border:1px solid rgba(255,255,255,.3); }
-    .watch-btn.trailer:hover { background:rgba(255,255,255,.25); transform:translateY(-2px); }
-    @media(max-width:900px) { .detail-grid { grid-template-columns:1fr !important; } }
-  </style>
 </head>
 <body>
 <div th:replace="~{fragments :: navbar}"></div>
@@ -58,69 +17,64 @@
 <div class="movie-hero-backdrop"
      th:style="${movie.backdropUrl != null} ? 'background-image:url(' + ${movie.backdropUrl} + ')' :
                (${movie.posterUrl != null} ? 'background-image:url(' + ${movie.posterUrl} + ')' : '')">
-  <div style="position:relative;z-index:1;padding:3rem 4%;display:flex;gap:2.5rem;align-items:flex-end;width:100%">
+  <div class="movie-hero-content">
 
     <!-- Poster -->
     <img th:if="${movie.posterUrl != null and !#strings.isEmpty(movie.posterUrl)}"
          th:src="${movie.posterUrl}" th:alt="${movie.title}"
          class="movie-poster-large" onerror="this.style.display='none'"/>
     <div th:unless="${movie.posterUrl != null and !#strings.isEmpty(movie.posterUrl)}"
-         style="width:200px;height:300px;border-radius:12px;background:linear-gradient(135deg,#1a1a2e,#0f3460);
+         style="width:200px;height:300px;border-radius:14px;background:linear-gradient(135deg,#1a1a2e,#0f3460);
                 display:flex;align-items:center;justify-content:center;font-size:4rem;flex-shrink:0">🎬</div>
 
     <!-- Info -->
     <div style="flex:1;min-width:0">
-      <div class="genre-tags" style="margin-bottom:.75rem">
+      <div class="genre-tags" style="margin-bottom:10px">
         <span class="genre-tag" th:each="g : ${movie.genres}" th:text="${g.genreName}">Genre</span>
       </div>
-      <h1 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(2rem,5vw,3.5rem);letter-spacing:2px;
-                 line-height:1;margin-bottom:.75rem;text-shadow:0 4px 24px rgba(0,0,0,.5)"
+
+      <h1 style="font-size:clamp(1.8rem,4.5vw,3.2rem);font-weight:800;letter-spacing:-.02em;
+                 line-height:1.05;margin-bottom:10px;text-shadow:0 4px 24px rgba(0,0,0,.5)"
           th:text="${movie.title}">Movie Title</h1>
 
-      <div style="display:flex;align-items:center;gap:1.5rem;margin-bottom:1rem;flex-wrap:wrap">
-        <span style="color:#b3b3b3" th:if="${movie.releaseYear != null}">
+      <div style="display:flex;align-items:center;gap:20px;margin-bottom:14px;flex-wrap:wrap;font-size:.9rem">
+        <span style="color:#a0a0a0" th:if="${movie.releaseYear != null}">
           📅 <span th:text="${movie.releaseYear}">2024</span>
         </span>
-        <span style="color:#f5c518;display:flex;align-items:center;gap:.3rem"
+        <span style="color:#F5C518;display:flex;align-items:center;gap:4px;font-weight:700"
               th:if="${movie.averageRating != null and movie.averageRating > 0}">
           ⭐ <span class="avg-rating" th:text="${#numbers.formatDecimal(movie.averageRating,1,1)}">4.5</span>
-          <span class="rating-count" style="color:#757575;font-size:.85rem"
-                th:text="|(${movie.totalRatings})|">(0)</span>
+          <span class="rating-count" style="color:#606060;font-weight:400;font-size:.82rem"
+                th:text="'(' + ${movie.totalRatings} + ')'"></span>
         </span>
-        <span style="color:#757575" th:if="${movie.averageRating == null or movie.averageRating == 0}">No ratings yet</span>
+        <span style="color:#606060" th:if="${movie.averageRating == null or movie.averageRating == 0}">No ratings yet</span>
       </div>
 
-      <p style="color:#e5e5e5;line-height:1.8;max-width:600px;margin-bottom:1.5rem;
+      <p style="color:rgba(255,255,255,.8);line-height:1.75;max-width:580px;margin-bottom:20px;
                 font-size:.95rem;text-shadow:0 2px 8px rgba(0,0,0,.8)"
          th:if="${movie.description != null and !#strings.isEmpty(movie.description)}"
          th:text="${movie.description}">Description</p>
 
-      <!-- Action buttons -->
-      <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1.5rem">
-        <!-- Trailer button -->
-        <button class="watch-btn trailer" th:if="${movie.trailerKey != null and !#strings.isEmpty(movie.trailerKey)}"
- 				th:data-trailer-key="${movie.trailerKey}"
- 				onclick="openTrailer(this.dataset.trailerKey)">
- 			▶ Watch Trailer
-		</button>
-
-        <!-- Watch on platforms - chỉ hiện khi đã login -->
+      <!-- Primary action: Trailer -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+        <button class="watch-btn trailer"
+                th:if="${movie.trailerKey != null and !#strings.isEmpty(movie.trailerKey)}"
+                th:data-trailer-key="${movie.trailerKey}"
+                onclick="openTrailer(this.dataset.trailerKey)">
+          ▶ Watch Trailer
+        </button>
         <th:block th:if="${currentUser != null}">
           <a class="watch-btn netflix"
              th:href="|https://www.netflix.com/search?q=${movie.title}|"
-             target="_blank" rel="noopener">
-            🎬 Netflix
-          </a>
+             target="_blank" rel="noopener">🎬 Netflix</a>
           <a class="watch-btn fpt"
              th:href="|https://fptplay.vn/tim-kiem?keyword=${movie.title}|"
-             target="_blank" rel="noopener">
-            📺 FPT Play
-          </a>
+             target="_blank" rel="noopener">📺 FPT Play</a>
         </th:block>
       </div>
 
-      <!-- User action buttons -->
-      <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+      <!-- User actions -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
         <th:block th:if="${currentUser != null}">
           <button th:if="${hasWatched}" class="btn btn-success" disabled>✅ Watched</button>
           <button th:unless="${hasWatched}" class="btn btn-primary"
@@ -133,13 +87,13 @@
         <th:block th:if="${currentUser == null}">
           <a href="/auth/login" class="btn btn-primary">Login to interact</a>
         </th:block>
-        <a href="/movies" class="btn btn-outline">← Back</a>
+        <a href="/movies" class="btn btn-ghost">← Back</a>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ── TRAILER MODAL ── -->
+<!-- Trailer Modal -->
 <div class="trailer-modal" id="trailerModal" onclick="closeTrailerOnBg(event)">
   <div class="trailer-wrap">
     <button class="trailer-close" onclick="closeTrailer()">✕</button>
@@ -148,38 +102,36 @@
   </div>
 </div>
 
-<!-- ── MAIN CONTENT ── -->
+<!-- ── DETAIL GRID ── -->
 <div class="detail-grid">
 
   <!-- LEFT -->
   <div>
     <!-- Rate -->
-    <div th:if="${currentUser != null}"
-         style="background:#1a1a1a;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem">
-      <h3 style="margin-bottom:1rem;font-size:1rem">⭐ Rate This Movie</h3>
+    <div th:if="${currentUser != null}" class="detail-card">
+      <h3>⭐ Rate This Movie</h3>
       <div class="star-rating" data-star-rating
            th:data-movie-id="${movie.movieId}"
            th:data-current="${userRating}">
         <span class="star" th:each="i : ${#numbers.sequence(1,5)}" th:data-val="${i}">★</span>
       </div>
-      <p style="color:#757575;font-size:.8rem;margin-top:.5rem">
+      <p style="color:#606060;font-size:.8rem;margin-top:8px">
         <span th:if="${userRating > 0}">Your rating: <strong th:text="${userRating}">5</strong>/5</span>
         <span th:unless="${userRating > 0}">Click a star to rate</span>
       </p>
     </div>
 
     <!-- Overview -->
-    <div style="background:#1a1a1a;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem"
+    <div class="detail-card"
          th:if="${movie.description != null and !#strings.isEmpty(movie.description)}">
-      <h3 style="margin-bottom:1rem;font-size:1rem">📖 Overview</h3>
-      <p style="color:#b3b3b3;line-height:1.8" th:text="${movie.description}">Description</p>
+      <h3>📖 Overview</h3>
+      <p style="color:#a0a0a0;line-height:1.8;font-size:.9rem" th:text="${movie.description}">Description</p>
     </div>
 
-    <!-- Where to Watch - chỉ hiện khi đã login -->
-    <div th:if="${currentUser != null}"
-         style="background:#1a1a1a;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem">
-      <h3 style="margin-bottom:1rem;font-size:1rem">📡 Where to Watch</h3>
-      <div style="display:flex;flex-wrap:wrap;gap:.75rem">
+    <!-- Where to Watch -->
+    <div class="detail-card" th:if="${currentUser != null}">
+      <h3>📡 Where to Watch</h3>
+      <div style="display:flex;flex-wrap:wrap;gap:10px">
         <a class="watch-btn netflix"
            th:href="|https://www.netflix.com/search?q=${movie.title}|"
            target="_blank" rel="noopener">🎬 Netflix</a>
@@ -188,46 +140,45 @@
            target="_blank" rel="noopener">📺 FPT Play</a>
         <a class="watch-btn trailer"
            th:href="|https://www.youtube.com/results?search_query=${movie.title}+trailer|"
-           target="_blank" rel="noopener" style="background:rgba(255,0,0,.15);border-color:rgba(255,0,0,.3)">
-          ▶ YouTube
-        </a>
+           target="_blank" rel="noopener">▶ YouTube</a>
       </div>
-      <p style="color:#757575;font-size:.78rem;margin-top:.75rem">
-        Click để tìm phim trên các nền tảng streaming.
-      </p>
+      <p style="color:#606060;font-size:.78rem;margin-top:10px">Click to find this film on streaming platforms.</p>
     </div>
-    <!-- Guest: chỉ thấy trailer -->
-    <div th:if="${currentUser == null}"
-         style="background:#1a1a1a;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem">
-      <h3 style="margin-bottom:.75rem;font-size:1rem">📡 Where to Watch</h3>
-      <p style="color:#757575;font-size:.875rem;margin-bottom:1rem">
-        <a href="/auth/login" style="color:#e50914">Đăng nhập</a> để xem trên Netflix, FPT Play.
+
+    <!-- Guest: trailer only -->
+    <div class="detail-card" th:if="${currentUser == null}">
+      <h3>📡 Where to Watch</h3>
+      <p style="color:#606060;font-size:.875rem;margin-bottom:14px">
+        <a href="/auth/login" style="color:var(--red);font-weight:600">Sign in</a> to access Netflix, FPT Play and more.
       </p>
-      <div th:if="${movie.trailerKey != null and !#strings.isEmpty(movie.trailerKey)}">
-        <button class="watch-btn trailer" th:if="${movie.trailerKey != null and !#strings.isEmpty(movie.trailerKey)}"
- 				th:data-trailer-key="${movie.trailerKey}"
- 				onclick="openTrailer(this.dataset.trailerKey)">
- 			▶ Watch Trailer
-		</button>
-      </div>
+      <button class="watch-btn trailer"
+              th:if="${movie.trailerKey != null and !#strings.isEmpty(movie.trailerKey)}"
+              th:data-trailer-key="${movie.trailerKey}"
+              onclick="openTrailer(this.dataset.trailerKey)">
+        ▶ Watch Trailer
+      </button>
     </div>
 
     <!-- Comments -->
-    <div style="background:#1a1a1a;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:1.5rem">
-      <h3 style="margin-bottom:1.25rem;font-size:1rem">💬 Comments
-        <span style="color:#757575;font-size:.875rem;font-weight:400"
-              th:text="|(${#lists.size(comments)})|"></span>
+    <div class="detail-card">
+      <h3>💬 Comments
+        <span style="color:#606060;font-size:.8rem;font-weight:400;text-transform:none;letter-spacing:0"
+              th:text="'(' + ${#lists.size(comments)} + ')'"></span>
       </h3>
-      <div th:if="${currentUser != null}" style="margin-bottom:1.5rem">
+
+      <div th:if="${currentUser != null}" style="margin-bottom:20px">
         <textarea id="comment-input" class="form-control"
                   placeholder="Share your thoughts…" rows="3"></textarea>
-        <button class="btn btn-primary btn-sm" style="margin-top:.75rem"
+        <button class="btn btn-primary btn-sm" style="margin-top:10px"
                 onclick="submitCommentInline(this)">Post Comment</button>
       </div>
+
       <div th:if="${currentUser == null}"
-           style="margin-bottom:1rem;padding:.75rem;background:#111;border-radius:8px;color:#757575;font-size:.875rem">
-        <a href="/auth/login" style="color:#67e8f9">Login</a> to leave a comment.
+           style="margin-bottom:14px;padding:12px 16px;background:rgba(255,255,255,.03);
+                  border-radius:10px;color:#606060;font-size:.875rem;border:1px solid rgba(255,255,255,.06)">
+        <a href="/auth/login" style="color:#67e8f9;font-weight:600">Login</a> to leave a comment.
       </div>
+
       <div id="comment-list">
         <div class="comment-box" th:each="c : ${comments}">
           <div class="comment-header">
@@ -238,8 +189,9 @@
           <p class="comment-text" th:text="${c.commentText}">Comment text</p>
         </div>
         <div th:if="${#lists.isEmpty(comments)}"
-             style="padding:2rem;text-align:center;color:#757575">
-          <div style="font-size:2rem">💬</div><p>No comments yet. Be the first!</p>
+             style="padding:32px;text-align:center;color:#606060">
+          <div style="font-size:2rem;margin-bottom:8px">💬</div>
+          <p>No comments yet. Be the first!</p>
         </div>
       </div>
     </div>
@@ -247,32 +199,33 @@
 
   <!-- RIGHT – Similar Movies -->
   <div>
-    <div style="background:#1a1a1a;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:1.5rem">
-      <h3 style="margin-bottom:1.25rem;font-size:1rem">🎯 Similar Movies</h3>
-      <div style="display:flex;flex-direction:column;gap:1rem" th:if="${!#lists.isEmpty(similarMovies)}">
+    <div class="detail-card">
+      <h3>🎯 Similar Movies</h3>
+      <div style="display:flex;flex-direction:column;gap:12px" th:if="${!#lists.isEmpty(similarMovies)}">
         <a th:each="sm : ${similarMovies}"
            th:href="@{/movies/{id}(id=${sm.movieId})}"
-           style="display:flex;gap:.75rem;align-items:center;padding:.5rem;border-radius:8px;transition:background .2s"
-           onmouseover="this.style.background='rgba(255,255,255,.05)'"
+           style="display:flex;gap:12px;align-items:center;padding:8px;border-radius:10px;
+                  transition:background .2s;text-decoration:none;color:inherit"
+           onmouseover="this.style.background='rgba(255,255,255,.04)'"
            onmouseout="this.style.background='transparent'">
           <img th:if="${sm.posterUrl != null and !#strings.isEmpty(sm.posterUrl)}"
                th:src="${sm.posterUrl}" th:alt="${sm.title}"
-               style="width:50px;height:75px;border-radius:6px;object-fit:cover;flex-shrink:0"
+               style="width:50px;height:75px;border-radius:8px;object-fit:cover;flex-shrink:0"
                onerror="this.style.display='none'"/>
           <div th:unless="${sm.posterUrl != null and !#strings.isEmpty(sm.posterUrl)}"
-               style="width:50px;height:75px;border-radius:6px;background:#333;
+               style="width:50px;height:75px;border-radius:8px;background:#242424;
                       display:flex;align-items:center;justify-content:center;flex-shrink:0">🎬</div>
           <div style="flex:1;min-width:0">
             <div style="font-size:.875rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"
                  th:text="${sm.title}">Title</div>
-            <div style="font-size:.75rem;color:#757575;margin-top:.2rem" th:text="${sm.releaseYear}">Year</div>
-            <div style="display:flex;flex-wrap:wrap;gap:.2rem;margin-top:.3rem">
-              <span class="genre-tag" th:each="g : ${sm.genres}" th:text="${g.genreName}" style="font-size:.6rem">G</span>
+            <div style="font-size:.75rem;color:#606060;margin-top:2px" th:text="${sm.releaseYear}">Year</div>
+            <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">
+              <span class="genre-tag" th:each="g : ${sm.genres}" th:text="${g.genreName}">G</span>
             </div>
           </div>
         </a>
       </div>
-      <p th:if="${#lists.isEmpty(similarMovies)}" style="color:#757575;font-size:.875rem">No similar movies found.</p>
+      <p th:if="${#lists.isEmpty(similarMovies)}" style="color:#606060;font-size:.875rem">No similar movies found.</p>
     </div>
   </div>
 </div>
@@ -287,12 +240,11 @@
     if (container) initStarRating(container, container.dataset.movieId, parseInt(container.dataset.current || '0'));
   });
 
-  // Trailer
   function openTrailer(key) {
- 	document.getElementById('trailerFrame').src = 'https://www.youtube.com/embed/' + key + '?autoplay=1';
- 	document.getElementById('trailerModal').classList.add('active');
- 		document.body.style.overflow = 'hidden';
-}
+    document.getElementById('trailerFrame').src = 'https://www.youtube.com/embed/' + key + '?autoplay=1';
+    document.getElementById('trailerModal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
   function closeTrailer() {
     document.getElementById('trailerFrame').src = '';
     document.getElementById('trailerModal').classList.remove('active');
@@ -303,7 +255,6 @@
   }
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeTrailer(); });
 
-  // Comment
   function submitCommentInline(btn) {
     const input = document.getElementById('comment-input');
     const text = input.value.trim();
@@ -312,6 +263,7 @@
     const csrfMeta = document.querySelector('meta[name="_csrf"]');
     const csrfHeader = document.querySelector('meta[name="_csrf_header"]');
     if (csrfMeta) headers[csrfHeader.content] = csrfMeta.content;
+    btn.disabled = true; btn.textContent = 'Posting…';
     fetch(`/api/movies/${MOVIE_ID}/comment?text=${encodeURIComponent(text)}`, { method: 'POST', headers })
       .then(r => r.json())
       .then(data => {
@@ -322,7 +274,7 @@
         const dateStr = now.toLocaleDateString('en-US',{month:'short',day:'2-digit',year:'numeric'})
                       + ' ' + now.toTimeString().slice(0,5);
         list.insertAdjacentHTML('afterbegin',
-          `<div class="comment-box">
+          `<div class="comment-box" style="animation:slideUp .3s ease both">
             <div class="comment-header">
               <span class="comment-author">👤 ${data.username}</span>
               <span class="comment-date">${dateStr}</span>
@@ -330,9 +282,10 @@
             <p class="comment-text">${data.text}</p>
           </div>`);
         input.value = '';
+        btn.disabled = false; btn.textContent = 'Post Comment';
         showToast('Comment posted! 💬', 'success');
       })
-      .catch(() => showToast('Error posting comment', 'error'));
+      .catch(() => { btn.disabled = false; btn.textContent = 'Post Comment'; showToast('Error posting comment', 'error'); });
   }
 </script>
 </body>

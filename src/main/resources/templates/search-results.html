@@ -17,8 +17,8 @@
     <h1 class="section-title">
       🔍 Results for "<span th:text="${keyword}">query</span>"
     </h1>
-    <span style="color:#6c757d;font-size:.875rem"
-          th:text="|${#lists.size(movies)} result(s)|">0 results</span>
+    <span style="color:var(--text-muted);font-size:.875rem;font-weight:500"
+          th:text="${#lists.size(movies)} + ' result(s)'">0 results</span>
   </div>
 
   <div class="movies-grid" th:if="${!#lists.isEmpty(movies)}">

@@ -5,6 +5,7 @@
   <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="description" content="MovieRec – AI-powered movie recommendations tailored for you."/>
   <title>MovieRec – Discover Movies You'll Love</title>
   <link rel="stylesheet" th:href="@{/css/style.css}"/>
 </head>
@@ -19,23 +20,42 @@
        style="background-image:url('https://image.tmdb.org/t/p/original/oNyjloIkShU4OaJsY6oWQ5d83sf.jpg')">
   </div>
   <div class="hero-content">
+    <div class="hero-eyebrow">🤖 AI-Powered Recommendations</div>
+
     <h1 th:if="${currentUser != null}"
-        th:text="'Welcome back, ' + ${currentUser.username}">Welcome</h1>
-    <h1 th:if="${currentUser == null}">Discover Movies<br>You'll Love</h1>
-    <p>Personalized recommendations powered by AI and your watch history.
-       The more you watch, the smarter your picks get.</p>
+        th:text="'Welcome back, ' + ${currentUser.username} + '.'">Welcome back.</h1>
+    <h1 th:if="${currentUser == null}">The Smarter Way<br>to Find Great Films.</h1>
+
+    <p th:if="${currentUser != null}">Your personalized picks are ready. The more you watch and rate, the smarter your recommendations get.</p>
+    <p th:if="${currentUser == null}">Personalized recommendations powered by AI and your watch history. Sign up free and discover movies you'll actually love.</p>
+
     <div class="hero-actions">
-      <a href="/movies" class="btn btn-white btn-lg">🎬 Browse Movies</a>
-      <a href="/auth/register" th:if="${currentUser == null}" class="btn btn-outline btn-lg">✨ Get Started Free</a>
-      <a href="/user/recommendations" th:if="${currentUser != null}" class="btn btn-outline btn-lg">✨ My Recommendations</a>
+      <a href="/movies" class="btn btn-white btn-xl">🎬 Browse Movies</a>
+      <a href="/auth/register" th:if="${currentUser == null}" class="btn btn-outline btn-xl">✨ Get Started Free</a>
+      <a href="/user/recommendations" th:if="${currentUser != null}" class="btn btn-outline btn-xl">✨ My Picks</a>
+    </div>
+
+    <div class="hero-stats" th:if="${currentUser != null}">
+      <div>
+        <div class="hero-stat-value">AI</div>
+        <div class="hero-stat-label">Powered</div>
+      </div>
+      <div>
+        <div class="hero-stat-value">∞</div>
+        <div class="hero-stat-label">Discoveries</div>
+      </div>
+      <div>
+        <div class="hero-stat-value">Free</div>
+        <div class="hero-stat-label">Always</div>
+      </div>
     </div>
   </div>
 </div>
 
 <!-- ── PERSONALIZED ── -->
-<div class="section" th:if="${currentUser != null and recommendations != null and !recommendations.empty}">
+<div class="section reveal" th:if="${currentUser != null and recommendations != null and !recommendations.empty}">
   <div class="section-header">
-    <h2 class="section-title">✨ Recommended <span>For You</span></h2>
+    <h2 class="section-title section-title--lg">✨ Recommended <span>For You</span></h2>
     <a href="/user/recommendations" class="view-all">View all →</a>
   </div>
   <div class="movies-row">
@@ -49,7 +69,7 @@
 </div>
 
 <!-- ── GENRE PICKS ── -->
-<div class="section" th:if="${currentUser != null and genrePicks != null and !genrePicks.empty}">
+<div class="section reveal" th:if="${currentUser != null and genrePicks != null and !genrePicks.empty}">
   <div class="section-header">
     <h2 class="section-title">🎭 Based on Your <span>Taste</span></h2>
   </div>
@@ -61,7 +81,7 @@
 </div>
 
 <!-- ── TRENDING ── -->
-<div class="section" th:if="${trending != null and !trending.empty}">
+<div class="section reveal" th:if="${trending != null and !trending.empty}">
   <div class="section-header">
     <h2 class="section-title">🔥 <span>Trending</span> Now</h2>
     <a href="/movies" class="view-all">View all →</a>
@@ -74,7 +94,7 @@
 </div>
 
 <!-- ── TOP RATED ── -->
-<div class="section" th:if="${topRated != null and !topRated.empty}">
+<div class="section reveal" th:if="${topRated != null and !topRated.empty}">
   <div class="section-header">
     <h2 class="section-title">⭐ <span>Top Rated</span> Movies</h2>
   </div>
@@ -86,7 +106,7 @@
 </div>
 
 <!-- ── NEW RELEASES ── -->
-<div class="section" th:if="${newReleases != null and !newReleases.empty}">
+<div class="section reveal" th:if="${newReleases != null and !newReleases.empty}">
   <div class="section-header">
     <h2 class="section-title">🆕 <span>New</span> Releases</h2>
     <a href="/movies" class="view-all">View all →</a>
@@ -99,38 +119,26 @@
 </div>
 
 <!-- ── GENRES ── -->
-<div class="section" th:if="${allGenres != null and !allGenres.empty}">
+<div class="section reveal" th:if="${allGenres != null and !allGenres.empty}">
   <div class="section-header">
     <h2 class="section-title">🎭 Browse by <span>Genre</span></h2>
   </div>
-  <div style="display:flex;flex-wrap:wrap;gap:.6rem">
+  <div style="display:flex;flex-wrap:wrap;gap:8px">
     <a th:each="genre : ${allGenres}"
        th:href="@{/search(q=${genre.genreName})}"
        th:text="${genre.genreName}"
-       style="padding:.45rem 1.1rem;border:1px solid rgba(255,255,255,.15);
-              border-radius:20px;color:#b3b3b3;font-size:.82rem;font-weight:500;
-              transition:all .2s cubic-bezier(.34,1.56,.64,1)"
-       onmouseover="this.style.borderColor='#e50914';this.style.color='#fff';this.style.transform='translateY(-2px)';this.style.background='rgba(229,9,20,.1)'"
-       onmouseout="this.style.borderColor='rgba(255,255,255,.15)';this.style.color='#b3b3b3';this.style.transform='';this.style.background=''">
-    </a>
+       class="genre-pill">Genre</a>
   </div>
 </div>
 
 <!-- ── GUEST CTA ── -->
-<div th:if="${currentUser == null}"
-     style="margin:3rem 4%;padding:3.5rem;
-            background:linear-gradient(135deg,rgba(229,9,20,.08) 0%,rgba(229,9,20,.03) 100%);
-            border:1px solid rgba(229,9,20,.2);border-radius:20px;text-align:center">
-  <h2 style="font-family:'Bebas Neue',sans-serif;font-size:2.5rem;letter-spacing:2px;margin-bottom:.75rem">
-    Get Personalized Recommendations
-  </h2>
-  <p style="color:#b3b3b3;margin-bottom:1.75rem;font-size:1rem;max-width:480px;margin-left:auto;margin-right:auto">
-    Sign up to track what you watch, rate movies, and get AI-powered suggestions just for you.
-  </p>
-  <a href="/auth/register" class="btn btn-primary btn-lg">Create Free Account</a>
+<div th:if="${currentUser == null}" class="cta-section reveal">
+  <h2>Get Personalized Recommendations</h2>
+  <p>Sign up free to track what you watch, rate movies, and get AI-powered suggestions just for you.</p>
+  <a href="/auth/register" class="btn btn-primary btn-xl">🚀 Create Free Account</a>
 </div>
 
-<div style="height:5rem"></div>
+<div style="height:4rem"></div>
 <script th:src="@{/js/app.js}"></script>
 </body>
 </html>
