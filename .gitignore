@@ -1,0 +1,31 @@
+# Build
+.gradle/
+build/
+bin/
+*.class
+*.jar
+*.war
+
+# SECRETS - KHÔNG BAO GIỜ commit
+src/main/resources/application.properties
+.env
+*.env
+
+# IDE
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+*.launch
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Dataset SQL - quá nặng, không cần trong repo
+*.sql

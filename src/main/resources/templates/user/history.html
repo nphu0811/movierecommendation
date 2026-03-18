@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta name="_csrf" th:content="${_csrf.token}"/>
+  <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Watch History – MovieRec</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body>
+<div th:replace="~{fragments :: navbar}"></div>
+<div th:replace="~{search-overlay :: searchOverlay}"></div>
+<div class="section">
+  <div class="section-header">
+    <h1 class="section-title">🕐 Watch <span>History</span></h1>
+    <span style="color:#6c757d;font-size:.875rem"
+          th:text="|${#lists.size(watchHistory)} movie(s) watched|">0 movies</span>
+  </div>
+
+  <div th:if="${!#lists.isEmpty(watchHistory)}">
+    <div th:each="wh : ${watchHistory}"
+         style="display:flex;align-items:center;gap:1rem;padding:1rem;
+                background:#1f1f1f;border-radius:10px;margin-bottom:.75rem;
+                transition:background .2s"
+         onmouseover="this.style.background='#2a2a2a'"
+         onmouseout="this.style.background='#1f1f1f'">
+      <img th:if="${wh.movie.posterUrl != null and !#strings.isEmpty(wh.movie.posterUrl)}"
+           th:src="${wh.movie.posterUrl}" th:alt="${wh.movie.title}"
+           style="width:50px;height:75px;border-radius:6px;object-fit:cover;flex-shrink:0"
+           onerror="this.style.display='none'"/>
+      <div th:unless="${wh.movie.posterUrl != null and !#strings.isEmpty(wh.movie.posterUrl)}"
+           style="width:50px;height:75px;border-radius:6px;background:#333;
+                  display:flex;align-items:center;justify-content:center;flex-shrink:0">🎬</div>
+      <div style="flex:1">
+        <a th:href="@{/movies/{id}(id=${wh.movie.movieId})}"
+           style="font-weight:600;font-size:.95rem" th:text="${wh.movie.title}">Title</a>
+        <div style="display:flex;gap:1rem;margin-top:.3rem">
+          <span style="color:#6c757d;font-size:.8rem" th:text="${wh.movie.releaseYear}">2024</span>
+          <span style="font-size:.8rem;color:#6c757d">
+            Watched: <span th:text="${#temporals.format(wh.watchedAt, 'MMM dd, yyyy')}">Date</span>
+          </span>
+        </div>
+        <div class="genre-tags" style="margin-top:.4rem">
+          <span class="genre-tag" th:each="g : ${wh.movie.genres}" th:text="${g.genreName}">Genre</span>
+        </div>
+      </div>
+      <a th:href="@{/movies/{id}(id=${wh.movie.movieId})}" class="btn btn-outline btn-sm">View →</a>
+    </div>
+  </div>
+
+  <div class="empty-state" th:if="${#lists.isEmpty(watchHistory)}">
+    <div class="icon">🎬</div>
+    <h3>No watch history yet</h3>
+    <p style="margin-bottom:1.5rem">Movies you mark as watched will appear here.</p>
+    <a href="/movies" class="btn btn-primary">Browse Movies</a>
+  </div>
+</div>
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>

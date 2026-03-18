@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta name="_csrf" th:content="${_csrf.token}"/>
+  <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>My Recommendations – MovieRec</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body>
+<div th:replace="~{fragments :: navbar}"></div>
+<div th:replace="~{search-overlay :: searchOverlay}"></div>
+
+<div class="section">
+  <div style="text-align:center;padding:3rem 0 2rem">
+    <h1 style="font-size:2.5rem;font-weight:800">✨ Your Personalized <span style="color:#e50914">Picks</span></h1>
+    <p style="color:#b3b3b3;margin-top:.75rem;max-width:500px;margin-left:auto;margin-right:auto">
+      Recommendations powered by your watch history, ratings, and users with similar taste.
+    </p>
+  </div>
+
+  <!-- How it works banner -->
+  <div style="background:rgba(229,9,20,.08);border:1px solid rgba(229,9,20,.2);border-radius:12px;
+              padding:1.25rem 1.5rem;margin-bottom:3rem;display:flex;gap:2rem;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:.75rem">
+      <span style="font-size:1.5rem">📊</span>
+      <div>
+        <div style="font-size:.875rem;font-weight:600">Content-Based</div>
+        <div style="font-size:.75rem;color:#6c757d">Based on your genre preferences</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:.75rem">
+      <span style="font-size:1.5rem">👥</span>
+      <div>
+        <div style="font-size:.875rem;font-weight:600">Collaborative</div>
+        <div style="font-size:.75rem;color:#6c757d">From users with similar taste</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:.75rem">
+      <span style="font-size:1.5rem">🔥</span>
+      <div>
+        <div style="font-size:.875rem;font-weight:600">Popularity</div>
+        <div style="font-size:.75rem;color:#6c757d">What everyone is watching</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Personalized for you -->
+  <div th:if="${recommendations != null and !#lists.isEmpty(recommendations)}">
+    <div class="section-header">
+      <h2 class="section-title">🎯 Recommended <span>For You</span></h2>
+      <span style="color:#6c757d;font-size:.8rem" th:text="|${#lists.size(recommendations)} picks|"></span>
+    </div>
+    <div class="movies-grid">
+      <div th:each="movie, iter : ${recommendations}" style="position:relative">
+        <div class="rec-badge" th:text="|#${iter.index + 1}|">#1</div>
+        <div th:replace="~{fragments :: movieCard(${movie})}"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty state for cold start -->
+  <div th:if="${recommendations == null or #lists.isEmpty(recommendations)}"
+       style="background:#1f1f1f;border-radius:12px;padding:3rem;text-align:center;margin-bottom:3rem">
+    <div style="font-size:3rem;margin-bottom:1rem">🎬</div>
+    <h3 style="margin-bottom:.75rem">Not enough data yet!</h3>
+    <p style="color:#6c757d;margin-bottom:1.5rem">Watch and rate at least 5 movies to unlock personalized recommendations.</p>
+    <a href="/movies" class="btn btn-primary">Start Watching</a>
+  </div>
+
+  <!-- Genre-based -->
+  <div style="margin-top:3rem" th:if="${genrePicks != null and !#lists.isEmpty(genrePicks)}">
+    <div class="section-header">
+      <h2 class="section-title">🎭 Based on Your <span>Favorite Genres</span></h2>
+    </div>
+    <div class="movies-row">
+      <th:block th:each="movie : ${genrePicks}"><div th:replace="~{fragments :: movieCard(${movie})}"></div></th:block>
+    </div>
+  </div>
+
+  <!-- Trending -->
+  <div style="margin-top:3rem;padding-bottom:3rem" th:if="${trending != null and !#lists.isEmpty(trending)}">
+    <div class="section-header">
+      <h2 class="section-title">🔥 <span>Trending</span> This Week</h2>
+    </div>
+    <div class="movies-row">
+      <th:block th:each="movie : ${trending}"><div th:replace="~{fragments :: movieCard(${movie})}"></div></th:block>
+    </div>
+  </div>
+</div>
+
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>

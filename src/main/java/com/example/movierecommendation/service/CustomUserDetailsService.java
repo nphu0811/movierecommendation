@@ -1,0 +1,45 @@
+package com.example.movierecommendation.service;
+
+import com.example.movierecommendation.entity.User;
+import com.example.movierecommendation.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Service
+public class CustomUserDetailsService implements UserDetailsService {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Override
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
+
+        // Dùng DisabledException để Spring Security phân biệt với sai mật khẩu
+        if (Boolean.FALSE.equals(user.getIsActive())) {
+            throw new DisabledException("Account is locked: " + email);
+        }
+
+        List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+        authorities.add(new SimpleGrantedAuthority("ROLE_" + user.getRole()));
+
+        return new org.springframework.security.core.userdetails.User(
+                user.getEmail(),
+                user.getPasswordHash(),
+                true,   // enabled
+                true,   // accountNonExpired
+                true,   // credentialsNonExpired
+                true,   // accountNonLocked
+                authorities
+        );
+    }
+}

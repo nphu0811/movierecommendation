@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title th:text="${movie != null} ? 'Edit Movie' : 'Add Movie'">Movie Form</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body>
+<div class="admin-layout">
+  <aside class="admin-sidebar">
+    <div class="sidebar-logo">⚙ Admin</div>
+    <nav class="sidebar-nav">
+      <a href="/admin">📊 Dashboard</a>
+      <a href="/admin/movies" class="active">🎬 Movies</a>
+      <a href="/admin/genres">🎭 Genres</a>
+      <a href="/admin/users">👥 Users</a>
+      <a href="/">← Back to Site</a>
+    </nav>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-header">
+      <h1 th:text="${movie != null} ? 'Edit Movie' : 'Add New Movie'">Movie Form</h1>
+    </div>
+
+    <div class="alert alert-danger" th:if="${error}" th:text="${error}"></div>
+
+    <div style="background:#1f1f1f;border-radius:12px;padding:2rem;max-width:700px">
+      <form th:action="${movie != null} ? @{/admin/movies/{id}/edit(id=${movie.movieId})} : @{/admin/movies/new}"
+            method="post">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+        <div class="form-group">
+          <label class="form-label">Movie Title *</label>
+          <input type="text" name="title" class="form-control" required
+                 th:value="${movie?.title}" placeholder="e.g. Inception"/>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+          <div class="form-group">
+            <label class="form-label">Release Year</label>
+            <input type="number" name="releaseYear" class="form-control"
+                   th:value="${movie?.releaseYear}" min="1900" max="2030" placeholder="2024"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Poster URL</label>
+            <input type="url" name="posterUrl" class="form-control"
+                   th:value="${movie?.posterUrl}" placeholder="https://..."/>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea name="description" class="form-control" rows="4"
+                    placeholder="Brief overview of the movie…" th:text="${movie?.description}"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Genres (hold Ctrl to select multiple)</label>
+          <select name="genreIds" multiple class="form-control" style="height:160px">
+            <option th:each="genre : ${allGenres}"
+                    th:value="${genre.genreId}"
+                    th:text="${genre.genreName}"
+                    th:selected="${movie != null and movie.genres != null and #lists.contains(movie.genres.![genreId], genre.genreId)}">Genre</option>
+          </select>
+        </div>
+
+        <!-- Poster preview -->
+        <div class="form-group" id="poster-preview-wrap" style="display:none">
+          <label class="form-label">Preview</label>
+          <img id="poster-preview"
+               style="width:120px;height:180px;object-fit:cover;border-radius:8px;border:1px solid #333"/>
+        </div>
+
+        <div style="display:flex;gap:1rem;margin-top:1.5rem">
+          <button type="submit" class="btn btn-primary">
+            <span th:text="${movie != null} ? '💾 Save Changes' : '+ Add Movie'">Submit</span>
+          </button>
+          <a href="/admin/movies" class="btn btn-outline">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </main>
+</div>
+
+<script th:src="@{/js/app.js}"></script>
+<script>
+  // Live poster preview
+  const urlInput = document.querySelector('input[name="posterUrl"]');
+  const preview  = document.getElementById('poster-preview');
+  const wrap     = document.getElementById('poster-preview-wrap');
+
+  function updatePreview() {
+    const val = urlInput.value.trim();
+    if (val) {
+      preview.src = val;
+      wrap.style.display = 'block';
+    } else {
+      wrap.style.display = 'none';
+    }
+  }
+  urlInput.addEventListener('input', updatePreview);
+  updatePreview(); // run on load for edit form
+</script>
+</body>
+</html>

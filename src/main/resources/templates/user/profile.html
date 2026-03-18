@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta name="_csrf" th:content="${_csrf.token}"/>
+  <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>My Profile – MovieRec</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body>
+<div th:replace="~{fragments :: navbar}"></div>
+<div th:replace="~{search-overlay :: searchOverlay}"></div>
+
+<div style="max-width:900px;margin:2rem auto;padding:0 1rem">
+
+  <div class="alert alert-success" th:if="${success}" th:text="${success}"></div>
+  <div class="alert alert-danger"  th:if="${error}"   th:text="${error}"></div>
+
+  <!-- Profile Header -->
+  <div style="background:#1f1f1f;border-radius:16px;padding:2rem;margin-bottom:2rem;
+              display:flex;align-items:center;gap:2rem">
+    <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#e50914,#b0060f);
+                display:flex;align-items:center;justify-content:center;font-size:2rem;flex-shrink:0">
+      👤
+    </div>
+    <div>
+      <h2 style="font-size:1.5rem;font-weight:700" th:text="${currentUser.username}">Username</h2>
+      <p style="color:#6c757d;margin-top:.25rem" th:text="${currentUser.email}">email@example.com</p>
+      <p style="color:#6c757d;font-size:.8rem;margin-top:.25rem">
+        Member since <span th:text="${#temporals.format(currentUser.createdAt, 'MMMM yyyy')}">Jan 2024</span>
+      </p>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:1rem">
+      <div style="text-align:center">
+        <div style="font-size:1.5rem;font-weight:700" th:text="${#lists.size(watchHistory)}">0</div>
+        <div style="font-size:.75rem;color:#6c757d">Watched</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:1.5rem;font-weight:700" th:text="${#lists.size(watchlist)}">0</div>
+        <div style="font-size:.75rem;color:#6c757d">Watchlist</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs - chỉ hiện với USER, không hiện với ADMIN -->
+  <th:block th:if="${currentUser.role == 'USER'}">
+  <div style="display:flex;gap:0;border-bottom:1px solid #333;margin-bottom:2rem">
+    <button class="tab-btn active" onclick="switchTab('edit-profile', this)">✏️ Edit Profile</button>
+    <button class="tab-btn" onclick="switchTab('change-password', this)">🔒 Password</button>
+  </div>
+
+  <!-- Edit Profile -->
+  <div id="edit-profile" class="tab-content">
+    <div style="background:#1f1f1f;border-radius:12px;padding:1.5rem">
+      <h3 style="margin-bottom:1.25rem">Edit Profile</h3>
+      <form th:action="@{/user/profile/update}" method="post">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+        <div class="form-group">
+          <label class="form-label">Username</label>
+          <input type="text" name="username" class="form-control" th:value="${currentUser.username}" required/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" name="email" class="form-control" th:value="${currentUser.email}" required/>
+        </div>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Change Password -->
+  <div id="change-password" class="tab-content" style="display:none">
+    <div style="background:#1f1f1f;border-radius:12px;padding:1.5rem">
+      <h3 style="margin-bottom:1.25rem">Change Password</h3>
+      <form th:action="@{/user/profile/change-password}" method="post">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+        <div class="form-group">
+          <label class="form-label">Current Password</label>
+          <input type="password" name="currentPassword" class="form-control" required/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">New Password</label>
+          <input type="password" name="newPassword" class="form-control" required minlength="6"/>
+        </div>
+        <button type="submit" class="btn btn-primary">Update Password</button>
+      </form>
+    </div>
+  </div>
+  </th:block>
+
+  <!-- Recent Watch History -->
+  <div style="margin-top:2.5rem">
+    <div class="section-header">
+      <h3 class="section-title">🕐 Recent <span>History</span></h3>
+      <a href="/user/history" class="view-all">View all →</a>
+    </div>
+    <div class="movies-row" th:if="${!#lists.isEmpty(watchHistory)}">
+      <th:block th:each="wh : ${#lists.subList(watchHistory, 0, T(Math).min(6, #lists.size(watchHistory)))}">
+        <div th:replace="~{fragments :: movieCard(${wh.movie})}"></div>
+      </th:block>
+    </div>
+    <div class="empty-state" th:if="${#lists.isEmpty(watchHistory)}" style="padding:2rem">
+      <div class="icon">🎬</div><p style="color:#6c757d">No watch history yet. Start watching!</p>
+    </div>
+  </div>
+
+  <!-- Watchlist Preview -->
+  <div style="margin-top:2.5rem;padding-bottom:3rem">
+    <div class="section-header">
+      <h3 class="section-title">❤️ My <span>Watchlist</span></h3>
+      <a href="/user/watchlist" class="view-all">View all →</a>
+    </div>
+    <div class="movies-row" th:if="${!#lists.isEmpty(watchlist)}">
+      <th:block th:each="wl : ${#lists.subList(watchlist, 0, T(Math).min(6, #lists.size(watchlist)))}">
+        <div th:replace="~{fragments :: movieCard(${wl.movie})}"></div>
+      </th:block>
+    </div>
+    <div class="empty-state" th:if="${#lists.isEmpty(watchlist)}" style="padding:2rem">
+      <div class="icon">❤️</div><p style="color:#6c757d">Your watchlist is empty. Add some movies!</p>
+    </div>
+  </div>
+</div>
+
+<script th:src="@{/js/app.js}"></script>
+<script>
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).style.display = 'block';
+  btn.classList.add('active');
+}
+</script>
+<style>
+.tab-btn {
+  padding: .75rem 1.5rem; background: transparent;
+  border: none; border-bottom: 2px solid transparent;
+  color: #6c757d; cursor: pointer; font-size: .9rem;
+  font-weight: 500; transition: all .2s;
+}
+.tab-btn:hover { color: #fff; }
+.tab-btn.active { color: #e50914; border-bottom-color: #e50914; }
+</style>
+</body>
+</html>

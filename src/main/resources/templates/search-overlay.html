@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="searchOverlay">
+<!-- Search Overlay -->
+<div class="search-overlay" id="searchOverlay">
+  <div class="search-overlay-inner">
+    <div class="search-overlay-box">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#e50914" stroke-width="2.2"
+           stroke-linecap="round" stroke-linejoin="round"
+           style="width:20px;height:20px;flex-shrink:0">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="text" id="overlaySearchInput"
+             placeholder="Search movies, genres…" autocomplete="off"/>
+      <button id="overlayCloseBtn" class="search-overlay-close">✕</button>
+    </div>
+    <div class="search-overlay-results" id="overlayResults" style="display:none"></div>
+    <div class="search-overlay-hint" id="overlayHint">Type to search • Press Esc to close</div>
+  </div>
+</div>
+
+<script>
+(function() {
+  function init() {
+    var overlay  = document.getElementById('searchOverlay');
+    var input    = document.getElementById('overlaySearchInput');
+    var results  = document.getElementById('overlayResults');
+    var hint     = document.getElementById('overlayHint');
+    var openBtn  = document.getElementById('searchOpenBtn');
+    var closeBtn = document.getElementById('overlayCloseBtn');
+    if (!openBtn || !overlay) return;
+
+    function openOverlay() {
+      overlay.classList.add('active');
+      document.body.style.overflow = 'hidden';
+      setTimeout(function() { if (input) input.focus(); }, 80);
+    }
+    function closeOverlay() {
+      overlay.classList.remove('active');
+      document.body.style.overflow = '';
+      if (input) input.value = '';
+      if (results) results.style.display = 'none';
+      if (hint) hint.style.display = 'block';
+    }
+
+    openBtn.addEventListener('click', function(e) { e.preventDefault(); openOverlay(); });
+    if (closeBtn) closeBtn.addEventListener('click', closeOverlay);
+    overlay.addEventListener('click', function(e) { if (e.target === overlay) closeOverlay(); });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') { closeOverlay(); return; }
+      if (e.key === '/' && !overlay.classList.contains('active')
+          && document.activeElement.tagName !== 'INPUT'
+          && document.activeElement.tagName !== 'TEXTAREA') {
+        e.preventDefault(); openOverlay();
+      }
+    });
+
+    if (!input) return;
+    var timer = null;
+    input.addEventListener('input', function() {
+      var q = this.value.trim();
+      clearTimeout(timer);
+      if (!q) { results.style.display = 'none'; hint.style.display = 'block'; return; }
+      hint.style.display = 'none';
+      results.innerHTML = '<div style="padding:20px;text-align:center;color:#555">🔍 Searching…</div>';
+      results.style.display = 'block';
+      timer = setTimeout(function() { doSearch(q); }, 280);
+    });
+    input.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && this.value.trim())
+        window.location.href = '/search?q=' + encodeURIComponent(this.value.trim());
+    });
+
+    function doSearch(q) {
+      fetch('/api/search/autocomplete?q=' + encodeURIComponent(q))
+        .then(function(r) { return r.json(); })
+        .then(function(data) { if (input.value.trim() === q) renderResults(data, q); })
+        .catch(function() { results.style.display = 'none'; });
+    }
+    function renderResults(movies, q) {
+      if (!movies || !movies.length) {
+        results.innerHTML = '<div style="padding:24px;text-align:center;color:#555">No results for "' + esc(q) + '"</div>';
+        results.style.display = 'block'; return;
+      }
+      var html = '';
+      for (var i = 0; i < movies.length; i++) {
+        var m = movies[i];
+        var poster = m.poster
+          ? '<img src="' + esc(m.poster) + '" alt="" style="width:44px;height:62px;object-fit:cover;border-radius:6px;flex-shrink:0" onerror="this.style.display=\'none\'">'
+          : '<div class="search-overlay-item-icon">🎬</div>';
+        var genres = (m.genres && m.genres.length) ? m.genres.slice(0,2).join(' · ') : '';
+        var meta = [m.year, genres].filter(Boolean).join(' • ');
+        html += '<a class="search-overlay-item" href="/movies/' + m.id + '">'
+              + poster + '<div class="search-overlay-item-info">'
+              + '<div class="search-overlay-item-title">' + highlight(esc(m.title), esc(q)) + '</div>'
+              + '<div class="search-overlay-item-meta">' + esc(meta) + '</div>'
+              + '</div></a>';
+      }
+      html += '<a class="search-overlay-see-all" href="/search?q=' + encodeURIComponent(q) + '">See all results for "' + esc(q) + '" →</a>';
+      results.innerHTML = html;
+      results.style.display = 'block';
+    }
+    function highlight(title, q) {
+      var idx = title.toLowerCase().indexOf(q.toLowerCase());
+      if (idx < 0) return title;
+      return title.substring(0,idx) + '<strong style="color:#e50914">' + title.substring(idx,idx+q.length) + '</strong>' + title.substring(idx+q.length);
+    }
+    function esc(s) {
+      return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';
+    }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+</script>
+</th:block>
+</body>
+</html>

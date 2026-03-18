@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Manage Genres – Admin</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body>
+<div class="admin-layout">
+  <aside class="admin-sidebar">
+    <div class="sidebar-logo">⚙ Admin</div>
+    <nav class="sidebar-nav">
+      <a href="/admin">📊 Dashboard</a>
+      <a href="/admin/movies">🎬 Movies</a>
+      <a href="/admin/genres" class="active">🎭 Genres</a>
+      <a href="/admin/users">👥 Users</a>
+      <a href="/">← Back to Site</a>
+    </nav>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-header"><h1>Genres</h1></div>
+
+    <div class="alert alert-success" th:if="${success}" th:text="${success}"></div>
+    <div class="alert alert-danger"  th:if="${error}"   th:text="${error}"></div>
+
+    <div style="display:grid;grid-template-columns:360px 1fr;gap:2rem">
+      <!-- Add genre -->
+      <div style="background:#1f1f1f;border-radius:12px;padding:1.5rem;align-self:start">
+        <h3 style="margin-bottom:1.25rem">Add New Genre</h3>
+        <form th:action="@{/admin/genres/new}" method="post">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+          <div class="form-group">
+            <label class="form-label">Genre Name</label>
+            <input type="text" name="name" class="form-control" placeholder="e.g. Science Fiction" required/>
+          </div>
+          <button type="submit" class="btn btn-primary">+ Add Genre</button>
+        </form>
+      </div>
+
+      <!-- Genre list -->
+      <div style="background:#1f1f1f;border-radius:12px;overflow:hidden;align-self:start">
+        <table class="data-table">
+          <thead>
+            <tr><th>ID</th><th>Genre Name</th><th>Actions</th></tr>
+          </thead>
+          <tbody>
+            <tr th:each="genre : ${genres}">
+              <td style="color:#6c757d" th:text="${genre.genreId}">1</td>
+              <td>
+                <span class="genre-tag" th:text="${genre.genreName}">Genre</span>
+              </td>
+              <td>
+                <form th:action="@{/admin/genres/{id}/delete(id=${genre.genreId})}"
+                      method="post" style="margin:0"
+                      onsubmit="return confirm('Delete this genre? This may affect movies.')">
+                  <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                  <button type="submit" class="btn btn-danger btn-sm">🗑 Delete</button>
+                </form>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="empty-state" th:if="${#lists.isEmpty(genres)}" style="padding:2rem">
+          <p style="color:#6c757d">No genres yet. Add one on the left.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>

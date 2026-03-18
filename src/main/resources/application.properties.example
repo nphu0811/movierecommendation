@@ -1,0 +1,37 @@
+# Copy file này thành application.properties và điền thông tin thực
+# File application.properties đã bị .gitignore - KHÔNG commit lên Git
+
+spring.application.name=movierecommendation
+
+# SQL Server local
+spring.datasource.url=jdbc:sqlserver://localhost\\SQLEXPRESS;databaseName=MOVIERECOMMENDATION;encrypt=true;trustServerCertificate=true
+spring.datasource.username=sa
+spring.datasource.password=YOUR_DB_PASSWORD
+spring.datasource.driver-class-name=com.microsoft.sqlserver.jdbc.SQLServerDriver
+
+spring.jpa.hibernate.ddl-auto=none
+spring.jpa.show-sql=false
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.SQLServerDialect
+spring.jpa.properties.hibernate.format_sql=false
+spring.jpa.properties.hibernate.physical_naming_strategy=org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+spring.jpa.properties.hibernate.implicit_naming_strategy=org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl
+
+spring.thymeleaf.cache=false
+spring.thymeleaf.encoding=UTF-8
+server.port=8080
+
+spring.servlet.multipart.max-file-size=10MB
+spring.servlet.multipart.max-request-size=10MB
+
+spring.datasource.hikari.maximum-pool-size=10
+spring.datasource.hikari.minimum-idle=2
+spring.datasource.hikari.connection-timeout=30000
+spring.datasource.hikari.idle-timeout=600000
+spring.datasource.hikari.max-lifetime=1800000
+
+# API Keys
+openai.api.key=YOUR_OPENAI_KEY_HERE
+tmdb.api.key=YOUR_TMDB_KEY_HERE
+app.remember-me-key=ANY_RANDOM_STRING_MIN_32_CHARS
+
+logging.level.com.example.movierecommendation=INFO
