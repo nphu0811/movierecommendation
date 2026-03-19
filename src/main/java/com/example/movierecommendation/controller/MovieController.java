@@ -11,12 +11,16 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import org.springframework.validation.annotation.Validated;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
 @Controller
+@Validated
 public class MovieController {
 
     @Autowired
@@ -45,7 +49,7 @@ public class MovieController {
     }
 
     @GetMapping("/movies/{id}")
-    public String movieDetail(@PathVariable("id") Integer id,
+    public String movieDetail(@PathVariable("id") @Min(1) @Max(Integer.MAX_VALUE) Integer id,
                               @AuthenticationPrincipal UserDetails userDetails,
                               Model model) {
         String username = userDetails != null ? userDetails.getUsername() : null;
@@ -69,8 +73,8 @@ public class MovieController {
     @PostMapping("/api/movies/{id}/rate")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> rateMovie(
-            @PathVariable("id") Integer id,
-            @RequestParam(name = "score") Integer score,
+            @PathVariable("id") @Min(1) @Max(Integer.MAX_VALUE) Integer id,
+            @RequestParam(name = "score") @Min(1) @Max(5) Integer score,
             @AuthenticationPrincipal UserDetails userDetails) {
         if (userDetails == null) return ResponseEntity.status(401).build();
         User user = userService.getCurrentUser(userDetails.getUsername());
@@ -86,7 +90,7 @@ public class MovieController {
     @PostMapping("/api/movies/{id}/watch")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> markWatched(
-            @PathVariable("id") Integer id,
+            @PathVariable("id") @Min(1) @Max(Integer.MAX_VALUE) Integer id,
             @AuthenticationPrincipal UserDetails userDetails) {
         if (userDetails == null) return ResponseEntity.status(401).build();
         User user = userService.getCurrentUser(userDetails.getUsername());
@@ -99,7 +103,7 @@ public class MovieController {
     @PostMapping("/api/movies/{id}/watchlist")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> toggleWatchlist(
-            @PathVariable("id") Integer id,
+            @PathVariable("id") @Min(1) @Max(Integer.MAX_VALUE) Integer id,
             @AuthenticationPrincipal UserDetails userDetails) {
         if (userDetails == null) return ResponseEntity.status(401).build();
         User user = userService.getCurrentUser(userDetails.getUsername());
@@ -112,7 +116,7 @@ public class MovieController {
     @PostMapping("/api/movies/{id}/comment")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> addComment(
-            @PathVariable("id") Integer id,
+            @PathVariable("id") @Min(1) @Max(Integer.MAX_VALUE) Integer id,
             @RequestParam(name = "text") String text,
             @AuthenticationPrincipal UserDetails userDetails) {
         if (userDetails == null) return ResponseEntity.status(401).build();

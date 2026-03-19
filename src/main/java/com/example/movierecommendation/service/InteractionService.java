@@ -23,10 +23,24 @@ public class InteractionService {
     @Autowired
     private UserRepository userRepository;
 
+    private final Map<String, Long> rateLimits = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final long COOLDOWN_MS = 2000;
+
+    private void checkRateLimit(Integer userId, String action) {
+        String key = userId + ":" + action;
+        long now = System.currentTimeMillis();
+        long last = rateLimits.getOrDefault(key, 0L);
+        if (now - last < COOLDOWN_MS) {
+            throw new RuntimeException("Rate limit exceeded for " + action + ". Please wait.");
+        }
+        rateLimits.put(key, now);
+    }
+
     // ──────────────────── RATING ────────────────────
 
     @Transactional
     public Rating rateMovie(Integer userId, Integer movieId, Integer score) {
+        checkRateLimit(userId, "rateMovie");
         Optional<Rating> existing = ratingRepository.findByUserUserIdAndMovieMovieId(userId, movieId);
         Rating rating;
         if (existing.isPresent()) {
@@ -111,12 +125,23 @@ public class InteractionService {
 
     @Transactional
     public Comment addComment(Integer userId, Integer movieId, String text) {
+        checkRateLimit(userId, "addComment");
+        if (text == null || text.trim().isEmpty()) {
+            throw new IllegalArgumentException("Comment cannot be empty");
+        }
+        
+        // Escape HTML to prevent XSS
+        String sanitizedText = org.springframework.web.util.HtmlUtils.htmlEscape(text.trim());
+        if (sanitizedText.length() > 500) {
+            throw new IllegalArgumentException("Comment is too long");
+        }
+
         User user = userRepository.findById(userId).orElseThrow();
         Movie movie = movieRepository.findById(movieId).orElseThrow();
         Comment comment = new Comment();
         comment.setUser(user);
         comment.setMovie(movie);
-        comment.setCommentText(text);
+        comment.setCommentText(sanitizedText);
         return commentRepository.save(comment);
     }
 

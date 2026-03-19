@@ -19,11 +19,20 @@ public class RecommendationEngine {
     @Autowired private WatchHistoryRepository watchHistoryRepository;
     @Autowired private MovieRepository movieRepository;
 
-    private static final double ALPHA = 0.40;
-    private static final double BETA  = 0.40;
-    private static final double GAMMA = 0.20;
-    private static final int MAX_RECOMMENDATIONS = 20;
-    private static final int MIN_COMMON_RATINGS  = 2;
+    @org.springframework.beans.factory.annotation.Value("${recommendation.alpha:0.40}")
+    private double alpha;
+
+    @org.springframework.beans.factory.annotation.Value("${recommendation.beta:0.40}")
+    private double beta;
+
+    @org.springframework.beans.factory.annotation.Value("${recommendation.gamma:0.20}")
+    private double gamma;
+
+    @org.springframework.beans.factory.annotation.Value("${recommendation.max.recommendations:20}")
+    private int maxRecommendations;
+
+    @org.springframework.beans.factory.annotation.Value("${recommendation.min.common.ratings:2}")
+    private int minCommonRatings;
 
     public List<Movie> getRecommendations(Integer userId) {
         List<Integer> watchedIds = watchHistoryRepository.findWatchedMovieIdsByUserId(userId);
@@ -40,9 +49,9 @@ public class RecommendationEngine {
 
         Map<Integer, Double> scoreMap = new HashMap<>();
         for (Integer movieId : allCandidates) {
-            double score = ALPHA * getOrDefault(contentScores, movieId)
-                         + BETA  * getOrDefault(collabScores, movieId)
-                         + GAMMA * getOrDefault(popularityScores, movieId);
+            double score = alpha * getOrDefault(contentScores, movieId)
+                         + beta  * getOrDefault(collabScores, movieId)
+                         + gamma * getOrDefault(popularityScores, movieId);
             scoreMap.put(movieId, score);
         }
 
@@ -50,12 +59,12 @@ public class RecommendationEngine {
         entries.sort((a, b) -> Double.compare(b.getValue(), a.getValue()));
 
         List<Integer> topIds = new ArrayList<>();
-        for (int i = 0; i < Math.min(MAX_RECOMMENDATIONS, entries.size()); i++) {
+        for (int i = 0; i < Math.min(maxRecommendations, entries.size()); i++) {
             topIds.add(entries.get(i).getKey());
         }
 
         if (topIds.isEmpty()) {
-            return movieRepository.findMostWatchedMovies(PageRequest.of(0, MAX_RECOMMENDATIONS));
+            return movieRepository.findMostWatchedMovies(PageRequest.of(0, maxRecommendations));
         }
 
         List<Movie> movies = new ArrayList<>(movieRepository.findAllById(topIds));
@@ -69,7 +78,9 @@ public class RecommendationEngine {
 
     public List<Movie> getSimilarMovies(Movie targetMovie, Integer currentUserId) {
         List<Integer> targetGenreIds = new ArrayList<>();
-        for (Genre g : targetMovie.getGenres()) targetGenreIds.add(g.getGenreId());
+        if (targetMovie.getGenres() != null) {
+            for (Genre g : targetMovie.getGenres()) targetGenreIds.add(g.getGenreId());
+        }
 
         List<Integer> excludeIds = new ArrayList<>();
         excludeIds.add(targetMovie.getMovieId());
@@ -190,7 +201,7 @@ public class RecommendationEngine {
         for (Map.Entry<Integer, List<Rating>> entry : byUser.entrySet()) {
             Map<Integer, Double> otherVector = toRatingVector(entry.getValue());
             long commonCount = targetVector.keySet().stream().filter(otherVector::containsKey).count();
-            if (commonCount < MIN_COMMON_RATINGS) continue;
+            if (commonCount < minCommonRatings) continue;
             double sim = cosineSimilarity(targetVector, otherVector);
             if (sim > 0) simData.add(new double[]{entry.getKey(), sim});
         }

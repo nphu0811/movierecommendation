@@ -53,7 +53,11 @@ public class OpenAIService {
     }
 
     public boolean isEnabled() {
-        return apiKey != null && !apiKey.trim().isEmpty();
+        boolean enabled = apiKey != null && !apiKey.trim().isEmpty();
+        if (enabled && log.isDebugEnabled()) {
+             log.debug("OpenAI API is enabled. Key: {}***", apiKey.substring(0, Math.min(4, apiKey.length())));
+        }
+        return enabled;
     }
 
     public List<String> getAIRecommendedTitles(Integer userId, List<Movie> allMovies) {
@@ -162,6 +166,9 @@ public class OpenAIService {
 
             return parseTitleArray(content);
 
+        } catch (java.util.concurrent.TimeoutException e) {
+            log.warn("OpenAI API Timeout reached: {}", e.getMessage());
+            return Collections.emptyList();
         } catch (Exception e) {
             log.warn("OpenAI call failed: {}", e.getMessage());
             return Collections.emptyList();
