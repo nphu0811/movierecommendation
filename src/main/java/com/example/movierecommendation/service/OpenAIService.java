@@ -166,11 +166,12 @@ public class OpenAIService {
 
             return parseTitleArray(content);
 
-        } catch (java.util.concurrent.TimeoutException e) {
-            log.warn("OpenAI API Timeout reached: {}", e.getMessage());
-            return Collections.emptyList();
         } catch (Exception e) {
-            log.warn("OpenAI call failed: {}", e.getMessage());
+            if (e.getCause() instanceof java.util.concurrent.TimeoutException) {
+                log.warn("OpenAI API Timeout reached: {}", e.getMessage());
+            } else {
+                log.warn("OpenAI call failed: {}", e.getMessage());
+            }
             return Collections.emptyList();
         }
     }
