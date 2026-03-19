@@ -16,18 +16,18 @@
   --red-subtle:   rgba(229, 9, 20, .08);
 
   --black:        #000000;
-  --bg:           #0F0F0F;
-  --bg-surface:   #1A1A1A;
+  --bg:           #000000;
+  --bg-surface:   transparent;
   --bg-elevated:  #242424;
-  --bg-glass:     rgba(15, 15, 15, .88);
+  --bg-glass:     rgba(0, 0, 0, .88);
 
   --white:        #FFFFFF;
   --text-primary:   #FFFFFF;
   --text-secondary: #A0A0A0;
-  --text-muted:     #606060;
+  --text-muted:     rgba(255, 255, 255, 0.45);
 
-  --border:         rgba(255, 255, 255, .08);
-  --border-hover:   rgba(255, 255, 255, .18);
+  --border:         rgba(255, 255, 255, .05);
+  --border-hover:   rgba(255, 255, 255, .15);
   --gold:           #F5C518;
 
   /* Shadows */
@@ -77,6 +77,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
   line-height: 1.6;
+  padding-bottom: 4rem;
 }
 
 a { color: inherit; text-decoration: none; }
@@ -122,6 +123,11 @@ ul { list-style: none; }
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50%       { opacity: .5; }
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
 }
 
 /* ── Navbar ── */
@@ -277,10 +283,10 @@ body { padding-top: 64px; }
 .btn-lg  { padding: 14px 28px; font-size: 1rem; border-radius: var(--radius); }
 .btn-xl  { padding: 16px 36px; font-size: 1.05rem; border-radius: var(--radius); font-weight: 700; }
 
-.btn-danger   { background: #dc2626; color: #fff; }
-.btn-danger:hover  { background: #b91c1c; transform: translateY(-2px); }
-.btn-success  { background: #16a34a; color: #fff; }
-.btn-success:hover { background: #15803d; transform: translateY(-2px); }
+.btn-danger   { background: var(--red); color: var(--white); }
+.btn-danger:hover  { background: var(--red-hover); transform: translateY(-2px); }
+.btn-success  { background: rgba(255, 255, 255, 0.15); border: 1px solid var(--border-hover); color: var(--white); }
+.btn-success:hover { background: rgba(255, 255, 255, 0.25); transform: translateY(-2px); }
 
 .btn-icon {
   background: transparent; border: none; cursor: pointer;
@@ -332,9 +338,9 @@ body { padding-top: 64px; }
   padding-bottom: var(--space-2);
   scroll-snap-type: x mandatory;
   -ms-overflow-style: none;
-  scrollbar-width: none;
+  scrollbar-width: thin;
 }
-.movies-row::-webkit-scrollbar { display: none; }
+.movies-row::-webkit-scrollbar { height: 6px; }
 .movies-row .movie-card {
   min-width: 170px;
   max-width: 170px;
@@ -344,7 +350,7 @@ body { padding-top: 64px; }
 
 /* ── Movie Card ── */
 .movie-card {
-  background: var(--bg-surface);
+  background: transparent;
   border-radius: var(--radius-lg);
   overflow: hidden;
   cursor: pointer;
@@ -401,7 +407,7 @@ body { padding-top: 64px; }
   pointer-events: none;
   animation: shimmer 2s infinite linear;
 }
-.movie-card:hover .movie-poster::after { opacity: 1; }
+.movie-card:hover .movie-poster::after { opacity: 0.05; }
 
 .movie-poster-placeholder {
   width: 100%; aspect-ratio: 2/3;
@@ -530,6 +536,7 @@ body { padding-top: 64px; }
 }
 .hero-bg {
   position: absolute; inset: 0;
+  background-image: url('https://image.tmdb.org/t/p/original/oNyjloIkShU4OaJsY6oWQ5d83sf.jpg');
   background-size: cover; background-position: center 20%;
   z-index: 0;
 }
@@ -729,6 +736,18 @@ body { padding-top: 64px; }
 .form-control::placeholder { color: #3a3a3a; }
 textarea.form-control { resize: vertical; min-height: 100px; }
 
+.form-control.is-invalid {
+  border-color: var(--red);
+  background: rgba(229,9,20,.05);
+  animation: shake 0.4s var(--spring) both;
+}
+.error-feedback {
+  color: var(--red);
+  font-size: 0.75rem;
+  margin-top: 4px;
+  display: block;
+}
+
 /* ── Auth Pages ── */
 .auth-container {
   min-height: 100vh;
@@ -755,7 +774,7 @@ textarea.form-control { resize: vertical; min-height: 100px; }
   -webkit-backdrop-filter: blur(24px);
   border: 1px solid rgba(255,255,255,.07);
   border-radius: var(--radius-xl);
-  padding: 44px;
+  padding: 48px;
   width: 100%; max-width: 440px;
   box-shadow: 0 32px 80px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.05);
   animation: scaleIn .4s var(--spring) both;

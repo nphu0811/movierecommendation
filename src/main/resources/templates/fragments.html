@@ -22,16 +22,21 @@
 
   <div class="navbar-actions">
     <th:block th:if="${currentUser != null}">
-      <a href="/user/watchlist" class="btn btn-ghost btn-sm">❤️ Watchlist</a>
-      <a href="/user/profile" class="btn btn-outline btn-sm"
-         th:text="'👤 ' + ${currentUser.username}">Profile</a>
+      <a href="/user/watchlist" class="btn btn-ghost btn-sm">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256"><path d="M240,94c0,70-103.79,126.66-108.21,129a8,8,0,0,1-7.58,0C119.79,220.66,16,164,16,94A62.07,62.07,0,0,1,78,32c22.59,0,41.94,12.31,50,32,8.06-19.69,27.41-32,50-32A62.07,62.07,0,0,1,240,94Z"></path></svg> Watchlist
+      </a>
+      <a href="/user/profile" class="btn btn-outline btn-sm">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256"><path d="M230.92,212c-15.23-26.33-38.7-45.21-66.09-54.16a72,72,0,1,0-73.66,0C63.78,166.78,40.31,185.66,25.08,212a8,8,0,1,0,13.85,8c18.84-32.56,52.14-52,89.07-52s70.23,19.44,89.07,52a8,8,0,1,0,13.85-8ZM72,96a56,56,0,1,1,56,56A56.06,56.06,0,0,1,72,96Z"></path></svg>
+        <span th:text="${currentUser.username}">Profile</span>
+      </a>
       <form th:action="@{/auth/logout}" method="post" style="margin:0">
         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
         <button type="submit" class="btn btn-ghost btn-sm">Logout</button>
       </form>
-      <a href="/admin" class="btn btn-sm"
-         th:if="${currentUser.role == 'ADMIN'}"
-         style="background:#ffc107;color:#000;font-weight:700">⚙ Admin</a>
+      <a href="/admin" class="btn btn-sm btn-admin"
+         th:if="${currentUser.role == 'ADMIN'}">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256"><path d="M128,80a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160Zm114.73-45.72-26.16-5.88a87.6,87.6,0,0,0-5.23-14.74l12.55-23.75a16.08,16.08,0,0,0-3.32-18.73l-19.46-19.46a16.09,16.09,0,0,0-18.73-3.32l-23.75,12.55a87.6,87.6,0,0,0-14.74-5.23l-5.88-26.16A16.09,16.09,0,0,0,122.31,0H101.69a16.09,16.09,0,0,0-15.72,12.56l-5.88,26.16a87.6,87.6,0,0,0-14.74,5.23L41.6,31.4A16.09,16.09,0,0,0,22.87,34.72L3.41,54.18A16.08,16.08,0,0,0,.09,72.91l12.55,23.75a87.6,87.6,0,0,0-5.23,14.74l-26.16,5.88A16.09,16.09,0,0,0-32,133.69v20.62a16.09,16.09,0,0,0,12.56,15.72l26.16,5.88a87.6,87.6,0,0,0,5.23,14.74l-12.55,23.75a16.08,16.08,0,0,0,3.32,18.73l19.46,19.46a16.09,16.09,0,0,0,18.73,3.32l23.75-12.55a87.6,87.6,0,0,0,14.74,5.23l5.88,26.16A16.09,16.09,0,0,0,101.69,256h20.62a16.09,16.09,0,0,0,15.72-12.56l5.88-26.16a87.6,87.6,0,0,0,14.74-5.23l23.75,12.55a16.09,16.09,0,0,0,18.73-3.32l19.46-19.46a16.08,16.08,0,0,0,3.32-18.73l-12.55-23.75a87.6,87.6,0,0,0,5.23-14.74l26.16-5.88A16.09,16.09,0,0,0,256,154.31V133.69A16.09,16.09,0,0,0,242.73,114.28Z"></path></svg> Admin
+      </a>
     </th:block>
     <th:block th:if="${currentUser == null}">
       <a href="/auth/login" class="btn btn-ghost btn-sm">Login</a>
@@ -41,24 +46,27 @@
 </nav>
 
 <!-- MOVIE CARD fragment -->
-<div th:fragment="movieCard(movie)" class="movie-card"
-     th:if="${movie != null}"
-     th:attr="onclick=|window.location='/movies/${movie.movieId}'|, aria-label=${movie.title}"
-     role="button" tabindex="0">
+<a th:fragment="movieCard(movie)" class="movie-card"
+   th:if="${movie != null}"
+   th:href="@{/movies/{id}(id=${movie.movieId})}"
+   th:aria-label="${movie.title}">
   <div class="card-inner">
     <div class="movie-poster">
       <img th:if="${movie.posterUrl != null and !#strings.isEmpty(movie.posterUrl)}"
            th:src="${movie.posterUrl}" th:alt="${movie.title}" loading="lazy"
            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
       <div class="movie-poster-placeholder"
-           th:style="${movie.posterUrl != null and !#strings.isEmpty(movie.posterUrl)} ? 'display:none' : 'display:flex'">🎬</div>
+           th:style="${movie.posterUrl != null and !#strings.isEmpty(movie.posterUrl)} ? 'display:none' : 'display:flex'">
+        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" viewBox="0 0 256 256"><path d="M224,48H32A16,16,0,0,0,16,64V192a16,16,0,0,0,16,16H224a16,16,0,0,0,16-16V64A16,16,0,0,0,224,48ZM98.74,64l18.29,48H73.05L54.76,64ZM149.88,64l18.29,48h-44L105.9,64Zm51.14,48H157l-18.29-48h43.43L200.41,64H224v48ZM32,112H58.85L40.56,64H32ZM224,192H32V128H224v64Z"></path></svg>
+      </div>
       <div class="movie-overlay">
         <div class="overlay-content">
           <div class="overlay-title" th:text="${movie.title}">Title</div>
           <div class="overlay-meta">
             <span class="overlay-rating"
                   th:if="${movie.averageRating != null and movie.averageRating > 0}">
-              ⭐ <span th:text="${#numbers.formatDecimal(movie.averageRating,1,1)}">4.5</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#F5C518" viewBox="0 0 256 256"><path d="M234.5,114.38l-45.1,39.36,13.51,58.6a16,16,0,0,1-23.84,17.34l-51.11-31-51,31a16,16,0,0,1-23.84-17.34L66.61,153.8,21.5,114.38a16,16,0,0,1,9.11-28.06l59.46-5.15,23.21-55.36a15.95,15.95,0,0,1,29.44,0h0L166,81.17l59.44,5.15a16,16,0,0,1,9.11,28.06Z"></path></svg>
+              <span th:text="${#numbers.formatDecimal(movie.averageRating,1,1)}">4.5</span>
             </span>
             <span th:text="${movie.releaseYear}">2024</span>
           </div>
@@ -76,7 +84,8 @@
         <span class="movie-year" th:text="${movie.releaseYear}">2024</span>
         <span class="movie-rating"
               th:if="${movie.averageRating != null and movie.averageRating > 0}">
-          ⭐ <span th:text="${#numbers.formatDecimal(movie.averageRating,1,1)}">4.5</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#F5C518" viewBox="0 0 256 256"><path d="M234.5,114.38l-45.1,39.36,13.51,58.6a16,16,0,0,1-23.84,17.34l-51.11-31-51,31a16,16,0,0,1-23.84-17.34L66.61,153.8,21.5,114.38a16,16,0,0,1,9.11-28.06l59.46-5.15,23.21-55.36a15.95,15.95,0,0,1,29.44,0h0L166,81.17l59.44,5.15a16,16,0,0,1,9.11,28.06Z"></path></svg>
+          <span th:text="${#numbers.formatDecimal(movie.averageRating,1,1)}">4.5</span>
         </span>
       </div>
       <div class="genre-tags" th:if="${movie.genres != null and !movie.genres.empty}">
@@ -84,7 +93,7 @@
       </div>
     </div>
   </div>
-</div>
+</a>
 
 </body>
 </html>
