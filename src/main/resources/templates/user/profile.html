@@ -96,7 +96,7 @@
       <a href="/user/history" class="view-all">View all →</a>
     </div>
     <div class="movies-row" th:if="${!#lists.isEmpty(watchHistory)}">
-      <th:block th:each="wh : ${#lists.subList(watchHistory, 0, T(Math).min(6, #lists.size(watchHistory)))}">
+      <th:block th:each="wh : ${#lists.size(watchHistory) > 6 ? #lists.subList(watchHistory, 0, 6) : watchHistory}">
         <div th:replace="~{fragments :: movieCard(${wh.movie})}"></div>
       </th:block>
     </div>
@@ -112,7 +112,7 @@
       <a href="/user/watchlist" class="view-all">View all →</a>
     </div>
     <div class="movies-row" th:if="${!#lists.isEmpty(watchlist)}">
-      <th:block th:each="wl : ${#lists.subList(watchlist, 0, T(Math).min(6, #lists.size(watchlist)))}">
+      <th:block th:each="wl : ${#lists.size(watchlist) > 6 ? #lists.subList(watchlist, 0, 6) : watchlist}">
         <div th:replace="~{fragments :: movieCard(${wl.movie})}"></div>
       </th:block>
     </div>
