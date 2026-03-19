@@ -89,9 +89,6 @@ public class SecurityConfig {
                 .requestMatchers("/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
-            .requiresChannel(channel -> channel
-                .anyRequest().requiresSecure()
-            )
             .formLogin(form -> form
                 .loginPage("/auth/login")
                 .loginProcessingUrl("/auth/login")
