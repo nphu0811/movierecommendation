@@ -27,7 +27,7 @@ public class MovieService {
 
 
     public Page<Movie> getAllMovies(int page, int size) {
-        Page<Movie> moviePage = movieRepository.findAll(PageRequest.of(page, size, Sort.by("createdAt").descending()));
+        Page<Movie> moviePage = movieRepository.findAll(PageRequest.of(page, size, Sort.by("movieId").ascending()));
         enrichWithRatings(moviePage.getContent());
         return moviePage;
     }

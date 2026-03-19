@@ -65,7 +65,7 @@ public class OpenAIService {
 
         try {
             List<Rating> ratings = ratingRepository.findByUserUserId(userId);
-            List<WatchHistory> history = watchHistoryRepository.findByUserUserIdOrderByWatchedAtDesc(userId);
+            List<WatchHistory> history = watchHistoryRepository.findByUserUserIdOrderByWatchedAtAsc(userId);
 
             if (ratings.isEmpty() && history.isEmpty()) return Collections.emptyList();
 

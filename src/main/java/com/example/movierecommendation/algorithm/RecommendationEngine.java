@@ -153,7 +153,7 @@ public class RecommendationEngine {
                 genreProfile.merge(g.getGenreId(), (double) r.getRating(), Double::sum);
             }
         }
-        List<WatchHistory> history = watchHistoryRepository.findByUserUserIdOrderByWatchedAtDesc(userId);
+        List<WatchHistory> history = watchHistoryRepository.findByUserUserIdOrderByWatchedAtAsc(userId);
         for (WatchHistory wh : history) {
             Movie movie = wh.getMovie();
             if (movie == null || movie.getGenres() == null) continue;

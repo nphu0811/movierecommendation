@@ -11,9 +11,9 @@ import java.util.List;
 @Repository
 public interface WatchHistoryRepository extends JpaRepository<WatchHistory, Integer> {
 
-    List<WatchHistory> findByUserUserIdOrderByWatchedAtDesc(Integer userId);
+    List<WatchHistory> findByUserUserIdOrderByWatchedAtAsc(Integer userId);
 
-    List<WatchHistory> findByUserUserIdOrderByWatchedAtDesc(Integer userId, Pageable pageable);
+    List<WatchHistory> findByUserUserIdOrderByWatchedAtAsc(Integer userId, Pageable pageable);
 
     @Query("SELECT wh.movie.movieId FROM WatchHistory wh WHERE wh.user.userId = :userId")
     List<Integer> findWatchedMovieIdsByUserId(@Param("userId") Integer userId);

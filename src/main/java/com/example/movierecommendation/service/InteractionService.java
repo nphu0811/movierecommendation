@@ -88,7 +88,7 @@ public class InteractionService {
     }
 
     public List<WatchHistory> getWatchHistory(Integer userId) {
-        return watchHistoryRepository.findByUserUserIdOrderByWatchedAtDesc(userId);
+        return watchHistoryRepository.findByUserUserIdOrderByWatchedAtAsc(userId);
     }
 
     public boolean hasWatched(Integer userId, Integer movieId) {
@@ -114,7 +114,7 @@ public class InteractionService {
     }
 
     public List<Watchlist> getWatchlist(Integer userId) {
-        return watchlistRepository.findByUserUserIdOrderByAddedAtDesc(userId);
+        return watchlistRepository.findByUserUserIdOrderByAddedAtAsc(userId);
     }
 
     public boolean isInWatchlist(Integer userId, Integer movieId) {

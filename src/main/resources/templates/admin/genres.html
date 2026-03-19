@@ -8,16 +8,7 @@
 </head>
 <body>
 <div class="admin-layout">
-  <aside class="admin-sidebar">
-    <div class="sidebar-logo">⚙ Admin</div>
-    <nav class="sidebar-nav">
-      <a href="/admin">📊 Dashboard</a>
-      <a href="/admin/movies">🎬 Movies</a>
-      <a href="/admin/genres" class="active">🎭 Genres</a>
-      <a href="/admin/users">👥 Users</a>
-      <a href="/">← Back to Site</a>
-    </nav>
-  </aside>
+  <div th:replace="~{fragments :: adminSidebar('genres')}"></div>
 
   <main class="admin-main">
     <div class="admin-header"><h1>Genres</h1></div>
@@ -27,7 +18,7 @@
 
     <div style="display:grid;grid-template-columns:360px 1fr;gap:2rem">
       <!-- Add genre -->
-      <div style="background:#1f1f1f;border-radius:12px;padding:1.5rem;align-self:start">
+      <div style="background:var(--bg-elevated);border-radius:12px;padding:1.5rem;align-self:start">
         <h3 style="margin-bottom:1.25rem">Add New Genre</h3>
         <form th:action="@{/admin/genres/new}" method="post">
           <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
@@ -40,7 +31,7 @@
       </div>
 
       <!-- Genre list -->
-      <div style="background:#1f1f1f;border-radius:12px;overflow:hidden;align-self:start">
+      <div style="background:var(--bg-elevated);border-radius:12px;overflow:hidden;align-self:start">
         <table class="data-table">
           <thead>
             <tr><th>ID</th><th>Genre Name</th><th>Actions</th></tr>
@@ -56,7 +47,9 @@
                       method="post" style="margin:0"
                       onsubmit="return confirm('Delete this genre? This may affect movies.')">
                   <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                  <button type="submit" class="btn btn-danger btn-sm">🗑 Delete</button>
+                  <button type="submit" class="btn btn-danger btn-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256" style="margin-right:4px;vertical-align:-3px"><path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM96,40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96Zm96,168H64V64H192ZM112,104v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Z"></path></svg> Delete
+                  </button>
                 </form>
               </td>
             </tr>

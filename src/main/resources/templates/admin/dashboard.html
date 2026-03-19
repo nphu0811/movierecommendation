@@ -10,16 +10,7 @@
 <div class="admin-layout">
 
   <!-- Sidebar -->
-  <aside class="admin-sidebar">
-    <div class="sidebar-logo">⚙ Admin</div>
-    <nav class="sidebar-nav">
-      <a href="/admin" class="active">📊 Dashboard</a>
-      <a href="/admin/movies">🎬 Movies</a>
-      <a href="/admin/genres">🎭 Genres</a>
-      <a href="/admin/users">👥 Users</a>
-      <a href="/" style="margin-top:auto;border-top:1px solid #333">← Back to Site</a>
-    </nav>
-  </aside>
+  <div th:replace="~{fragments :: adminSidebar('dashboard')}"></div>
 
   <!-- Main -->
   <main class="admin-main">
@@ -31,11 +22,13 @@
     <!-- Stats -->
     
   <!-- Poster Fetch Section -->
-  <div style="background:#1a1a1a;border:1px solid rgba(229,9,20,.3);border-radius:12px;padding:1.25rem;margin-bottom:2rem;display:flex;align-items:center;justify-content:space-between;gap:1rem">
+  <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:2rem;display:flex;align-items:center;justify-content:space-between;gap:1rem">
     <div>
-      <div style="font-weight:700;margin-bottom:.25rem">🖼️ Movie Posters</div>
-      <div style="font-size:.82rem;color:#888" th:if="${!posterRunning}">Fetch poster cho tất cả phim từ TMDB API</div>
-      <div style="font-size:.82rem;color:#4ade80" th:if="${posterRunning}"
+      <div style="font-weight:700;margin-bottom:.25rem;display:flex;align-items:center;gap:.5rem">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256"><path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40ZM40,56H216V158.75l-46.63-46.63a16,16,0,0,0-22.62,0L54.06,204.81A15.86,15.86,0,0,0,40,200ZM216,200H76.69L158.06,118.63,216,176.57ZM104,104A16,16,0,1,1,88,88,16,16,0,0,1,104,104Z"></path></svg> Movie Posters
+      </div>
+      <div style="font-size:.82rem;color:var(--text-muted)" th:if="${!posterRunning}">Fetch poster cho tất cả phim từ TMDB API</div>
+      <div style="font-size:.82rem;color:var(--success)" th:if="${posterRunning}"
            th:text="|⏳ Đang fetch: ${posterDone}/${posterTotal} phim...|">Loading...</div>
     </div>
     <form th:action="@{/admin/fetch-posters}" method="post">
@@ -48,10 +41,13 @@
 
 
   <!-- Seed Ratings & Comments -->
-  <div style="background:#1a1a1a;border:1px solid rgba(229,9,20,.3);border-radius:12px;padding:1.25rem;margin-bottom:1.5rem;display:flex;align-items:center;justify-content:space-between;gap:1rem">
+  <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:1.5rem;display:flex;align-items:center;justify-content:space-between;gap:1rem">
     <div>
-      <div style="font-weight:700;margin-bottom:.25rem">⭐ Seed Ratings & Comments</div>
-      <div style="font-size:.82rem;color:#888">Fetch ratings + reviews thật từ TMDB cho 500 phim phổ biến</div>
+      <div style="font-weight:700;margin-bottom:.25rem;display:flex;align-items:center;gap:.5rem;color:var(--secondary)">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256"><path d="M234.29,114.85l-45,38.83L203,211.75a16.4,16.4,0,0,1-24.5,17.82L128,198.49,77.47,229.57A16.4,16.4,0,0,1,53,211.75l13.76-58.07-45-38.83A16.46,16.46,0,0,1,31.08,86l59-4.76,22.76-55.08a16.36,16.36,0,0,1,30.27,0l22.75,55.08,59,4.76a16.46,16.46,0,0,1,9.37,28.86Z"></path></svg> 
+        <span style="color:var(--text)">Seed Ratings & Comments</span>
+      </div>
+      <div style="font-size:.82rem;color:var(--text-muted)">Fetch ratings + reviews thật từ TMDB cho 500 phim phổ biến</div>
     </div>
     <form th:action="@{/admin/seed-data}" method="post">
       <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
@@ -61,35 +57,35 @@
 
   <div class="stats-grid">
       <div class="stat-card">
-        <div class="stat-icon">👥</div>
+        <div class="stat-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256"><path d="M216,152a8,8,0,0,0-8,8v48H120a8,8,0,0,0,0,16h96a16,16,0,0,0,16-16V160A8,8,0,0,0,216,152ZM104,152a64,64,0,1,0-64-64A64.07,64.07,0,0,0,104,152Zm0-112a48,48,0,1,1-48,48A48.05,48.05,0,0,1,104,40Zm-8,144H24A16,16,0,0,0,8,200v8a16,16,0,0,0,16,16h72a16,16,0,0,0,16-16v-8A16,16,0,0,0,96,184Zm0,24H24v-8H96Z"></path></svg></div>
         <div>
           <div class="stat-value" th:text="${totalUsers}">0</div>
           <div class="stat-label">Total Users</div>
         </div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon">🎬</div>
+        <div class="stat-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256"><path d="M224,48H32A16,16,0,0,0,16,64V192a16,16,0,0,0,16,16H224a16,16,0,0,0,16-16V64A16,16,0,0,0,224,48ZM64,192H32V160H64Zm0-64H32V96H64ZM192,192H80V64H192ZM224,192H208V160h16Zm0-64H208V96h16Z"></path></svg></div>
         <div>
           <div class="stat-value" th:text="${totalMovies}">0</div>
           <div class="stat-label">Total Movies</div>
         </div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon">⭐</div>
+        <div class="stat-icon" style="color:var(--secondary)"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256"><path d="M234.29,114.85l-45,38.83L203,211.75a16.4,16.4,0,0,1-24.5,17.82L128,198.49,77.47,229.57A16.4,16.4,0,0,1,53,211.75l13.76-58.07-45-38.83A16.46,16.46,0,0,1,31.08,86l59-4.76,22.76-55.08a16.36,16.36,0,0,1,30.27,0l22.75,55.08,59,4.76a16.46,16.46,0,0,1,9.37,28.86Z"></path></svg></div>
         <div>
           <div class="stat-value" th:text="${totalRatings}">0</div>
           <div class="stat-label">Total Ratings</div>
         </div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon">💬</div>
+        <div class="stat-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256"><path d="M216,48H40A16,16,0,0,0,24,64V224a15.84,15.84,0,0,0,9.25,14.5A16.05,16.05,0,0,0,40,240a15.89,15.89,0,0,0,10.25-3.78.69.69,0,0,0,.13-.11L82.5,208H216a16,16,0,0,0,16-16V64A16,16,0,0,0,216,48ZM88,144a8,8,0,0,1,0-16h80a8,8,0,0,1,0,16Zm0-32a8,8,0,0,1,0-16h80a8,8,0,0,1,0,16Z"></path></svg></div>
         <div>
           <div class="stat-value" th:text="${totalComments}">0</div>
           <div class="stat-label">Comments</div>
         </div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon">🔥</div>
+        <div class="stat-icon" style="color:#f97316"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256"><path d="M196.48,103.38A123.47,123.47,0,0,0,157.65,25.61a8,8,0,0,0-13.62-4,136.21,136.21,0,0,1-30,28.84A102.3,102.3,0,0,0,67.8,111.94,84.18,84.18,0,0,0,64,136a88,88,0,1,0,132.48-32.62ZM136,192a8,8,0,0,1-16,0,16,16,0,0,0-32,0,8,8,0,0,1-16,0,32,32,0,0,1,64,0,16,16,0,0,0,32,0,8,8,0,0,1,16,0A66.7,66.7,0,0,1,136,204.62Z"></path></svg></div>
         <div>
           <div class="stat-value" th:text="${activeUsers}">0</div>
           <div class="stat-label">Active Users</div>
@@ -101,36 +97,42 @@
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">
 
       <!-- Top Rated -->
-      <div style="background:#1f1f1f;border-radius:12px;padding:1.5rem">
-        <h3 style="margin-bottom:1rem">⭐ Top Rated Movies</h3>
+      <div style="background:var(--bg-elevated);border-radius:12px;padding:1.5rem">
+        <h3 style="margin-bottom:1rem;display:flex;align-items:center;gap:.5rem;color:var(--secondary)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256"><path d="M234.29,114.85l-45,38.83L203,211.75a16.4,16.4,0,0,1-24.5,17.82L128,198.49,77.47,229.57A16.4,16.4,0,0,1,53,211.75l13.76-58.07-45-38.83A16.46,16.46,0,0,1,31.08,86l59-4.76,22.76-55.08a16.36,16.36,0,0,1,30.27,0l22.75,55.08,59,4.76a16.46,16.46,0,0,1,9.37,28.86Z"></path></svg> 
+          <span style="color:var(--text)">Top Rated Movies</span>
+        </h3>
         <div th:each="movie, iter : ${topRated}"
-             style="display:flex;align-items:center;gap:.75rem;padding:.6rem 0;border-bottom:1px solid #2a2a2a">
-          <span style="color:#e50914;font-weight:700;width:20px"
+             style="display:flex;align-items:center;gap:.75rem;padding:.6rem 0;border-bottom:1px solid var(--border)">
+          <span style="color:var(--primary);font-weight:700;width:20px"
                 th:text="${iter.index + 1}">1</span>
           <div style="flex:1">
             <div style="font-size:.875rem;font-weight:500" th:text="${movie.title}">Title</div>
-            <div style="font-size:.75rem;color:#6c757d" th:text="${movie.releaseYear}">Year</div>
+            <div style="font-size:.75rem;color:var(--text-muted)" th:text="${movie.releaseYear}">Year</div>
           </div>
-          <span style="color:#f5c518;font-size:.875rem"
+          <span style="color:var(--secondary);font-size:.875rem"
                 th:if="${movie.averageRating != null and movie.averageRating > 0}"
-                th:text="|⭐ ${#numbers.formatDecimal(movie.averageRating,1,1)}|">⭐ 4.5</span>
+                th:text="${#numbers.formatDecimal(movie.averageRating,1,1)}">4.5</span>
         </div>
-        <div th:if="${#lists.isEmpty(topRated)}" style="color:#6c757d;font-size:.875rem">No data yet.</div>
+        <div th:if="${#lists.isEmpty(topRated)}" style="color:var(--text-muted);font-size:.875rem">No data yet.</div>
       </div>
 
       <!-- Popular -->
-      <div style="background:#1f1f1f;border-radius:12px;padding:1.5rem">
-        <h3 style="margin-bottom:1rem">🔥 Most Watched</h3>
+      <div style="background:var(--bg-elevated);border-radius:12px;padding:1.5rem">
+        <h3 style="margin-bottom:1rem;display:flex;align-items:center;gap:.5rem;color:#f97316">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256"><path d="M196.48,103.38A123.47,123.47,0,0,0,157.65,25.61a8,8,0,0,0-13.62-4,136.21,136.21,0,0,1-30,28.84A102.3,102.3,0,0,0,67.8,111.94,84.18,84.18,0,0,0,64,136a88,88,0,1,0,132.48-32.62ZM136,192a8,8,0,0,1-16,0,16,16,0,0,0-32,0,8,8,0,0,1-16,0,32,32,0,0,1,64,0,16,16,0,0,0,32,0,8,8,0,0,1,16,0A66.7,66.7,0,0,1,136,204.62Z"></path></svg>
+          <span style="color:var(--text)">Most Watched</span>
+        </h3>
         <div th:each="movie, iter : ${popular}"
-             style="display:flex;align-items:center;gap:.75rem;padding:.6rem 0;border-bottom:1px solid #2a2a2a">
-          <span style="color:#e50914;font-weight:700;width:20px"
+             style="display:flex;align-items:center;gap:.75rem;padding:.6rem 0;border-bottom:1px solid var(--border)">
+          <span style="color:var(--primary);font-weight:700;width:20px"
                 th:text="${iter.index + 1}">1</span>
           <div style="flex:1">
             <div style="font-size:.875rem;font-weight:500" th:text="${movie.title}">Title</div>
-            <div style="font-size:.75rem;color:#6c757d" th:text="${movie.releaseYear}">Year</div>
+            <div style="font-size:.75rem;color:var(--text-muted)" th:text="${movie.releaseYear}">Year</div>
           </div>
         </div>
-        <div th:if="${#lists.isEmpty(popular)}" style="color:#6c757d;font-size:.875rem">No data yet.</div>
+        <div th:if="${#lists.isEmpty(popular)}" style="color:var(--text-muted);font-size:.875rem">No data yet.</div>
       </div>
     </div>
 

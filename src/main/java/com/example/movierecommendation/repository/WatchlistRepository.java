@@ -8,7 +8,7 @@ import java.util.Optional;
 
 @Repository
 public interface WatchlistRepository extends JpaRepository<Watchlist, Integer> {
-    List<Watchlist> findByUserUserIdOrderByAddedAtDesc(Integer userId);
+    List<Watchlist> findByUserUserIdOrderByAddedAtAsc(Integer userId);
     Optional<Watchlist> findByUserUserIdAndMovieMovieId(Integer userId, Integer movieId);
     boolean existsByUserUserIdAndMovieMovieId(Integer userId, Integer movieId);
     void deleteByUserUserIdAndMovieMovieId(Integer userId, Integer movieId);
