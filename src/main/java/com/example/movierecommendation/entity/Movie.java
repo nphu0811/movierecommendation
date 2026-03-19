@@ -5,7 +5,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
-@Table(name = "movies")
+@Table(name = "movies", indexes = {
+    @Index(name = "idx_movie_title", columnList = "title")
+})
 public class Movie {
 
     @Id
@@ -34,7 +36,7 @@ public class Movie {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
         name = "movie_genres",
         joinColumns = @JoinColumn(name = "movie_id"),

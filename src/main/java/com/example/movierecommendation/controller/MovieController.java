@@ -1,5 +1,6 @@
 package com.example.movierecommendation.controller;
 
+import com.example.movierecommendation.dto.MovieDetailDTO;
 import com.example.movierecommendation.entity.*;
 import com.example.movierecommendation.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,8 @@ public class MovieController {
     private RecommendationService recommendationService;
     @Autowired
     private UserService userService;
+    @Autowired
+    private MovieFacade movieFacade;
 
     @GetMapping("/movies")
     public String listMovies(@RequestParam(name = "page", defaultValue = "0") int page,
@@ -45,29 +48,21 @@ public class MovieController {
     public String movieDetail(@PathVariable("id") Integer id,
                               @AuthenticationPrincipal UserDetails userDetails,
                               Model model) {
-        Optional<Movie> opt = movieService.findById(id);
-        if (!opt.isPresent()) return "redirect:/movies";
+        String username = userDetails != null ? userDetails.getUsername() : null;
+        MovieDetailDTO dto = movieFacade.getMovieDetail(id, username);
+        if (dto == null) return "redirect:/movies";
 
-        Movie movie = opt.get();
-        model.addAttribute("movie", movie);
-        model.addAttribute("comments", interactionService.getCommentsByMovie(id));
-
-        Integer currentUserId = null;
-        if (userDetails != null) {
-            User currentUser = userService.getCurrentUser(userDetails.getUsername());
-            currentUserId = currentUser.getUserId();
-            model.addAttribute("currentUser", currentUser);
-
-            Optional<Rating> ratingOpt = interactionService.getUserRating(currentUserId, id);
-            int userRating = 0;
-            if (ratingOpt.isPresent()) {
-                userRating = ratingOpt.get().getRating();
-            }
-            model.addAttribute("userRating", userRating);
-            model.addAttribute("inWatchlist", interactionService.isInWatchlist(currentUserId, id));
-            model.addAttribute("hasWatched", interactionService.hasWatched(currentUserId, id));
+        model.addAttribute("movie", dto.getMovie());
+        model.addAttribute("comments", dto.getComments());
+        
+        if (dto.getCurrentUser() != null) {
+            model.addAttribute("currentUser", dto.getCurrentUser());
+            model.addAttribute("userRating", dto.getUserRating());
+            model.addAttribute("inWatchlist", dto.isInWatchlist());
+            model.addAttribute("hasWatched", dto.isHasWatched());
         }
-        model.addAttribute("similarMovies", recommendationService.getSimilarMovies(movie, currentUserId));
+        
+        model.addAttribute("similarMovies", dto.getSimilarMovies());
         return "movie/detail";
     }
 

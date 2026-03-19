@@ -25,6 +25,9 @@ public interface RatingRepository extends JpaRepository<Rating, Integer> {
     @Query("SELECT r FROM Rating r JOIN FETCH r.movie JOIN FETCH r.user WHERE r.user.userId IN :userIds")
     List<Rating> findByUserUserIdIn(@Param("userIds") List<Integer> userIds);
 
+    @Query("SELECT r.movie.movieId, AVG(CAST(r.rating AS double)), COUNT(r) FROM Rating r WHERE r.movie.movieId IN :movieIds GROUP BY r.movie.movieId")
+    List<Object[]> findRatingStatsByMovieIds(@Param("movieIds") List<Integer> movieIds);
+
     @Query("SELECT AVG(CAST(r.rating AS double)) FROM Rating r WHERE r.movie.movieId = :movieId")
     Double findAverageRatingByMovieId(@Param("movieId") Integer movieId);
 

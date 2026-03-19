@@ -6,7 +6,14 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
+
 @Configuration
+@EnableAsync
+@EnableCaching
+@EnableScheduling
 public class AppConfig {
 
     @Bean

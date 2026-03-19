@@ -6,6 +6,7 @@ import com.example.movierecommendation.repository.MovieRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
@@ -20,20 +21,20 @@ public class RecommendationService {
     @Autowired private MovieRepository movieRepository;
     @Autowired private OpenAIService openAIService;
 
+    @Cacheable(value = "user_ai_recommendations", key = "#userId", unless = "#result == null or #result.isEmpty()")
     public List<Movie> getPersonalizedRecommendations(Integer userId) {
         List<Movie> hybrid = engine.getRecommendations(userId);
 
         if (!openAIService.isEnabled()) return hybrid;
 
         try {
-            // FIX: Không gọi findAll() - chỉ lấy trending 100 phim để AI chọn
-            // Đủ context, tránh load toàn DB vào RAM
-            List<Movie> candidates = movieRepository.findMostWatchedMovies(PageRequest.of(0, 100));
+            // FIX: Reduce payload to 20 instead of 100
+            List<Movie> candidates = movieRepository.findMostWatchedMovies(PageRequest.of(0, 20));
             List<String> aiTitles = openAIService.getAIRecommendedTitles(userId, candidates);
 
-            if (aiTitles.isEmpty()) return hybrid;
+            if (aiTitles == null || aiTitles.isEmpty()) return hybrid;
 
-            // FIX: Dedup dùng Set<Integer> thay vì nested loop O(n²)
+            // FIX: Use structured lookup Map
             Map<String, Movie> titleIndex = new HashMap<>();
             for (Movie m : candidates) {
                 titleIndex.put(m.getTitle().toLowerCase(), m);
@@ -45,14 +46,12 @@ public class RecommendationService {
             for (String title : aiTitles) {
                 String key = title.toLowerCase();
                 Movie match = titleIndex.get(key);
-                // Fuzzy match nếu exact không tìm được
                 if (match == null) {
-                    for (Map.Entry<String, Movie> e : titleIndex.entrySet()) {
-                        if (e.getKey().contains(key) || key.contains(e.getKey())) {
-                            match = e.getValue();
-                            break;
-                        }
-                    }
+                    match = titleIndex.entrySet().stream()
+                        .filter(e -> e.getKey().contains(key) || key.contains(e.getKey()))
+                        .map(Map.Entry::getValue)
+                        .findFirst()
+                        .orElse(null);
                 }
                 if (match != null && seen.add(match.getMovieId())) {
                     aiMovies.add(match);
