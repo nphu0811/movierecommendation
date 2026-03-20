@@ -92,7 +92,7 @@ public class RecommendationEngine {
             return movieRepository.findMostWatchedMovies(PageRequest.of(0, 6));
         }
 
-        List<Movie> similar = new ArrayList<>(movieRepository.findByGenreIds(targetGenreIds, excludeIds));
+        List<Movie> similar = new ArrayList<>(movieRepository.findByGenreIdsAndNotInIds(targetGenreIds, excludeIds, PageRequest.of(0, 50)));
         similar.sort((a, b) -> Double.compare(genreOverlap(b, targetGenreIds), genreOverlap(a, targetGenreIds)));
 
         List<Movie> result = new ArrayList<>();
@@ -129,7 +129,7 @@ public class RecommendationEngine {
         for (int i = 0; i < Math.min(5, profileEntries.size()); i++) topGenreIds.add(profileEntries.get(i).getKey());
 
         List<Integer> excludeIds = watchedIds.isEmpty() ? Collections.singletonList(-1) : watchedIds;
-        List<Movie> candidates = movieRepository.findByGenreIds(topGenreIds, excludeIds);
+        List<Movie> candidates = movieRepository.findByGenreIdsAndNotInIds(topGenreIds, excludeIds, PageRequest.of(0, 200));
 
         double maxWeight = genreProfile.values().stream().mapToDouble(Double::doubleValue).max().orElse(1.0);
 

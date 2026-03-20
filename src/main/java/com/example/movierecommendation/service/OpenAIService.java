@@ -155,7 +155,7 @@ public class OpenAIService {
                 .bodyValue(body)
                 .retrieve()
                 .bodyToMono(String.class)
-                .timeout(Duration.ofSeconds(10)) // Timeout 10s
+                .timeout(Duration.ofSeconds(4)) // Timeout 4s
                 .block(); // Block ở đây vì controller dùng MVC (không phải Reactive)
 
             if (response == null) return Collections.emptyList();

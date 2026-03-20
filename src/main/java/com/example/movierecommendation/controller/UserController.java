@@ -86,10 +86,23 @@ public class UserController {
     public String recommendations(@AuthenticationPrincipal UserDetails userDetails, Model model) {
         User user = userService.getCurrentUser(userDetails.getUsername());
         model.addAttribute("currentUser", user);
-        model.addAttribute("recommendations",
-                recommendationService.getPersonalizedRecommendations(user.getUserId()));
-        model.addAttribute("genrePicks",
-                recommendationService.getGenreBasedRecommendations(user.getUserId()));
+
+        java.util.concurrent.ExecutorService exec = java.util.concurrent.Executors.newFixedThreadPool(2);
+        java.util.concurrent.Future<java.util.List<com.example.movierecommendation.entity.Movie>> recFuture = exec.submit(() ->
+            recommendationService.getPersonalizedRecommendations(user.getUserId()));
+        java.util.concurrent.Future<java.util.List<com.example.movierecommendation.entity.Movie>> genreFuture = exec.submit(() ->
+            recommendationService.getGenreBasedRecommendations(user.getUserId()));
+
+        try {
+            model.addAttribute("recommendations", recFuture.get(5, java.util.concurrent.TimeUnit.SECONDS));
+            model.addAttribute("genrePicks", genreFuture.get(3, java.util.concurrent.TimeUnit.SECONDS));
+        } catch (Exception e) {
+            model.addAttribute("recommendations", recommendationService.getTrendingMovies());
+            model.addAttribute("genrePicks", java.util.Collections.emptyList());
+        } finally {
+            exec.shutdown();
+        }
+
         model.addAttribute("trending", recommendationService.getTrendingMovies());
         return "user/recommendations";
     }
