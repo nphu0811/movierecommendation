@@ -46,54 +46,38 @@
 </nav>
 
 <!-- MOVIE CARD fragment -->
-<a th:fragment="movieCard(movie)" class="movie-card"
-   th:if="${movie != null}"
-   th:href="@{/movies/{id}(id=${movie.movieId})}"
-   th:aria-label="${movie.title}">
-  <div class="card-inner">
-    <div class="movie-poster">
-      <img th:if="${movie.posterUrl != null and !#strings.isEmpty(movie.posterUrl)}"
-           th:src="${movie.posterUrl}" th:alt="${movie.title}" loading="lazy"
-           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
-      <div class="movie-poster-placeholder"
-           th:style="${movie.posterUrl != null and !#strings.isEmpty(movie.posterUrl)} ? 'display:none' : 'display:flex'">
-        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" viewBox="0 0 256 256"><path d="M224,48H32A16,16,0,0,0,16,64V192a16,16,0,0,0,16,16H224a16,16,0,0,0,16-16V64A16,16,0,0,0,224,48ZM98.74,64l18.29,48H73.05L54.76,64ZM149.88,64l18.29,48h-44L105.9,64Zm51.14,48H157l-18.29-48h43.43L200.41,64H224v48ZM32,112H58.85L40.56,64H32ZM224,192H32V128H224v64Z"></path></svg>
-      </div>
-      <div class="movie-overlay">
-        <div class="overlay-content">
-          <div class="overlay-title" th:text="${movie.title}">Title</div>
-          <div class="overlay-meta">
-            <span class="overlay-rating"
-                  th:if="${movie.averageRating != null and movie.averageRating > 0}">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#F5C518" viewBox="0 0 256 256"><path d="M234.5,114.38l-45.1,39.36,13.51,58.6a16,16,0,0,1-23.84,17.34l-51.11-31-51,31a16,16,0,0,1-23.84-17.34L66.61,153.8,21.5,114.38a16,16,0,0,1,9.11-28.06l59.46-5.15,23.21-55.36a15.95,15.95,0,0,1,29.44,0h0L166,81.17l59.44,5.15a16,16,0,0,1,9.11,28.06Z"></path></svg>
-              <span th:text="${#numbers.formatDecimal(movie.averageRating,1,1)}">4.5</span>
-            </span>
-            <span th:text="${movie.releaseYear}">2024</span>
-          </div>
-          <div class="overlay-actions">
-            <a th:href="@{/movies/{id}(id=${movie.movieId})}"
-               class="btn btn-primary btn-sm"
-               onclick="event.stopPropagation()">▶ View</a>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="movie-info">
-      <div class="movie-title" th:text="${movie.title}">Movie Title</div>
-      <div class="movie-meta">
-        <span class="movie-year" th:text="${movie.releaseYear}">2024</span>
-        <span class="movie-rating"
-              th:if="${movie.averageRating != null and movie.averageRating > 0}">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#F5C518" viewBox="0 0 256 256"><path d="M234.5,114.38l-45.1,39.36,13.51,58.6a16,16,0,0,1-23.84,17.34l-51.11-31-51,31a16,16,0,0,1-23.84-17.34L66.61,153.8,21.5,114.38a16,16,0,0,1,9.11-28.06l59.46-5.15,23.21-55.36a15.95,15.95,0,0,1,29.44,0h0L166,81.17l59.44,5.15a16,16,0,0,1,9.11,28.06Z"></path></svg>
-          <span th:text="${#numbers.formatDecimal(movie.averageRating,1,1)}">4.5</span>
-        </span>
-      </div>
-      <div class="genre-tags" th:if="${movie.genres != null and !movie.genres.empty}">
-        <span class="genre-tag" th:each="g : ${movie.genres}" th:text="${g.genreName}">Genre</span>
+<div th:fragment="movieCard(movie)" class="movie-card"
+     th:if="${movie != null}"
+     th:attr="onclick=|window.location='/movies/${movie.movieId}'|">
+  <div class="movie-poster">
+    <img th:if="${movie.posterUrl != null and !#strings.isEmpty(movie.posterUrl)}"
+         th:src="${movie.posterUrl}" th:alt="${movie.title}" loading="lazy"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
+    <div class="movie-poster-placeholder"
+         th:style="${movie.posterUrl != null and !#strings.isEmpty(movie.posterUrl)} ? 'display:none' : 'display:flex'">🎬</div>
+    <div class="movie-overlay">
+      <div class="overlay-actions">
+        <a th:href="@{/movies/{id}(id=${movie.movieId})}"
+           class="btn btn-primary btn-sm"
+           onclick="event.stopPropagation()">▶ View</a>
       </div>
     </div>
   </div>
-</a>
+  <div class="movie-info">
+    <div class="movie-title" th:text="${movie.title}">Movie Title</div>
+    <div class="movie-meta">
+      <span class="movie-year" th:text="${movie.releaseYear}">2024</span>
+      <span class="movie-rating"
+            th:if="${movie.averageRating != null and movie.averageRating > 0}">
+        ⭐ <span th:text="${#numbers.formatDecimal(movie.averageRating,1,1)}">4.5</span>
+      </span>
+    </div>
+    <div class="genre-tags" th:if="${movie.genres != null and !movie.genres.empty}">
+      <span class="genre-tag" th:each="g : ${movie.genres}" th:text="${g.genreName}">Genre</span>
+    </div>
+  </div>
+</div>
+
 
 <!-- ── ADMIN SIDEBAR ── -->
 <aside th:fragment="adminSidebar(activeMenu)" class="admin-sidebar">
