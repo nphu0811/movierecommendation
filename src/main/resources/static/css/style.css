@@ -1390,3 +1390,16 @@ textarea.form-control { resize: vertical; min-height: 100px; }
   color: #606060;
   margin-top: 2px;
 }
+
+/* -- TAGS -- */
+.tag-pill {
+  display:inline-flex;align-items:center;gap:5px;
+  background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.35);
+  color:#818cf8;border-radius:20px;padding:4px 10px;font-size:.8rem;font-weight:600;
+  transition:background .2s;
+}
+.tag-pill:hover { background:rgba(99,102,241,.28); }
+.tag-count {
+  background:rgba(99,102,241,.25);border-radius:10px;padding:1px 6px;font-size:.72rem;
+}
+

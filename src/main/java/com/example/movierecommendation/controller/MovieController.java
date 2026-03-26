@@ -58,6 +58,8 @@ public class MovieController {
 
         model.addAttribute("movie", dto.getMovie());
         model.addAttribute("comments", dto.getComments());
+        model.addAttribute("movieLink", dto.getMovieLink());
+        model.addAttribute("topTags", dto.getTopTags() != null ? dto.getTopTags() : java.util.Collections.emptyList());
         
         if (dto.getCurrentUser() != null) {
             model.addAttribute("currentUser", dto.getCurrentUser());
@@ -128,5 +130,39 @@ public class MovieController {
         result.put("text", comment.getCommentText());
         result.put("createdAt", comment.getCreatedAt().toString());
         return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/api/movies/{id}/tags")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> addTag(
+            @PathVariable("id") @Min(1) @Max(Integer.MAX_VALUE) Integer id,
+            @RequestParam(name = "tag") String tag,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) return ResponseEntity.status(401).build();
+        User user = userService.getCurrentUser(userDetails.getUsername());
+        try {
+            com.example.movierecommendation.entity.Tag saved =
+                interactionService.addTag(user.getUserId(), id, tag);
+            Map<String, Object> result = new HashMap<>();
+            result.put("tagId", saved.getTagId());
+            result.put("tag", saved.getTag());
+            result.put("username", user.getUsername());
+            return ResponseEntity.ok(result);
+        } catch (IllegalArgumentException e) {
+            Map<String, Object> err = new HashMap<>();
+            err.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(err);
+        }
+    }
+
+    @DeleteMapping("/api/tags/{tagId}")
+    @ResponseBody
+    public ResponseEntity<Void> deleteTag(
+            @PathVariable("tagId") Integer tagId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) return ResponseEntity.status(401).build();
+        User user = userService.getCurrentUser(userDetails.getUsername());
+        interactionService.deleteTag(tagId, user.getUserId());
+        return ResponseEntity.ok().build();
     }
 }

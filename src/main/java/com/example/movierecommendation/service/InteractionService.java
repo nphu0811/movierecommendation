@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
+import java.util.Optional;
 
 @Service
 public class InteractionService {
@@ -22,6 +23,10 @@ public class InteractionService {
     private MovieRepository movieRepository;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private TagRepository tagRepository;
+    @Autowired
+    private LinkRepository linkRepository;
 
     private final Map<String, Long> rateLimits = new java.util.concurrent.ConcurrentHashMap<>();
     private static final long COOLDOWN_MS = 2000;
@@ -160,5 +165,48 @@ public class InteractionService {
 
     public long countActiveUsers() {
         return watchHistoryRepository.countActiveUsers();
+    }
+
+    // ──────────────────── TAGS ────────────────────
+
+    @Transactional
+    public Tag addTag(Integer userId, Integer movieId, String tagText) {
+        checkRateLimit(userId, "addTag");
+        if (tagText == null || tagText.trim().isEmpty()) {
+            throw new IllegalArgumentException("Tag cannot be empty");
+        }
+        String sanitized = org.springframework.web.util.HtmlUtils.htmlEscape(tagText.trim().toLowerCase());
+        if (sanitized.length() > 50) {
+            throw new IllegalArgumentException("Tag too long (max 50 characters)");
+        }
+        if (tagRepository.existsByUserUserIdAndMovieMovieIdAndTag(userId, movieId, sanitized)) {
+            throw new IllegalArgumentException("You already added this tag");
+        }
+        User user = userRepository.findById(userId).orElseThrow();
+        Movie movie = movieRepository.findById(movieId).orElseThrow();
+        Tag tag = new Tag();
+        tag.setUser(user);
+        tag.setMovie(movie);
+        tag.setTag(sanitized);
+        return tagRepository.save(tag);
+    }
+
+    public List<Tag> getTagsByMovie(Integer movieId) {
+        return tagRepository.findByMovieMovieIdOrderByCreatedAtDesc(movieId);
+    }
+
+    @Transactional
+    public void deleteTag(Integer tagId, Integer userId) {
+        tagRepository.deleteByTagIdAndUserUserId(tagId, userId);
+    }
+
+    public List<Object[]> getTopTagsForMovie(Integer movieId) {
+        return tagRepository.findTopTagsByMovieId(movieId);
+    }
+
+    // ──────────────────── LINKS ────────────────────
+
+    public Optional<Link> getLinkForMovie(Integer movieId) {
+        return linkRepository.findByMovieMovieId(movieId);
     }
 }

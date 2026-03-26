@@ -122,7 +122,6 @@
       <p class="text-secondary-md" th:text="${movie.description}">Description</p>
     </div>
 
-    <!-- Where to Watch -->
     <div class="detail-card" th:if="${currentUser != null}">
       <h3>📡 Where to Watch</h3>
       <div style="display:flex;flex-wrap:wrap;gap:10px">
@@ -135,6 +134,14 @@
         <a class="watch-btn trailer"
            th:href="|https://www.youtube.com/results?search_query=${movie.title}+trailer|"
            target="_blank" rel="noopener">▶ YouTube</a>
+        <a th:if="${movieLink != null and movieLink.imdbId != null}"
+           th:href="|https://www.imdb.com/title/tt${movieLink.imdbId}|"
+           class="watch-btn" style="background:#f5c518;color:#000;font-weight:700"
+           target="_blank" rel="noopener">⭐ IMDb</a>
+        <a th:if="${movieLink != null and movieLink.tmdbId != null}"
+           th:href="|https://www.themoviedb.org/movie/${movieLink.tmdbId}|"
+           class="watch-btn" style="background:#01b4e4;color:#fff"
+           target="_blank" rel="noopener">🎥 TMDB</a>
       </div>
       <p class="text-muted-sm" style="margin-top:10px">Click to find this film on streaming platforms.</p>
     </div>
@@ -151,6 +158,37 @@
               onclick="openTrailer(this.dataset.trailerKey)">
         ▶ Watch Trailer
       </button>
+    </div>
+
+    <!-- Tags -->
+    <div class="detail-card">
+      <h3>🏷️ Tags
+        <span style="color:#606060;font-size:.8rem;font-weight:400;text-transform:none;letter-spacing:0"
+              th:text="${#lists.isEmpty(topTags)} ? '' : '(' + ${#lists.size(topTags)} + ' nhãn)'"></span>
+      </h3>
+
+      <!-- Top tags display -->
+      <div id="tag-list" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">
+        <div th:if="${not #lists.isEmpty(topTags)}" th:each="row : ${topTags}"
+             class="tag-pill">
+          <span th:text="${row[0]}">tag</span>
+          <span class="tag-count" th:text="'×' + ${row[1]}">×1</span>
+        </div>
+        <div th:if="${#lists.isEmpty(topTags)}" class="empty-comments-state" style="font-size:.9rem;padding:8px 0">
+          Chưa có tag nào. Hãy là người đầu tiên!
+        </div>
+      </div>
+
+      <!-- Add tag form (logged-in users only) -->
+      <div th:if="${currentUser != null}" style="display:flex;gap:8px;align-items:center">
+        <input id="tag-input" class="form-control" type="text"
+               placeholder="Nhập tag (VD: hay, buồn, hành động)" maxlength="50"
+               style="flex:1;padding:8px 12px"/>
+        <button class="btn btn-primary btn-sm" onclick="submitTag()">＋ Add</button>
+      </div>
+      <div th:if="${currentUser == null}" class="comment-login-box">
+        <a href="/auth/login" class="login-link-highlight">Đăng nhập</a> để gắn tag cho phim.
+      </div>
     </div>
 
     <!-- Comments -->
@@ -273,6 +311,50 @@
       })
       .catch(() => { btn.disabled = false; btn.textContent = 'Post Comment'; showToast('Error posting comment', 'error'); });
   }
+
+  function submitTag() {
+    const input = document.getElementById('tag-input');
+    if (!input) return;
+    const tag = input.value.trim();
+    if (!tag) return;
+    const headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
+    const csrfMeta = document.querySelector('meta[name="_csrf"]');
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]');
+    if (csrfMeta) headers[csrfHeader.content] = csrfMeta.content;
+    fetch(`/api/movies/${MOVIE_ID}/tags?tag=${encodeURIComponent(tag)}`, { method: 'POST', headers })
+      .then(r => r.json())
+      .then(data => {
+        if (data.error) { showToast(data.error, 'error'); return; }
+        const list = document.getElementById('tag-list');
+        // Remove "no tags" placeholder if present
+        const empty = list.querySelector('.empty-comments-state');
+        if (empty) empty.remove();
+        // Add new pill or increment existing
+        const existing = [...list.querySelectorAll('.tag-pill')].find(p => p.querySelector('span').textContent === data.tag);
+        if (existing) {
+          const cnt = existing.querySelector('.tag-count');
+          const n = parseInt(cnt.textContent.replace('×','')) + 1;
+          cnt.textContent = '×' + n;
+        } else {
+          list.insertAdjacentHTML('beforeend',
+            `<div class="tag-pill" style="animation:slideUp .3s ease both">
+               <span>${data.tag}</span><span class="tag-count">×1</span>
+             </div>`);
+        }
+        input.value = '';
+        showToast('Tag đã thêm! 🏷️', 'success');
+      })
+      .catch(() => showToast('Lỗi thêm tag', 'error'));
+  }
+
+  // Submit tag on Enter key
+  document.addEventListener('DOMContentLoaded', () => {
+    const tagInput = document.getElementById('tag-input');
+    if (tagInput) {
+      tagInput.addEventListener('keydown', e => { if (e.key === 'Enter') submitTag(); });
+    }
+  });
+
 </script>
 </body>
 </html>

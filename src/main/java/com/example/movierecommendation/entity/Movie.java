@@ -53,6 +53,12 @@ public class Movie {
     @OneToMany(mappedBy = "movie", fetch = FetchType.LAZY)
     private List<WatchHistory> watchHistories;
 
+    @OneToOne(mappedBy = "movie", fetch = FetchType.LAZY)
+    private Link link;
+
+    @OneToMany(mappedBy = "movie", fetch = FetchType.LAZY)
+    private List<Tag> tags;
+
     @Transient
     private Double averageRating;
 
@@ -99,6 +105,12 @@ public class Movie {
 
     public List<WatchHistory> getWatchHistories() { return watchHistories; }
     public void setWatchHistories(List<WatchHistory> watchHistories) { this.watchHistories = watchHistories; }
+
+    public Link getLink() { return link; }
+    public void setLink(Link link) { this.link = link; }
+
+    public List<Tag> getTags() { return tags; }
+    public void setTags(List<Tag> tags) { this.tags = tags; }
 
     public Double getAverageRating() { return averageRating; }
     public void setAverageRating(Double averageRating) { this.averageRating = averageRating; }
