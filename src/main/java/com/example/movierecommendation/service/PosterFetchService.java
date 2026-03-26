@@ -45,9 +45,10 @@ public class PosterFetchService {
         }
         running = true; done = 0;
         try {
-            // Lấy phim cần fetch: poster sai format HOẶC chưa có description
+            // Lấy phim cần fetch: chưa có poster HOẶC poster sai format HOẶC chưa có description/trailer
             List<Movie> toFix = movieRepository.findAll().stream()
-                .filter(m -> (m.getPosterUrl() != null && m.getPosterUrl().matches(".*\\/\\d+\\.jpg"))
+                .filter(m -> m.getPosterUrl() == null
+                          || (m.getPosterUrl() != null && m.getPosterUrl().matches(".*\\/\\d+\\.jpg"))
                           || m.getDescription() == null || m.getDescription().isEmpty()
                           || m.getTrailerKey() == null)
                 .toList();
@@ -58,11 +59,15 @@ public class PosterFetchService {
 
             for (Movie movie : toFix) {
                 try {
-                    // Extract tmdbId từ poster_url hiện tại
+                    // 1) Extract tmdbId từ poster_url cũ (format: .../123.jpg)
                     String tmdbId = null;
                     if (movie.getPosterUrl() != null && movie.getPosterUrl().matches(".*\\/\\d+\\.jpg")) {
                         String u = movie.getPosterUrl();
                         tmdbId = u.substring(u.lastIndexOf('/') + 1, u.lastIndexOf('.'));
+                    }
+                    // 2) Nếu không có → tra bảng links (phim mới import từ CSV)
+                    if (tmdbId == null && movie.getLink() != null && movie.getLink().getTmdbId() != null) {
+                        tmdbId = movie.getLink().getTmdbId().toString();
                     }
                     if (tmdbId == null) { done++; continue; }
 
