@@ -33,11 +33,11 @@
     </div>
     <div style="margin-left:auto;display:flex;gap:1rem">
       <div style="text-align:center">
-        <div style="font-size:1.5rem;font-weight:700" th:text="${#lists.size(watchHistory)}">0</div>
+        <div style="font-size:1.5rem;font-weight:700" th:text="${watchHistory != null ? watchHistory.size() : 0}">0</div>
         <div style="font-size:.75rem;color:#6c757d">Watched</div>
       </div>
       <div style="text-align:center">
-        <div style="font-size:1.5rem;font-weight:700" th:text="${#lists.size(watchlist)}">0</div>
+        <div style="font-size:1.5rem;font-weight:700" th:text="${watchlist != null ? watchlist.size() : 0}">0</div>
         <div style="font-size:.75rem;color:#6c757d">Watchlist</div>
       </div>
     </div>
@@ -95,12 +95,12 @@
       <h3 class="section-title">🕐 Recent <span>History</span></h3>
       <a href="/user/history" class="view-all">View all →</a>
     </div>
-    <div class="movies-row" th:if="${!#lists.isEmpty(watchHistory)}">
-      <th:block th:each="wh : ${#lists.size(watchHistory) > 6 ? #lists.subList(watchHistory, 0, 6) : watchHistory}">
-        <div th:replace="~{fragments :: movieCard(${wh.movie})}"></div>
+    <div class="movies-row" th:if="${watchHistory != null and !watchHistory.isEmpty()}">
+      <th:block th:each="wh, iterWh : ${watchHistory}">
+        <div th:if="${iterWh.index < 6}" th:replace="~{fragments :: movieCard(${wh.movie})}"></div>
       </th:block>
     </div>
-    <div class="empty-state" th:if="${#lists.isEmpty(watchHistory)}" style="padding:2rem">
+    <div class="empty-state" th:if="${watchHistory == null or watchHistory.isEmpty()}" style="padding:2rem">
       <div class="icon">🎬</div><p style="color:#6c757d">No watch history yet. Start watching!</p>
     </div>
   </div>
@@ -111,12 +111,12 @@
       <h3 class="section-title">❤️ My <span>Watchlist</span></h3>
       <a href="/user/watchlist" class="view-all">View all →</a>
     </div>
-    <div class="movies-row" th:if="${!#lists.isEmpty(watchlist)}">
-      <th:block th:each="wl : ${#lists.size(watchlist) > 6 ? #lists.subList(watchlist, 0, 6) : watchlist}">
-        <div th:replace="~{fragments :: movieCard(${wl.movie})}"></div>
+    <div class="movies-row" th:if="${watchlist != null and !watchlist.isEmpty()}">
+      <th:block th:each="wl, iterWl : ${watchlist}">
+        <div th:if="${iterWl.index < 6}" th:replace="~{fragments :: movieCard(${wl.movie})}"></div>
       </th:block>
     </div>
-    <div class="empty-state" th:if="${#lists.isEmpty(watchlist)}" style="padding:2rem">
+    <div class="empty-state" th:if="${watchlist == null or watchlist.isEmpty()}" style="padding:2rem">
       <div class="icon">❤️</div><p style="color:#6c757d">Your watchlist is empty. Add some movies!</p>
     </div>
   </div>

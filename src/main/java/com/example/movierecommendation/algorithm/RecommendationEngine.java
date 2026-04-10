@@ -56,12 +56,11 @@ public class RecommendationEngine {
 
     public List<Movie> getRecommendations(Integer userId) {
         Set<Integer> excluded = buildExcludedMovieIds(userId);
-        List<Integer> excludeQuery = excludeListForQuery(excluded);
         List<Rating> userRatings = ratingRepository.findByUserUserId(userId);
 
-        Map<Integer, Double> contentScores    = computeContentBasedScores(userId, excludeQuery, userRatings);
-        Map<Integer, Double> collabScores     = computeCollaborativeScores(userId, excludeQuery, userRatings);
-        Map<Integer, Double> popularityScores = computePopularityScores(excludeQuery);
+        Map<Integer, Double> contentScores    = computeContentBasedScores(userId, userRatings);
+        Map<Integer, Double> collabScores     = computeCollaborativeScores(userId, userRatings);
+        Map<Integer, Double> popularityScores = computePopularityScores(userId);
 
         Set<Integer> allCandidates = new HashSet<>();
         allCandidates.addAll(contentScores.keySet());
@@ -86,7 +85,7 @@ public class RecommendationEngine {
         }
 
         if (topIds.isEmpty()) {
-            return movieRepository.findMostWatchedMoviesExcluding(excludeQuery, PageRequest.of(0, maxRecommendations));
+            return movieRepository.findMostWatchedMoviesExcludingUserInteractions(userId, PageRequest.of(0, maxRecommendations));
         }
 
         List<Movie> movies = new ArrayList<>(movieRepository.findAllById(topIds));
@@ -104,10 +103,20 @@ public class RecommendationEngine {
             for (Genre g : targetMovie.getGenres()) targetGenreIds.add(g.getGenreId());
         }
 
-        Set<Integer> excludeSet = new HashSet<>();
-        excludeSet.add(targetMovie.getMovieId());
-        if (currentUserId != null) excludeSet.addAll(buildExcludedMovieIds(currentUserId));
-        List<Integer> excludeIds = excludeListForQuery(excludeSet);
+        if (currentUserId != null) {
+            if (targetGenreIds.isEmpty()) {
+                return movieRepository.findMostWatchedExcludingTargetAndUser(
+                    targetMovie.getMovieId(), currentUserId, PageRequest.of(0, 6));
+            }
+            List<Movie> similar = new ArrayList<>(movieRepository.findSimilarByGenresExcludingUser(
+                targetGenreIds, targetMovie.getMovieId(), currentUserId, PageRequest.of(0, 50)));
+            similar.sort((a, b) -> Double.compare(genreOverlap(b, targetGenreIds), genreOverlap(a, targetGenreIds)));
+            List<Movie> result = new ArrayList<>();
+            for (int i = 0; i < Math.min(6, similar.size()); i++) result.add(similar.get(i));
+            return result;
+        }
+
+        List<Integer> excludeIds = excludeListForQuery(new HashSet<>(Collections.singletonList(targetMovie.getMovieId())));
 
         if (targetGenreIds.isEmpty()) {
             return movieRepository.findMostWatchedMoviesExcluding(excludeIds, PageRequest.of(0, 6));
@@ -122,14 +131,12 @@ public class RecommendationEngine {
     }
 
     public List<Movie> getGenreBasedRecommendations(Integer userId) {
-        Set<Integer> excluded = buildExcludedMovieIds(userId);
-        List<Integer> excludeIds = excludeListForQuery(excluded);
         List<Integer> topGenreIds = getTopGenreIdsForUser(userId);
 
         if (topGenreIds.isEmpty()) {
-            return movieRepository.findTopRatedMoviesExcluding(excludeIds, PageRequest.of(0, 10));
+            return movieRepository.findTopRatedMoviesExcludingUserInteractions(userId, PageRequest.of(0, 10));
         }
-        return movieRepository.findByGenreIdsAndNotInIds(topGenreIds, excludeIds, PageRequest.of(0, 10));
+        return movieRepository.findByGenreIdsExcludingUserInteractions(topGenreIds, userId, PageRequest.of(0, 10));
     }
 
     public List<Movie> getTrendingMovies(int limit) {
@@ -139,7 +146,6 @@ public class RecommendationEngine {
     // ── CONTENT-BASED ─────────────────────────────────────────────
 
     private Map<Integer, Double> computeContentBasedScores(Integer userId,
-                                                            List<Integer> excludeIds,
                                                             List<Rating> userRatings) {
         Map<Integer, Double> scores = new HashMap<>();
         Map<Integer, Double> genreProfile = buildGenreProfile(userId, userRatings);
@@ -151,7 +157,8 @@ public class RecommendationEngine {
         List<Integer> topGenreIds = new ArrayList<>();
         for (int i = 0; i < Math.min(5, profileEntries.size()); i++) topGenreIds.add(profileEntries.get(i).getKey());
 
-        List<Movie> candidates = movieRepository.findByGenreIdsAndNotInIds(topGenreIds, excludeIds, PageRequest.of(0, 200));
+        List<Movie> candidates = movieRepository.findByGenreIdsExcludingUserInteractions(
+            topGenreIds, userId, PageRequest.of(0, 200));
 
         double maxWeight = genreProfile.values().stream().mapToDouble(Double::doubleValue).max().orElse(1.0);
 
@@ -190,7 +197,6 @@ public class RecommendationEngine {
     // FIX: Không dùng findAll() — chỉ lấy ratings của neighbor users
 
     private Map<Integer, Double> computeCollaborativeScores(Integer userId,
-                                                             List<Integer> excludeIds,
                                                              List<Rating> userRatings) {
         Map<Integer, Double> scores = new HashMap<>();
         if (userRatings.isEmpty()) return scores;
@@ -233,7 +239,7 @@ public class RecommendationEngine {
         int neighborCount = Math.min(10, simData.size());
         if (neighborCount == 0) return scores;
 
-        Set<Integer> excludeSet = new HashSet<>(excludeIds);
+        Set<Integer> excludeSet = buildExcludedMovieIds(userId);
 
         Map<Integer, Double> weightedSum = new HashMap<>();
         Map<Integer, Double> simSum = new HashMap<>();
@@ -279,9 +285,9 @@ public class RecommendationEngine {
 
     // ── POPULARITY ────────────────────────────────────────────────
 
-    private Map<Integer, Double> computePopularityScores(List<Integer> excludeIds) {
+    private Map<Integer, Double> computePopularityScores(Integer userId) {
         Map<Integer, Double> scores = new HashMap<>();
-        List<Movie> popular = movieRepository.findMostWatchedMoviesExcluding(excludeIds, PageRequest.of(0, 50));
+        List<Movie> popular = movieRepository.findMostWatchedMoviesExcludingUserInteractions(userId, PageRequest.of(0, 50));
         if (popular.isEmpty()) return scores;
         int maxRank = popular.size();
         for (int i = 0; i < popular.size(); i++) {

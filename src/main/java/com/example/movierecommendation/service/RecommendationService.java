@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
@@ -36,15 +37,15 @@ public class RecommendationService {
         return new ArrayList<>(list.subList(0, max));
     }
 
+    @Transactional(readOnly = true)
     public List<Movie> getPersonalizedRecommendations(Integer userId) {
         List<Movie> hybrid = removeExcludedMovies(userId, engine.getRecommendations(userId));
 
         if (!openAIService.isEnabled()) return hybrid;
 
         try {
-            Set<Integer> excluded = engine.getExcludedMovieIdsForRecommendations(userId);
-            List<Integer> exclude = excluded.isEmpty() ? Collections.singletonList(-1) : new ArrayList<>(excluded);
-            List<Movie> candidates = movieRepository.findMostWatchedMoviesExcluding(exclude, PageRequest.of(0, 20));
+            List<Movie> candidates = movieRepository.findMostWatchedMoviesExcludingUserInteractions(
+                userId, PageRequest.of(0, 20));
             List<String> aiTitles = openAIService.getAIRecommendedTitles(userId, candidates);
 
             if (aiTitles == null || aiTitles.isEmpty()) return hybrid;
@@ -90,6 +91,7 @@ public class RecommendationService {
         return engine.getSimilarMovies(movie, userId);
     }
 
+    @Transactional(readOnly = true)
     public List<Movie> getGenreBasedRecommendations(Integer userId) {
         return removeExcludedMovies(userId, engine.getGenreBasedRecommendations(userId));
     }
@@ -100,9 +102,7 @@ public class RecommendationService {
 
     /** Trending nhưng bỏ phim user đã xem / đã rate (khi đã đăng nhập). */
     public List<Movie> getTrendingMoviesForUser(Integer userId) {
-        Set<Integer> ex = engine.getExcludedMovieIdsForRecommendations(userId);
-        List<Integer> exclude = ex.isEmpty() ? Collections.singletonList(-1) : new ArrayList<>(ex);
-        return movieRepository.findMostWatchedMoviesExcluding(exclude, PageRequest.of(0, 10));
+        return movieRepository.findMostWatchedMoviesExcludingUserInteractions(userId, PageRequest.of(0, 10));
     }
 
     public List<Movie> getTopRatedMovies() {
@@ -110,9 +110,7 @@ public class RecommendationService {
     }
 
     public List<Movie> getTopRatedMoviesForUser(Integer userId) {
-        Set<Integer> ex = engine.getExcludedMovieIdsForRecommendations(userId);
-        List<Integer> exclude = ex.isEmpty() ? Collections.singletonList(-1) : new ArrayList<>(ex);
-        return movieRepository.findTopRatedMoviesExcluding(exclude, PageRequest.of(0, 10));
+        return movieRepository.findTopRatedMoviesExcludingUserInteractions(userId, PageRequest.of(0, 10));
     }
 
     public List<Movie> getNewReleases() {
