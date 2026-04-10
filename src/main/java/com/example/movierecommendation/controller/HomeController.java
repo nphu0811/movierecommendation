@@ -43,7 +43,7 @@ public class HomeController {
                 homeExecutor);
 
             try {
-                model.addAttribute("recommendations", recFuture.get(4, TimeUnit.SECONDS)); // tighten timeout
+                model.addAttribute("recommendations", recFuture.get(2, TimeUnit.SECONDS)); // faster failover
             } catch (TimeoutException e) {
                 recFuture.cancel(true);
                 model.addAttribute("recommendations",
@@ -54,7 +54,7 @@ public class HomeController {
             }
 
             try {
-                model.addAttribute("genrePicks", genreFuture.get(2, TimeUnit.SECONDS));
+                model.addAttribute("genrePicks", genreFuture.get(1, TimeUnit.SECONDS));
             } catch (TimeoutException e) {
                 genreFuture.cancel(true);
                 model.addAttribute("genrePicks", Collections.emptyList());
