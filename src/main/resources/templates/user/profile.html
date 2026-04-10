@@ -76,7 +76,7 @@
           <div style="color:#9ca3af;font-size:.9rem" th:text="${currentUser.email}">you@example.com</div>
           <form th:if="${!currentUser.isEmailVerified}" th:action="@{/user/email/send-code}" method="post" style="margin-left:auto">
             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-            <button class="btn btn-secondary" type="submit">Gửi mã 6 số</button>
+            <button id="sendEmailBtn" class="btn btn-secondary" type="submit">Gửi mã 6 số</button>
           </form>
         </div>
         <p style="color:#6c757d;font-size:.9rem;margin-top:.5rem">Mặc định trạng thái sẽ là chưa xác thực cho đến khi bạn nhập đúng mã 6 số gửi về email.</p>
@@ -101,7 +101,7 @@
         <h3 style="margin:0">Change Password</h3>
         <form th:action="@{/user/profile/password/send-code}" method="post">
           <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-          <button type="submit" class="btn btn-secondary">Gửi mã xác thực</button>
+          <button id="sendPassBtn" type="submit" class="btn btn-secondary">Gửi mã xác thực</button>
         </form>
       </div>
       <p style="color:#6c757d;font-size:.9rem;margin-top:-.25rem">Nhập mã 6 số gửi tới email để xác nhận đổi mật khẩu.</p>
@@ -159,13 +159,54 @@
 </div>
 
 <script th:src="@{/js/app.js}"></script>
-<script>
+<script th:inline="javascript">
+/*<![CDATA[*/
 function switchTab(id, btn) {
   document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById(id).style.display = 'block';
   btn.classList.add('active');
 }
+
+// Countdown Logic
+function manageCountdown(btnId) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  
+  const key = 'countdown_' + btnId;
+  const originalText = btnId === 'sendEmailBtn' ? 'Gửi mã 6 số' : 'Gửi mã xác thực';
+
+  const updateBtn = () => {
+    const expires = localStorage.getItem(key);
+    if (expires) {
+      const remaining = Math.ceil((parseInt(expires) - Date.now()) / 1000);
+      if (remaining > 0) {
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+        btn.innerText = `Gửi lại sau (${remaining}s)`;
+        setTimeout(updateBtn, 1000);
+      } else {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.innerText = originalText;
+        localStorage.removeItem(key);
+      }
+    }
+  };
+
+  btn.addEventListener('click', () => {
+    // Chỉ đặt countdown nếu form hợp lệ (hoặc cứ đặt vì nút này submit form)
+    localStorage.setItem(key, Date.now() + 60000);
+  });
+
+  updateBtn();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  manageCountdown('sendEmailBtn');
+  manageCountdown('sendPassBtn');
+});
+/*]]>*/
 </script>
 <style>
 .tab-btn {

@@ -34,7 +34,9 @@ public class MailService {
             log.info("Verification email sent to {}", to);
         } catch (MailException ex) {
             log.error("Failed to send email to {}", to, ex);
-            throw new RuntimeException("Không thể gửi email. Vui lòng thử lại sau.");
+            // Hiển thị lỗi chi tiết hơn để dễ debug trên Railway
+            String errorDetail = (ex.getCause() != null) ? ex.getCause().getMessage() : ex.getMessage();
+            throw new RuntimeException("Gửi email thất bại: " + errorDetail);
         }
     }
 }
