@@ -10,6 +10,9 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.http.ResponseEntity;
+import java.util.Map;
+import java.util.HashMap;
 
 @Controller
 @RequestMapping("/user")
@@ -68,16 +71,18 @@ public class UserController {
     }
 
     @PostMapping("/email/send-code")
-    public String sendEmailCode(@AuthenticationPrincipal UserDetails userDetails,
-                                RedirectAttributes redirect) {
+    @ResponseBody
+    public ResponseEntity<?> sendEmailCode(@AuthenticationPrincipal UserDetails userDetails) {
+        Map<String, String> response = new HashMap<>();
         try {
             User user = userService.getCurrentUser(userDetails.getUsername());
             userService.sendEmailVerification(user.getUserId());
-            redirect.addFlashAttribute("success", "Đã gửi mã xác thực đến " + user.getEmail());
+            response.put("message", "Đã gửi mã xác thực đến " + user.getEmail());
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
-            redirect.addFlashAttribute("error", e.getMessage());
+            response.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
         }
-        return "redirect:/user/profile";
     }
 
     @PostMapping("/email/confirm")
@@ -95,16 +100,18 @@ public class UserController {
     }
 
     @PostMapping("/profile/password/send-code")
-    public String sendPasswordChangeCode(@AuthenticationPrincipal UserDetails userDetails,
-                                         RedirectAttributes redirect) {
+    @ResponseBody
+    public ResponseEntity<?> sendPasswordChangeCode(@AuthenticationPrincipal UserDetails userDetails) {
+        Map<String, String> response = new HashMap<>();
         try {
             User user = userService.getCurrentUser(userDetails.getUsername());
             userService.sendPasswordChangeCode(user.getUserId());
-            redirect.addFlashAttribute("success", "Mã xác thực đổi mật khẩu đã được gửi tới email của bạn.");
+            response.put("message", "Mã xác thực đổi mật khẩu đã được gửi tới email của bạn.");
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
-            redirect.addFlashAttribute("error", e.getMessage());
+            response.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
         }
-        return "redirect:/user/profile";
     }
 
     @GetMapping("/watchlist")
