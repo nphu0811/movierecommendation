@@ -1,11 +1,11 @@
 package com.example.movierecommendation.service;
 
+import com.resend.Resend;
+import com.resend.core.exception.ResendException;
+import com.resend.services.emails.model.CreateEmailOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.MailException;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -13,30 +13,30 @@ public class MailService {
 
     private static final Logger log = LoggerFactory.getLogger(MailService.class);
 
-    private final JavaMailSender mailSender;
+    private final Resend resend;
     private final String fromAddress;
 
-    public MailService(JavaMailSender mailSender,
-                       @Value("${app.mail.from:noreply@movierec.local}") String fromAddress) {
-        this.mailSender = mailSender;
+    public MailService(
+            @Value("${resend.api.key:}") String apiKey,
+            @Value("${app.mail.from:noreply@movierec.local}") String fromAddress) {
+        this.resend = new Resend(apiKey);
         this.fromAddress = fromAddress;
     }
 
     public void sendPlainText(String to, String subject, String content) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(fromAddress);
-        message.setTo(to);
-        message.setSubject(subject);
-        message.setText(content);
+        CreateEmailOptions params = CreateEmailOptions.builder()
+                .from(fromAddress)
+                .to(to)
+                .subject(subject)
+                .text(content)
+                .build();
 
         try {
-            mailSender.send(message);
+            resend.emails().send(params);
             log.info("Verification email sent to {}", to);
-        } catch (MailException ex) {
+        } catch (ResendException ex) {
             log.error("Failed to send email to {}", to, ex);
-            // Hiển thị lỗi chi tiết hơn để dễ debug trên Railway
-            String errorDetail = (ex.getCause() != null) ? ex.getCause().getMessage() : ex.getMessage();
-            throw new RuntimeException("Gửi email thất bại: " + errorDetail);
+            throw new RuntimeException("Gửi email thất bại: " + ex.getMessage());
         }
     }
 }
