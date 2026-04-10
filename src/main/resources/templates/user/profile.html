@@ -63,25 +63,61 @@
         <div class="form-group">
           <label class="form-label">Email</label>
           <input type="email" name="email" class="form-control" th:value="${currentUser.email}" required/>
+          <small style="color:#6c757d">Đổi email sẽ cần xác thực lại.</small>
         </div>
         <button type="submit" class="btn btn-primary">Save Changes</button>
       </form>
+
+      <div style="margin-top:1.5rem;padding:1rem;border:1px solid #2b2b2b;border-radius:10px">
+        <div style="display:flex;align-items:center;gap:1rem">
+          <div style="padding:.35rem .75rem;border-radius:999px;font-size:.85rem;font-weight:600"
+               th:style="${currentUser.isEmailVerified} ? 'background:#153e26;color:#5be7a9;' : 'background:#3a1b1b;color:#ff9b9b;'"
+               th:text="${currentUser.isEmailVerified} ? 'Đã xác thực' : 'Chưa xác thực'">Status</div>
+          <div style="color:#9ca3af;font-size:.9rem" th:text="${currentUser.email}">you@example.com</div>
+          <form th:if="${!currentUser.isEmailVerified}" th:action="@{/user/email/send-code}" method="post" style="margin-left:auto">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <button class="btn btn-secondary" type="submit">Gửi mã 6 số</button>
+          </form>
+        </div>
+        <p style="color:#6c757d;font-size:.9rem;margin-top:.5rem">Mặc định trạng thái sẽ là chưa xác thực cho đến khi bạn nhập đúng mã 6 số gửi về email.</p>
+        <div th:if="${!currentUser.isEmailVerified}" style="margin-top:.75rem">
+          <form th:action="@{/user/email/confirm}" method="post" style="display:flex;gap:.75rem;align-items:flex-end;flex-wrap:wrap">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Nhập mã xác thực</label>
+              <input type="text" name="code" pattern="[0-9]{6}" maxlength="6" class="form-control" placeholder="123456" required/>
+            </div>
+            <button type="submit" class="btn btn-primary">Xác nhận email</button>
+          </form>
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- Change Password -->
   <div id="change-password" class="tab-content" style="display:none">
     <div style="background:#1f1f1f;border-radius:12px;padding:1.5rem">
-      <h3 style="margin-bottom:1.25rem">Change Password</h3>
-      <form th:action="@{/user/profile/change-password}" method="post">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;gap:1rem">
+        <h3 style="margin:0">Change Password</h3>
+        <form th:action="@{/user/profile/password/send-code}" method="post">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+          <button type="submit" class="btn btn-secondary">Gửi mã xác thực</button>
+        </form>
+      </div>
+      <p style="color:#6c757d;font-size:.9rem;margin-top:-.25rem">Nhập mã 6 số gửi tới email để xác nhận đổi mật khẩu.</p>
+      <form th:action="@{/user/profile/change-password}" method="post" style="margin-top:1rem">
         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
         <div class="form-group">
           <label class="form-label">Current Password</label>
-          <input type="password" name="currentPassword" class="form-control" required/>
+          <input type="password" name="currentPassword" class="form-control" required autocomplete="current-password"/>
         </div>
         <div class="form-group">
           <label class="form-label">New Password</label>
-          <input type="password" name="newPassword" class="form-control" required minlength="6"/>
+          <input type="password" name="newPassword" class="form-control" required minlength="6" autocomplete="new-password"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Mã xác thực email</label>
+          <input type="text" name="verificationCode" class="form-control" pattern="[0-9]{6}" maxlength="6" placeholder="123456" required/>
         </div>
         <button type="submit" class="btn btn-primary">Update Password</button>
       </form>

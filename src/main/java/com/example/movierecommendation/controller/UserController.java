@@ -52,16 +52,57 @@ public class UserController {
     public String changePassword(@AuthenticationPrincipal UserDetails userDetails,
                                  @RequestParam(name = "currentPassword") String currentPassword,
                                  @RequestParam(name = "newPassword") String newPassword,
+                                 @RequestParam(name = "verificationCode") String verificationCode,
                                  RedirectAttributes redirect) {
         try {
             User user = userService.getCurrentUser(userDetails.getUsername());
             // Delegate validation to service layer
-            userService.changePasswordWithVerification(user.getUserId(), currentPassword, newPassword);
+            userService.changePasswordWithVerification(user.getUserId(), currentPassword, newPassword, verificationCode);
             redirect.addFlashAttribute("success", "Password changed successfully!");
         } catch (IllegalArgumentException e) {
             redirect.addFlashAttribute("error", e.getMessage());
         } catch (Exception e) {
             redirect.addFlashAttribute("error", "Failed to change password");
+        }
+        return "redirect:/user/profile";
+    }
+
+    @PostMapping("/email/send-code")
+    public String sendEmailCode(@AuthenticationPrincipal UserDetails userDetails,
+                                RedirectAttributes redirect) {
+        try {
+            User user = userService.getCurrentUser(userDetails.getUsername());
+            userService.sendEmailVerification(user.getUserId());
+            redirect.addFlashAttribute("success", "Đã gửi mã xác thực đến " + user.getEmail());
+        } catch (Exception e) {
+            redirect.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/user/profile";
+    }
+
+    @PostMapping("/email/confirm")
+    public String confirmEmail(@AuthenticationPrincipal UserDetails userDetails,
+                               @RequestParam("code") String code,
+                               RedirectAttributes redirect) {
+        try {
+            User user = userService.getCurrentUser(userDetails.getUsername());
+            userService.confirmEmail(user.getUserId(), code);
+            redirect.addFlashAttribute("success", "Email đã được xác thực!");
+        } catch (Exception e) {
+            redirect.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/user/profile";
+    }
+
+    @PostMapping("/profile/password/send-code")
+    public String sendPasswordChangeCode(@AuthenticationPrincipal UserDetails userDetails,
+                                         RedirectAttributes redirect) {
+        try {
+            User user = userService.getCurrentUser(userDetails.getUsername());
+            userService.sendPasswordChangeCode(user.getUserId());
+            redirect.addFlashAttribute("success", "Mã xác thực đổi mật khẩu đã được gửi tới email của bạn.");
+        } catch (Exception e) {
+            redirect.addFlashAttribute("error", e.getMessage());
         }
         return "redirect:/user/profile";
     }

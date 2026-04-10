@@ -33,6 +33,9 @@ public class User {
     @Column(name = "is_active")
     private Boolean isActive = true;
 
+    @Column(name = "is_email_verified")
+    private Boolean isEmailVerified = false;
+
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     private List<Rating> ratings;
 
@@ -52,6 +55,7 @@ public class User {
         if (createdAt == null) createdAt = LocalDateTime.now();
         if (role == null) role = "USER";
         if (isActive == null) isActive = true;
+        if (isEmailVerified == null) isEmailVerified = false;
     }
 
     public Integer getUserId() { return userId; }
@@ -74,6 +78,9 @@ public class User {
 
     public Boolean getIsActive() { return isActive; }
     public void setIsActive(Boolean isActive) { this.isActive = isActive; }
+
+    public Boolean getIsEmailVerified() { return isEmailVerified; }
+    public void setIsEmailVerified(Boolean isEmailVerified) { this.isEmailVerified = isEmailVerified; }
 
     public List<Rating> getRatings() { return ratings; }
     public void setRatings(List<Rating> ratings) { this.ratings = ratings; }

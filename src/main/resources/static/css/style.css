@@ -246,6 +246,16 @@ body { padding-top: 64px; }
   transform: translateY(-2px);
   box-shadow: var(--shadow-red);
 }
+.btn-secondary {
+  background: #2b2b2b;
+  color: #e5e7eb;
+  border: 1px solid #3a3a3a;
+}
+.btn-secondary:hover {
+  background: #3a3a3a;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,.35);
+}
 
 /* White – for hero secondary CTA */
 .btn-white {
@@ -1402,4 +1412,5 @@ textarea.form-control { resize: vertical; min-height: 100px; }
 .tag-count {
   background:rgba(99,102,241,.25);border-radius:10px;padding:1px 6px;font-size:.72rem;
 }
+
 

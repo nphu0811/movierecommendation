@@ -2,9 +2,9 @@ package com.example.movierecommendation.controller;
 
 import com.example.movierecommendation.dto.RegisterRequest;
 import com.example.movierecommendation.service.UserService;
+import com.example.movierecommendation.service.VerificationService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -19,7 +19,7 @@ public class AuthController {
     private UserService userService;
 
     @Autowired
-    private PasswordEncoder passwordEncoder;
+    private VerificationService verificationService;
 
     @GetMapping("/login")
     public String loginPage(@RequestParam(name = "error", required = false) String error,
@@ -60,6 +60,51 @@ public class AuthController {
         } catch (RuntimeException e) {
             model.addAttribute("error", e.getMessage());
             return "auth/register";
+        }
+    }
+
+    @GetMapping("/forgot-password")
+    public String forgotPasswordPage() {
+        return "auth/forgot-password";
+    }
+
+    @PostMapping("/forgot-password/send-code")
+    public String sendResetCode(@RequestParam("email") String email,
+                                RedirectAttributes redirect) {
+        try {
+            String masked = userService.sendPasswordReset(email);
+            redirect.addFlashAttribute("step", "code");
+            redirect.addFlashAttribute("maskedEmail", masked);
+            redirect.addFlashAttribute("email", email);
+            redirect.addFlashAttribute("success", "Đã gửi mã xác thực tới " + masked);
+        } catch (RuntimeException e) {
+            redirect.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/auth/forgot-password";
+    }
+
+    @PostMapping("/reset-password")
+    public String resetPassword(@RequestParam("email") String email,
+                                @RequestParam("code") String code,
+                                @RequestParam("newPassword") String newPassword,
+                                @RequestParam("confirmPassword") String confirmPassword,
+                                RedirectAttributes redirect) {
+        if (!newPassword.equals(confirmPassword)) {
+            redirect.addFlashAttribute("error", "Mật khẩu xác nhận không khớp");
+            redirect.addFlashAttribute("step", "code");
+            redirect.addFlashAttribute("email", email);
+            return "redirect:/auth/forgot-password";
+        }
+        try {
+            userService.resetPassword(email, code, newPassword);
+            redirect.addFlashAttribute("success", "Đổi mật khẩu thành công. Hãy đăng nhập lại.");
+            return "redirect:/auth/login";
+        } catch (RuntimeException e) {
+            redirect.addFlashAttribute("error", e.getMessage());
+            redirect.addFlashAttribute("step", "code");
+            redirect.addFlashAttribute("email", email);
+            redirect.addFlashAttribute("maskedEmail", verificationService.maskEmail(email));
+            return "redirect:/auth/forgot-password";
         }
     }
 }
