@@ -93,10 +93,12 @@ public class MovieController {
     @ResponseBody
     public ResponseEntity<Map<String, Object>> markWatched(
             @PathVariable("id") @Min(1) @Max(Integer.MAX_VALUE) Integer id,
+            @RequestParam(name = "duration", required = false) Integer duration,
+            @RequestParam(name = "progress", required = false) Double progress,
             @AuthenticationPrincipal UserDetails userDetails) {
         if (userDetails == null) return ResponseEntity.status(401).build();
         User user = userService.getCurrentUser(userDetails.getUsername());
-        interactionService.markAsWatched(user.getUserId(), id);
+        interactionService.markAsWatched(user.getUserId(), id, duration, progress);
         Map<String, Object> result = new HashMap<>();
         result.put("status", "watched");
         return ResponseEntity.ok(result);

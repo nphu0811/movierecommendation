@@ -81,15 +81,21 @@ public class InteractionService {
     // ──────────────────── WATCH HISTORY ────────────────────
 
     @Transactional
-    public void markAsWatched(Integer userId, Integer movieId) {
-        if (!watchHistoryRepository.existsByUserUserIdAndMovieMovieId(userId, movieId)) {
-            User user = userRepository.findById(userId).orElseThrow();
-            Movie movie = movieRepository.findById(movieId).orElseThrow();
-            WatchHistory wh = new WatchHistory();
-            wh.setUser(user);
-            wh.setMovie(movie);
-            watchHistoryRepository.save(wh);
-        }
+    public void markAsWatched(Integer userId, Integer movieId, Integer duration, Double progress) {
+        WatchHistory wh = watchHistoryRepository.findByUserUserIdAndMovieMovieId(userId, movieId)
+            .orElseGet(() -> {
+                User user = userRepository.findById(userId).orElseThrow();
+                Movie movie = movieRepository.findById(movieId).orElseThrow();
+                WatchHistory newWh = new WatchHistory();
+                newWh.setUser(user);
+                newWh.setMovie(movie);
+                return newWh;
+            });
+        
+        if (duration != null) wh.setWatchDuration(duration);
+        if (progress != null) wh.setProgress(progress);
+        wh.setWatchedAt(java.time.LocalDateTime.now());
+        watchHistoryRepository.save(wh);
     }
 
     public List<WatchHistory> getWatchHistory(Integer userId) {

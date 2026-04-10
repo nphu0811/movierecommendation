@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface WatchHistoryRepository extends JpaRepository<WatchHistory, Integer> {
@@ -17,6 +18,8 @@ public interface WatchHistoryRepository extends JpaRepository<WatchHistory, Inte
 
     @Query("SELECT wh.movie.movieId FROM WatchHistory wh WHERE wh.user.userId = :userId")
     List<Integer> findWatchedMovieIdsByUserId(@Param("userId") Integer userId);
+
+    Optional<WatchHistory> findByUserUserIdAndMovieMovieId(Integer userId, Integer movieId);
 
     boolean existsByUserUserIdAndMovieMovieId(Integer userId, Integer movieId);
 
