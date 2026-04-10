@@ -32,11 +32,12 @@ public class HomeController {
 
             // Chạy recommendations và genrePicks song song thay vì tuần tự
             // (AI call tốn 1-3s nên chạy song song tiết kiệm thời gian đáng kể)
+            final User finalUser = currentUser;
             ExecutorService exec = Executors.newFixedThreadPool(2);
             Future<List<Movie>> recFuture = exec.submit(() ->
-                recommendationService.getPersonalizedRecommendations(currentUser.getUserId()));
+                recommendationService.getPersonalizedRecommendations(finalUser.getUserId()));
             Future<List<Movie>> genreFuture = exec.submit(() ->
-                recommendationService.getGenreBasedRecommendations(currentUser.getUserId()));
+                recommendationService.getGenreBasedRecommendations(finalUser.getUserId()));
 
             try {
                 model.addAttribute("recommendations",
