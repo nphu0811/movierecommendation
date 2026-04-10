@@ -20,8 +20,14 @@ public interface MovieRepository extends JpaRepository<Movie, Integer> {
     @Query("SELECT m FROM Movie m LEFT JOIN m.ratings r GROUP BY m ORDER BY AVG(r.rating) DESC")
     List<Movie> findTopRatedMovies(Pageable pageable);
 
+    @Query("SELECT m FROM Movie m LEFT JOIN m.ratings r WHERE m.movieId NOT IN :excludeIds GROUP BY m ORDER BY AVG(r.rating) DESC")
+    List<Movie> findTopRatedMoviesExcluding(@Param("excludeIds") List<Integer> excludeIds, Pageable pageable);
+
     @Query("SELECT m FROM Movie m LEFT JOIN m.watchHistories wh GROUP BY m ORDER BY COUNT(wh) DESC")
     List<Movie> findMostWatchedMovies(Pageable pageable);
+
+    @Query("SELECT m FROM Movie m LEFT JOIN m.watchHistories wh WHERE m.movieId NOT IN :excludeIds GROUP BY m ORDER BY COUNT(wh) DESC")
+    List<Movie> findMostWatchedMoviesExcluding(@Param("excludeIds") List<Integer> excludeIds, Pageable pageable);
 
     @Query("SELECT DISTINCT m FROM Movie m JOIN m.genres g WHERE g.genreId IN :genreIds AND m.movieId NOT IN :excludeIds")
     List<Movie> findByGenreIdsAndNotInIds(@Param("genreIds") List<Integer> genreIds,

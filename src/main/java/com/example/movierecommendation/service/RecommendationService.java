@@ -3,6 +3,7 @@ package com.example.movierecommendation.service;
 import com.example.movierecommendation.algorithm.RecommendationEngine;
 import com.example.movierecommendation.entity.Movie;
 import com.example.movierecommendation.repository.MovieRepository;
+import com.example.movierecommendation.repository.WatchHistoryRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +20,7 @@ public class RecommendationService {
 
     @Autowired private RecommendationEngine engine;
     @Autowired private MovieRepository movieRepository;
+    @Autowired private WatchHistoryRepository watchHistoryRepository;
     @Autowired private OpenAIService openAIService;
 
     @Cacheable(value = "user_ai_recommendations", key = "#userId", unless = "#result == null or #result.isEmpty()")
@@ -28,8 +30,9 @@ public class RecommendationService {
         if (!openAIService.isEnabled()) return hybrid;
 
         try {
-            // FIX: Reduce payload to 20 instead of 100
-            List<Movie> candidates = movieRepository.findMostWatchedMovies(PageRequest.of(0, 20));
+            List<Integer> watchedIds = watchHistoryRepository.findWatchedMovieIdsByUserId(userId);
+            List<Integer> exclude = watchedIds.isEmpty() ? Collections.singletonList(-1) : watchedIds;
+            List<Movie> candidates = movieRepository.findMostWatchedMoviesExcluding(exclude, PageRequest.of(0, 20));
             List<String> aiTitles = openAIService.getAIRecommendedTitles(userId, candidates);
 
             if (aiTitles == null || aiTitles.isEmpty()) return hybrid;
@@ -60,9 +63,13 @@ public class RecommendationService {
 
             // Merge: AI movies lên đầu, hybrid sau, dedup bằng Set
             List<Movie> merged = new ArrayList<>(aiMovies);
+            Set<Integer> watchedSet = new HashSet<>(watchedIds);
             for (Movie m : hybrid) {
+                if (watchedSet.contains(m.getMovieId())) continue;
                 if (seen.add(m.getMovieId())) merged.add(m);
             }
+
+            merged.removeIf(m -> watchedSet.contains(m.getMovieId()));
 
             return merged.size() > 20 ? merged.subList(0, 20) : merged;
 

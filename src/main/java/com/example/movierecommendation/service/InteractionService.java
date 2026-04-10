@@ -3,6 +3,7 @@ package com.example.movierecommendation.service;
 import com.example.movierecommendation.entity.*;
 import com.example.movierecommendation.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
@@ -81,6 +82,7 @@ public class InteractionService {
     // ──────────────────── WATCH HISTORY ────────────────────
 
     @Transactional
+    @CacheEvict(value = "user_ai_recommendations", key = "#userId")
     public void markAsWatched(Integer userId, Integer movieId, Integer duration, Double progress) {
         WatchHistory wh = watchHistoryRepository.findByUserUserIdAndMovieMovieId(userId, movieId)
             .orElseGet(() -> {
