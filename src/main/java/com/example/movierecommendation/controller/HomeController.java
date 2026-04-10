@@ -1,11 +1,11 @@
-package com.example.movierecommendation.controller;
+﻿package com.example.movierecommendation.controller;
 
 import com.example.movierecommendation.entity.Movie;
 import com.example.movierecommendation.entity.User;
 import com.example.movierecommendation.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Async;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
@@ -21,6 +21,7 @@ public class HomeController {
     @Autowired private MovieService movieService;
     @Autowired private RecommendationService recommendationService;
     @Autowired private UserService userService;
+    @Autowired @Qualifier("homePageExecutor") private Executor homeExecutor;
 
     @GetMapping({"/", "/home"})
     public String home(@AuthenticationPrincipal UserDetails userDetails, Model model) {
@@ -30,30 +31,35 @@ public class HomeController {
             currentUser = userService.getCurrentUser(userDetails.getUsername());
             model.addAttribute("currentUser", currentUser);
 
-            // Chạy recommendations và genrePicks song song thay vì tuần tự
-            // (AI call tốn 1-3s nên chạy song song tiết kiệm thời gian đáng kể)
-            final User finalUser = currentUser;
-            ExecutorService exec = Executors.newFixedThreadPool(2);
-            Future<List<Movie>> recFuture = exec.submit(() ->
-                recommendationService.getPersonalizedRecommendations(finalUser.getUserId()));
-            Future<List<Movie>> genreFuture = exec.submit(() ->
-                recommendationService.getGenreBasedRecommendations(finalUser.getUserId()));
+            // Run recommendations and genre picks in parallel (AI call may take 1-3s).
+            // Use shared homePageExecutor instead of creating a new pool per request.
+            final User finalUser = currentUser;
+
+            CompletableFuture<List<Movie>> recFuture = CompletableFuture.supplyAsync(
+                () -> recommendationService.getPersonalizedRecommendations(finalUser.getUserId()),
+                homeExecutor);
+            CompletableFuture<List<Movie>> genreFuture = CompletableFuture.supplyAsync(
+                () -> recommendationService.getGenreBasedRecommendations(finalUser.getUserId()),
+                homeExecutor);
 
             try {
-                model.addAttribute("recommendations",
-                    recFuture.get(12, TimeUnit.SECONDS));   // timeout 12s
-                model.addAttribute("genrePicks",
-                    genreFuture.get(3, TimeUnit.SECONDS));  // genre nhanh hơn
+                model.addAttribute("recommendations", recFuture.get(4, TimeUnit.SECONDS)); // tighten timeout
             } catch (TimeoutException e) {
+                recFuture.cancel(true);
                 model.addAttribute("recommendations",
                     recommendationService.getTrendingMoviesForUser(currentUser.getUserId()));
-                model.addAttribute("genrePicks", Collections.emptyList());
             } catch (Exception e) {
                 model.addAttribute("recommendations",
                     recommendationService.getTrendingMoviesForUser(currentUser.getUserId()));
+            }
+
+            try {
+                model.addAttribute("genrePicks", genreFuture.get(2, TimeUnit.SECONDS));
+            } catch (TimeoutException e) {
+                genreFuture.cancel(true);
                 model.addAttribute("genrePicks", Collections.emptyList());
-            } finally {
-                exec.shutdown();
+            } catch (Exception e) {
+                model.addAttribute("genrePicks", Collections.emptyList());
             }
         }
 
@@ -109,3 +115,6 @@ public class HomeController {
         return ResponseEntity.ok(results);
     }
 }
+
+
+
