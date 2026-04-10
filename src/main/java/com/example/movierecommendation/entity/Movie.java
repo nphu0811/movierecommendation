@@ -36,7 +36,7 @@ public class Movie {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @ManyToMany(fetch = FetchType.LAZY)
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "movie_genres",
         joinColumns = @JoinColumn(name = "movie_id"),
