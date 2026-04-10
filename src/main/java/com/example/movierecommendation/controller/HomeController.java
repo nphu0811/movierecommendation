@@ -1,4 +1,4 @@
-﻿package com.example.movierecommendation.controller;
+package com.example.movierecommendation.controller;
 
 import com.example.movierecommendation.entity.Movie;
 import com.example.movierecommendation.entity.User;
