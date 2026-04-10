@@ -45,6 +45,7 @@ public class InteractionService {
     // ──────────────────── RATING ────────────────────
 
     @Transactional
+    @CacheEvict(value = "user_ai_recommendations", key = "#userId")
     public Rating rateMovie(Integer userId, Integer movieId, Integer score) {
         checkRateLimit(userId, "rateMovie");
         Optional<Rating> existing = ratingRepository.findByUserUserIdAndMovieMovieId(userId, movieId);

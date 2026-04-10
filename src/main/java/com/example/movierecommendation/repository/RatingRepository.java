@@ -14,6 +14,9 @@ public interface RatingRepository extends JpaRepository<Rating, Integer> {
 
     Optional<Rating> findByUserUserIdAndMovieMovieId(Integer userId, Integer movieId);
     List<Rating> findByUserUserId(Integer userId);
+
+    @Query("SELECT r.movie.movieId FROM Rating r WHERE r.user.userId = :userId")
+    List<Integer> findRatedMovieIdsByUserId(@Param("userId") Integer userId);
     List<Rating> findByMovieMovieId(Integer movieId);
 
     // Chỉ lấy users đã rate ít nhất 1 phim trong danh sách (thay thế findAll)

@@ -3,11 +3,9 @@ package com.example.movierecommendation.service;
 import com.example.movierecommendation.algorithm.RecommendationEngine;
 import com.example.movierecommendation.entity.Movie;
 import com.example.movierecommendation.repository.MovieRepository;
-import com.example.movierecommendation.repository.WatchHistoryRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
@@ -20,24 +18,38 @@ public class RecommendationService {
 
     @Autowired private RecommendationEngine engine;
     @Autowired private MovieRepository movieRepository;
-    @Autowired private WatchHistoryRepository watchHistoryRepository;
     @Autowired private OpenAIService openAIService;
 
-    @Cacheable(value = "user_ai_recommendations", key = "#userId", unless = "#result == null or #result.isEmpty()")
+    private List<Movie> removeExcludedMovies(Integer userId, List<Movie> movies) {
+        if (movies == null || movies.isEmpty()) return movies == null ? Collections.emptyList() : movies;
+        Set<Integer> ex = engine.getExcludedMovieIdsForRecommendations(userId);
+        if (ex.isEmpty()) return movies;
+        List<Movie> out = new ArrayList<>();
+        for (Movie m : movies) {
+            if (!ex.contains(m.getMovieId())) out.add(m);
+        }
+        return out;
+    }
+
+    private static List<Movie> limitSize(List<Movie> list, int max) {
+        if (list.size() <= max) return list;
+        return new ArrayList<>(list.subList(0, max));
+    }
+
     public List<Movie> getPersonalizedRecommendations(Integer userId) {
-        List<Movie> hybrid = engine.getRecommendations(userId);
+        List<Movie> hybrid = removeExcludedMovies(userId, engine.getRecommendations(userId));
 
         if (!openAIService.isEnabled()) return hybrid;
 
         try {
-            List<Integer> watchedIds = watchHistoryRepository.findWatchedMovieIdsByUserId(userId);
-            List<Integer> exclude = watchedIds.isEmpty() ? Collections.singletonList(-1) : watchedIds;
+            Set<Integer> excluded = engine.getExcludedMovieIdsForRecommendations(userId);
+            List<Integer> exclude = excluded.isEmpty() ? Collections.singletonList(-1) : new ArrayList<>(excluded);
             List<Movie> candidates = movieRepository.findMostWatchedMoviesExcluding(exclude, PageRequest.of(0, 20));
             List<String> aiTitles = openAIService.getAIRecommendedTitles(userId, candidates);
 
             if (aiTitles == null || aiTitles.isEmpty()) return hybrid;
 
-            // FIX: Use structured lookup Map
+            // Use structured lookup Map
             Map<String, Movie> titleIndex = new HashMap<>();
             for (Movie m : candidates) {
                 titleIndex.put(m.getTitle().toLowerCase(), m);
@@ -61,17 +73,12 @@ public class RecommendationService {
                 }
             }
 
-            // Merge: AI movies lên đầu, hybrid sau, dedup bằng Set
             List<Movie> merged = new ArrayList<>(aiMovies);
-            Set<Integer> watchedSet = new HashSet<>(watchedIds);
             for (Movie m : hybrid) {
-                if (watchedSet.contains(m.getMovieId())) continue;
                 if (seen.add(m.getMovieId())) merged.add(m);
             }
 
-            merged.removeIf(m -> watchedSet.contains(m.getMovieId()));
-
-            return merged.size() > 20 ? merged.subList(0, 20) : merged;
+            return limitSize(removeExcludedMovies(userId, merged), 20);
 
         } catch (Exception e) {
             log.warn("AI recommendation fallback for user {}: {}", userId, e.getMessage());
@@ -84,15 +91,28 @@ public class RecommendationService {
     }
 
     public List<Movie> getGenreBasedRecommendations(Integer userId) {
-        return engine.getGenreBasedRecommendations(userId);
+        return removeExcludedMovies(userId, engine.getGenreBasedRecommendations(userId));
     }
 
     public List<Movie> getTrendingMovies() {
         return engine.getTrendingMovies(10);
     }
 
+    /** Trending nhưng bỏ phim user đã xem / đã rate (khi đã đăng nhập). */
+    public List<Movie> getTrendingMoviesForUser(Integer userId) {
+        Set<Integer> ex = engine.getExcludedMovieIdsForRecommendations(userId);
+        List<Integer> exclude = ex.isEmpty() ? Collections.singletonList(-1) : new ArrayList<>(ex);
+        return movieRepository.findMostWatchedMoviesExcluding(exclude, PageRequest.of(0, 10));
+    }
+
     public List<Movie> getTopRatedMovies() {
         return movieRepository.findTopRatedMovies(PageRequest.of(0, 10));
+    }
+
+    public List<Movie> getTopRatedMoviesForUser(Integer userId) {
+        Set<Integer> ex = engine.getExcludedMovieIdsForRecommendations(userId);
+        List<Integer> exclude = ex.isEmpty() ? Collections.singletonList(-1) : new ArrayList<>(ex);
+        return movieRepository.findTopRatedMoviesExcluding(exclude, PageRequest.of(0, 10));
     }
 
     public List<Movie> getNewReleases() {

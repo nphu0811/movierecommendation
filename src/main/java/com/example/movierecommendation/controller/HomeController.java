@@ -25,8 +25,9 @@ public class HomeController {
     @GetMapping({"/", "/home"})
     public String home(@AuthenticationPrincipal UserDetails userDetails, Model model) {
 
+        User currentUser = null;
         if (userDetails != null) {
-            User currentUser = userService.getCurrentUser(userDetails.getUsername());
+            currentUser = userService.getCurrentUser(userDetails.getUsername());
             model.addAttribute("currentUser", currentUser);
 
             // Chạy recommendations và genrePicks song song thay vì tuần tự
@@ -43,19 +44,25 @@ public class HomeController {
                 model.addAttribute("genrePicks",
                     genreFuture.get(3, TimeUnit.SECONDS));  // genre nhanh hơn
             } catch (TimeoutException e) {
-                // Nếu AI timeout → fallback về trending
-                model.addAttribute("recommendations", recommendationService.getTrendingMovies());
+                model.addAttribute("recommendations",
+                    recommendationService.getTrendingMoviesForUser(currentUser.getUserId()));
                 model.addAttribute("genrePicks", Collections.emptyList());
             } catch (Exception e) {
-                model.addAttribute("recommendations", recommendationService.getTrendingMovies());
+                model.addAttribute("recommendations",
+                    recommendationService.getTrendingMoviesForUser(currentUser.getUserId()));
                 model.addAttribute("genrePicks", Collections.emptyList());
             } finally {
                 exec.shutdown();
             }
         }
 
-        model.addAttribute("trending", recommendationService.getTrendingMovies());
-        model.addAttribute("topRated", recommendationService.getTopRatedMovies());
+        if (currentUser != null) {
+            model.addAttribute("trending", recommendationService.getTrendingMoviesForUser(currentUser.getUserId()));
+            model.addAttribute("topRated", recommendationService.getTopRatedMoviesForUser(currentUser.getUserId()));
+        } else {
+            model.addAttribute("trending", recommendationService.getTrendingMovies());
+            model.addAttribute("topRated", recommendationService.getTopRatedMovies());
+        }
         model.addAttribute("newReleases", movieService.getAllMovies(0, 8).getContent());
         model.addAttribute("allGenres", movieService.getAllGenres());
         return "home";

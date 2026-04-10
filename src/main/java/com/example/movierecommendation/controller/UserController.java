@@ -97,13 +97,14 @@ public class UserController {
             model.addAttribute("recommendations", recFuture.get(5, java.util.concurrent.TimeUnit.SECONDS));
             model.addAttribute("genrePicks", genreFuture.get(3, java.util.concurrent.TimeUnit.SECONDS));
         } catch (Exception e) {
-            model.addAttribute("recommendations", recommendationService.getTrendingMovies());
+            model.addAttribute("recommendations",
+                recommendationService.getTrendingMoviesForUser(user.getUserId()));
             model.addAttribute("genrePicks", java.util.Collections.emptyList());
         } finally {
             exec.shutdown();
         }
 
-        model.addAttribute("trending", recommendationService.getTrendingMovies());
+        model.addAttribute("trending", recommendationService.getTrendingMoviesForUser(user.getUserId()));
         return "user/recommendations";
     }
 }
