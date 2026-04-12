@@ -1,19 +1,16 @@
 package com.example.movierecommendation.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.MediaType;
-import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
-import reactor.netty.http.client.HttpClient;
-import io.netty.resolver.AddressResolverGroup;
-import io.netty.resolver.dns.DnsAddressResolverGroup;
-import io.netty.resolver.dns.DefaultDnsServerAddressStreamProvider;
-import io.netty.channel.socket.nio.NioDatagramChannel;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
@@ -24,27 +21,18 @@ public class MailService {
 
     private static final Logger log = LoggerFactory.getLogger(MailService.class);
 
-    private final WebClient brevoClient;
+    private final HttpClient httpClient;
+    private final ObjectMapper objectMapper = new ObjectMapper();
     private final String fromAddress;
+    private final String apiKey;
 
     public MailService(
             @Value("${brevo.api.key}") String apiKey,
             @Value("${app.mail.from:noreply@movierec.local}") String fromAddress) {
         this.fromAddress = fromAddress;
-
-        AddressResolverGroup<?> resolverGroup = new DnsAddressResolverGroup(
-                NioDatagramChannel.class,
-                DefaultDnsServerAddressStreamProvider.INSTANCE
-        );
-
-        HttpClient httpClient = HttpClient.create()
-                .resolver(resolverGroup)
-                .responseTimeout(Duration.ofSeconds(15));
-
-        this.brevoClient = WebClient.builder()
-                .baseUrl("https://api.brevo.com/v3")
-                .clientConnector(new ReactorClientHttpConnector(httpClient))
-                .defaultHeader("api-key", apiKey)
+        this.apiKey = apiKey;
+        this.httpClient = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(10))
                 .build();
     }
 
@@ -54,7 +42,7 @@ public class MailService {
 
     /**
      * Send the same content to multiple recipients using Brevo HTTP API.
-     * Using HTTP avoids SMTP port blocks on hosting providers.
+     * Uses JDK HttpClient (system resolver) to avoid Netty DNS issues on the host.
      */
     public void sendPlainText(Collection<String> recipients, String subject, String content) {
         if (recipients == null || recipients.isEmpty()) {
@@ -69,19 +57,24 @@ public class MailService {
                     "htmlContent", content
             );
 
-            brevoClient.post()
-                    .uri("/smtp/email")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .accept(MediaType.APPLICATION_JSON)
-                    .bodyValue(body)
-                    .retrieve()
-                    .bodyToMono(Void.class)
-                    .block();
+            String json = objectMapper.writeValueAsString(body);
 
-            log.info("Verification email sent to {}", recipients);
-        } catch (WebClientResponseException ex) {
-            log.error("Failed to send email via Brevo HTTP. Status {} Body {}", ex.getStatusCode(), ex.getResponseBodyAsString());
-            throw new RuntimeException("Gửi email thất bại: " + ex.getMessage());
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("https://api.brevo.com/v3/smtp/email"))
+                    .timeout(Duration.ofSeconds(15))
+                    .header("Content-Type", "application/json")
+                    .header("Accept", "application/json")
+                    .header("api-key", apiKey)
+                    .POST(HttpRequest.BodyPublishers.ofString(json, StandardCharsets.UTF_8))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                log.info("Verification email sent to {}", recipients);
+            } else {
+                log.error("Failed to send email via Brevo HTTP. Status {} Body {}", response.statusCode(), response.body());
+                throw new RuntimeException("Gửi email thất bại: HTTP " + response.statusCode());
+            }
         } catch (Exception ex) {
             log.error("Failed to send email via Brevo HTTP", ex);
             throw new RuntimeException("Gửi email thất bại: " + ex.getMessage());
