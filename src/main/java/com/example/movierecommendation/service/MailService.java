@@ -11,11 +11,10 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.netty.http.client.HttpClient;
 import io.netty.resolver.AddressResolverGroup;
 import io.netty.resolver.dns.DnsAddressResolverGroup;
-import io.netty.resolver.dns.DnsServerAddressStreamProviders;
+import io.netty.resolver.dns.DefaultDnsServerAddressStreamProvider;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 
 import java.time.Duration;
-import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -35,12 +34,7 @@ public class MailService {
 
         AddressResolverGroup<?> resolverGroup = new DnsAddressResolverGroup(
                 NioDatagramChannel.class,
-                DnsServerAddressStreamProviders.sequential(
-                        List.of(
-                                new InetSocketAddress("8.8.8.8", 53),
-                                new InetSocketAddress("1.1.1.1", 53)
-                        )
-                )
+                DefaultDnsServerAddressStreamProvider.INSTANCE
         );
 
         HttpClient httpClient = HttpClient.create()
