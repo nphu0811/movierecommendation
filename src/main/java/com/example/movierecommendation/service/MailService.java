@@ -9,6 +9,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.netty.http.client.HttpClient;
+import io.netty.resolver.AddressResolverGroup;
+import io.netty.resolver.dns.DnsAddressResolverGroup;
+import io.netty.resolver.dns.DnsServerAddressStreamProviders;
+import io.netty.channel.socket.nio.NioDatagramChannel;
 
 import java.time.Duration;
 import java.util.Collection;
@@ -28,12 +32,13 @@ public class MailService {
             @Value("${app.mail.from:noreply@movierec.local}") String fromAddress) {
         this.fromAddress = fromAddress;
 
+        AddressResolverGroup<?> resolverGroup = new DnsAddressResolverGroup(
+                NioDatagramChannel.class,
+                DnsServerAddressStreamProviders.parse("8.8.8.8,1.1.1.1")
+        );
+
         HttpClient httpClient = HttpClient.create()
-                .resolver(spec -> spec
-                        .dnsServer("8.8.8.8")
-                        .dnsServer("1.1.1.1")
-                        .ndots(1)
-                        .dnsQueryTimeout(Duration.ofSeconds(5)))
+                .resolver(resolverGroup)
                 .responseTimeout(Duration.ofSeconds(15));
 
         this.brevoClient = WebClient.builder()
