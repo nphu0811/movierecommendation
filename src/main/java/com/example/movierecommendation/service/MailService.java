@@ -15,6 +15,7 @@ import io.netty.resolver.dns.DnsServerAddressStreamProviders;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 
 import java.time.Duration;
+import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +35,12 @@ public class MailService {
 
         AddressResolverGroup<?> resolverGroup = new DnsAddressResolverGroup(
                 NioDatagramChannel.class,
-                DnsServerAddressStreamProviders.parse("8.8.8.8,1.1.1.1")
+                DnsServerAddressStreamProviders.sequential(
+                        List.of(
+                                new InetSocketAddress("8.8.8.8", 53),
+                                new InetSocketAddress("1.1.1.1", 53)
+                        )
+                )
         );
 
         HttpClient httpClient = HttpClient.create()
