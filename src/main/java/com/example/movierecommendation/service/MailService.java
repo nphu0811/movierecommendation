@@ -3,10 +3,12 @@ package com.example.movierecommendation.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.MailException;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
+import java.util.Collection;
 
 @Service
 public class MailService {
@@ -23,20 +25,30 @@ public class MailService {
     }
 
     public void sendPlainText(String to, String subject, String content) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(fromAddress);
-        message.setTo(to);
-        message.setSubject(subject);
-        message.setText(content);
-
         try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
+            helper.setFrom(fromAddress);
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(content, true);
             mailSender.send(message);
             log.info("Verification email sent to {}", to);
-        } catch (MailException ex) {
+        } catch (MessagingException ex) {
             log.error("Failed to send email to {}", to, ex);
-            // Hiển thị lỗi chi tiết hơn để dễ debug trên Railway
-            String errorDetail = (ex.getCause() != null) ? ex.getCause().getMessage() : ex.getMessage();
-            throw new RuntimeException("Gửi email thất bại: " + errorDetail);
+            throw new RuntimeException("Gửi email thất bại: " + ex.getMessage());
         }
+    }
+
+    /**
+     * Send the same content to multiple recipients.
+     * We loop through individual sends to keep behaviour consistent with the single-recipient API.
+     */
+    public void sendPlainText(Collection<String> recipients, String subject, String content) {
+        if (recipients == null || recipients.isEmpty()) {
+            log.warn("No recipients provided, skip sending email");
+            return;
+        }
+        recipients.forEach(to -> sendPlainText(to, subject, content));
     }
 }
