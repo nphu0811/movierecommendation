@@ -30,12 +30,12 @@
       </div>
       <div style="font-size:.82rem;color:var(--text-muted)" th:if="${!posterRunning}">Fetch poster cho tất cả phim từ TMDB API</div>
       <div style="font-size:.82rem;color:var(--success)" th:if="${posterRunning}"
-           th:text="|⏳ Đang fetch: ${posterDone}/${posterTotal} phim...|">Loading...</div>
+           th:text="|Fetching: ${posterDone}/${posterTotal} movies...|">Loading...</div>
     </div>
     <form th:action="@{/admin/fetch-posters}" method="post">
       <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
       <button type="submit" class="btn btn-primary btn-sm"
-              th:text="${posterRunning} ? '⏳ Đang chạy...' : '▶ Fetch Posters'"
+              th:text="${posterRunning} ? 'Running...' : 'Fetch Posters'"
               th:disabled="${posterRunning}">Fetch Posters</button>
     </form>
   </div>
@@ -52,7 +52,7 @@
     </div>
     <form th:action="@{/admin/seed-data}" method="post">
       <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-      <button type="submit" class="btn btn-primary btn-sm">⭐ Seed Data</button>
+      <button type="submit" class="btn btn-primary btn-sm"><i class="ph-fill ph-database" style="margin-right:6px"></i> Seed Data</button>
     </form>
   </div>
 

@@ -1513,22 +1513,84 @@ textarea.form-control { resize: vertical; min-height: 100px; }
 @media (max-width: 700px) {
   .movies-grid { grid-template-columns: repeat(2, 1fr); gap: var(--space-3); }
   .section { padding: var(--space-6) 5%; }
-  .hero-content h1 { font-size: 2rem; }
-  .hero-section { min-height: 80vh; }
+  .hero-content h1 { font-size: 2.2rem; }
+  .hero-section { min-height: 75vh; align-items: center; padding-bottom: 0; }
+  .hero-content { text-align: center; margin: 0 auto; }
+  .hero-eyebrow { margin: 0 auto var(--space-4); }
+  .hero-actions { justify-content: center; }
+  
   .admin-layout { flex-direction: column; }
   .admin-sidebar { width: 100%; height: auto; position: static; }
   .admin-main { padding: var(--space-5); }
-  .movie-hero-content { flex-direction: column; align-items: flex-start; gap: var(--space-5); }
+  .movie-hero-content { flex-direction: column; align-items: flex-start; gap: var(--space-5); padding-top: 100px; }
   .movie-poster-large { width: 120px; height: 180px; }
+  
+  /* Navbar adjustments to prevent overlap */
+  .navbar { padding: 0 var(--space-4); justify-content: space-between; }
+  .nav-links { display: none; } /* Move to bottom nav */
+  .navbar-actions { gap: var(--space-2); }
+  .navbar-actions .btn-sm { padding: 8px 12px; }
+  .navbar-actions .btn svg { width: 18px; height: 18px; }
 }
+
 @media (max-width: 480px) {
-  .navbar-brand { font-size: 1.2rem; }
-  .nav-links { gap: var(--space-4); }
-  .nav-links a { font-size: .75rem; }
-  .movies-grid { grid-template-columns: repeat(2, 1fr); }
-  .auth-card { padding: var(--space-6) var(--space-5); }
-  .movies-row .movie-card { min-width: 140px; max-width: 140px; }
-  .hero-stats { flex-wrap: wrap; gap: var(--space-4); }
+  .hero-content h1 { font-size: 1.8rem; }
+  .hero-actions { flex-direction: column; width: 100%; }
+  .hero-actions .btn { width: 100%; }
+  
+  .navbar-brand { font-size: 1.1rem; }
+  .navbar-actions .btn span { display: none; } /* Hide Profile name */
+  
+  .section-title { font-size: 1.25rem; }
+  .section-title span { display: inline; }
+  
+  .footer-mobile-nav { display: flex !important; }
+  body { padding-bottom: 70px; } /* Space for bottom nav */
+}
+
+/* ============================================================
+   MOBILE BOTTOM NAVIGATION – Apple Glass Style
+   ============================================================ */
+.footer-mobile-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: 2000;
+  justify-content: space-around;
+  align-items: center;
+  padding: 0 var(--space-2);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.mobile-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-secondary);
+  font-size: 0.65rem;
+  font-weight: 500;
+  transition: color var(--t-fast);
+  flex: 1;
+}
+
+.mobile-nav-item i {
+  font-size: 1.4rem;
+}
+
+.mobile-nav-item.active {
+  color: var(--red);
+}
+
+.mobile-nav-item:active {
+  transform: scale(0.9);
 }
 
 /* Grid card sizing */

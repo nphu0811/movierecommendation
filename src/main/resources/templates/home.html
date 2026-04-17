@@ -13,6 +13,7 @@
 <body>
 
 <div th:replace="~{fragments :: navbar}"></div>
+<div th:replace="~{fragments :: mobileNav(${activeMenu})}"></div>
 <div th:replace="~{search-overlay :: searchOverlay}"></div>
 
 <!-- ── HERO ── -->

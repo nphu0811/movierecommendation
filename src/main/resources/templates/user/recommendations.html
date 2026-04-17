@@ -11,6 +11,7 @@
 </head>
 <body>
 <div th:replace="~{fragments :: navbar}"></div>
+<div th:replace="~{fragments :: mobileNav(${activeMenu})}"></div>
 <div th:replace="~{search-overlay :: searchOverlay}"></div>
 
 <div class="section">
@@ -53,7 +54,7 @@
   <!-- Personalized picks -->
   <div th:if="${recommendations != null and !#lists.isEmpty(recommendations)}">
     <div class="section-header">
-      <h2 class="section-title">🎯 Recommended <span>For You</span></h2>
+      <h2 class="section-title"><i class="ph-fill ph-sparkle" style="margin-right:8px;color:var(--red);vertical-align:-3px"></i> Recommended <span>For You</span></h2>
       <span style="color:var(--text-muted);font-size:.8rem;font-weight:500"
             th:text="${#lists.size(recommendations)} + ' picks'"></span>
     </div>
