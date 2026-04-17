@@ -1,9 +1,9 @@
 /* ============================================================
    MovieRec – Apple × Netflix Design System
-   Typography: SF Pro / System Stack (Apple design principles)
-   Spacing base: 8px
-   Color: Netflix palette (red, black, dark gray)
    ============================================================ */
+@import url('https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css');
+@import url('https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css');
+@import url('https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css');
 
 /* ── Design Tokens ── */
 :root {

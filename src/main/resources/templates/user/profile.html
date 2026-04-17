@@ -23,7 +23,7 @@
               display:flex;align-items:center;gap:2rem">
     <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#e50914,#b0060f);
                 display:flex;align-items:center;justify-content:center;font-size:2rem;flex-shrink:0">
-      👤
+      <i class="ph-fill ph-user" style="color:#fff"></i>
     </div>
     <div>
       <h2 style="font-size:1.5rem;font-weight:700" th:text="${currentUser.username}">Username</h2>
@@ -47,8 +47,8 @@
   <!-- Tabs - chỉ hiện với USER, không hiện với ADMIN -->
   <th:block th:if="${currentUser.role == 'USER'}">
   <div style="display:flex;gap:0;border-bottom:1px solid #333;margin-bottom:2rem">
-    <button class="tab-btn active" onclick="switchTab('edit-profile', this)">✏️ Edit Profile</button>
-    <button class="tab-btn" onclick="switchTab('change-password', this)">🔒 Password</button>
+    <button class="tab-btn active" onclick="switchTab('edit-profile', this)"><i class="ph-bold ph-pencil-simple" style="margin-right:6px"></i> Edit Profile</button>
+    <button class="tab-btn" onclick="switchTab('change-password', this)"><i class="ph-bold ph-lock-key" style="margin-right:6px"></i> Password</button>
   </div>
 
   <!-- Edit Profile -->
@@ -127,7 +127,7 @@
   <!-- Recent Watch History -->
   <div style="margin-top:2.5rem">
     <div class="section-header">
-      <h3 class="section-title">🕐 Recent <span>History</span></h3>
+      <h3 class="section-title"><i class="ph-fill ph-clock-counter-clockwise" style="margin-right:8px;vertical-align:-3px;color:var(--text-secondary)"></i> Recent <span>History</span></h3>
       <a href="/user/history" class="view-all">View all →</a>
     </div>
     <div class="movies-row" th:if="${watchHistory != null and !watchHistory.isEmpty()}">
@@ -136,14 +136,14 @@
       </th:block>
     </div>
     <div class="empty-state" th:if="${watchHistory == null or watchHistory.isEmpty()}" style="padding:2rem">
-      <div class="icon">🎬</div><p style="color:#6c757d">No watch history yet. Start watching!</p>
+      <div class="icon"><i class="ph-fill ph-film-strip"></i></div><p style="color:#6c757d">No watch history yet. Start watching!</p>
     </div>
   </div>
 
   <!-- Watchlist Preview -->
   <div style="margin-top:2.5rem;padding-bottom:3rem">
     <div class="section-header">
-      <h3 class="section-title">❤️ My <span>Watchlist</span></h3>
+      <h3 class="section-title"><i class="ph-fill ph-heart" style="margin-right:8px;vertical-align:-3px;color:var(--red)"></i> My <span>Watchlist</span></h3>
       <a href="/user/watchlist" class="view-all">View all →</a>
     </div>
     <div class="movies-row" th:if="${watchlist != null and !watchlist.isEmpty()}">
@@ -152,7 +152,7 @@
       </th:block>
     </div>
     <div class="empty-state" th:if="${watchlist == null or watchlist.isEmpty()}" style="padding:2rem">
-      <div class="icon">❤️</div><p style="color:#6c757d">Your watchlist is empty. Add some movies!</p>
+      <div class="icon"><i class="ph-fill ph-heart" style="color:var(--red)"></i></div><p style="color:#6c757d">Your watchlist is empty. Add some movies!</p>
     </div>
   </div>
 </div>

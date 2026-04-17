@@ -63,7 +63,7 @@
       clearTimeout(timer);
       if (!q) { results.style.display = 'none'; hint.style.display = 'block'; return; }
       hint.style.display = 'none';
-      results.innerHTML = '<div style="padding:20px;text-align:center;color:#555">🔍 Searching…</div>';
+      results.innerHTML = '<div style="padding:40px 20px;text-align:center;color:var(--text-muted);display:flex;flex-direction:column;align-items:center;gap:12px"><i class="ph-bold ph-magnifying-glass" style="font-size:2rem;animation:pulse 2s infinite"></i> Searching…</div>';
       results.style.display = 'block';
       timer = setTimeout(function() { doSearch(q); }, 280);
     });
@@ -88,7 +88,7 @@
         var m = movies[i];
         var poster = m.poster
           ? '<img src="' + esc(m.poster) + '" alt="" style="width:44px;height:62px;object-fit:cover;border-radius:6px;flex-shrink:0" onerror="this.style.display=\'none\'">'
-          : '<div class="search-overlay-item-icon">🎬</div>';
+          : '<div class="search-overlay-item-icon"><i class="ph-fill ph-film-strip"></i></div>';
         var genres = (m.genres && m.genres.length) ? m.genres.slice(0,2).join(' · ') : '';
         var meta = [m.year, genres].filter(Boolean).join(' • ');
         html += '<a class="search-overlay-item" href="/movies/' + m.id + '">'

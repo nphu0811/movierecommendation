@@ -14,7 +14,7 @@
 <div th:replace="~{search-overlay :: searchOverlay}"></div>
 <div class="section">
   <div class="section-header">
-    <h1 class="section-title">❤️ My <span>Watchlist</span></h1>
+    <h1 class="section-title"><i class="ph-fill ph-heart" style="margin-right:8px;vertical-align:-3px;color:var(--red)"></i> My <span>Watchlist</span></h1>
     <span style="color:#6c757d;font-size:.875rem"
           th:text="|${#lists.size(watchlist)} movie(s)|">0 movies</span>
   </div>
@@ -26,7 +26,7 @@
   </div>
 
   <div class="empty-state" th:if="${#lists.isEmpty(watchlist)}">
-    <div class="icon">❤️</div>
+    <div class="icon"><i class="ph-fill ph-heart" style="color:var(--red)"></i></div>
     <h3>Your watchlist is empty</h3>
     <p style="margin-bottom:1.5rem">Save movies you want to watch later.</p>
     <a href="/movies" class="btn btn-primary">Browse Movies</a>
