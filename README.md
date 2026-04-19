@@ -1,4 +1,3 @@
-@@ -1,369 +1,5 @@
 # 🎬 MovieRec — AI Movie Recommendation System
 
 **Hệ thống gợi ý phim thông minh** sử dụng **hybrid algorithm** (Content-based + Collaborative Filtering + Popularity) tích hợp **OpenAI GPT-3.5** để cung cấp trải nghiệm cá nhân hóa.
