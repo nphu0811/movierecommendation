@@ -43,33 +43,7 @@
   }, 3500);
 })();
 
-// ── Samurai Hero Particles ───────────────────────────────────
-(function() {
-  var container = document.getElementById('samuraiParticles');
-  if (!container) return;
-  for (var i = 0; i < 18; i++) {
-    var p = document.createElement('div');
-    p.className = 'samurai-particle';
-    var size = 2 + Math.random() * 4;
-    var isRed = i % 3 !== 0;
-    p.style.cssText = [
-      'width:' + size + 'px',
-      'height:' + size + 'px',
-      'left:' + (10 + Math.random() * 80) + '%',
-      'top:' + (10 + Math.random() * 80) + '%',
-      'background:' + (isRed
-        ? 'radial-gradient(circle, #ff1a1a, #8b0000)'
-        : 'radial-gradient(circle, #ffffff, #aaaaaa)'),
-      'box-shadow:' + (isRed
-        ? '0 0 6px rgba(255,26,26,0.5)'
-        : '0 0 6px rgba(255,255,255,0.3)'),
-      'opacity:0.4',
-      'animation-delay:' + (Math.random() * 3) + 's',
-      'animation-duration:' + (2.5 + Math.random() * 2.5) + 's'
-    ].join(';');
-    container.appendChild(p);
-  }
-})();
+
 
 // ── CSRF helpers ─────────────────────────────────────────────
 function getCsrfToken() {
