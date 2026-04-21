@@ -908,12 +908,14 @@ textarea.form-control { resize: vertical; min-height: 100px; }
    ============================================================ */
 .auth-container {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex; align-items: center; justify-content: center;
   padding: var(--space-6);
   background:
     radial-gradient(ellipse 80% 50% at 50% -5%, rgba(229,9,20,.08), transparent),
     var(--bg);
   position: relative; overflow: hidden;
+  isolation: isolate;
 }
 .auth-container::before {
   content: '';
@@ -923,6 +925,54 @@ textarea.form-control { resize: vertical; min-height: 100px; }
     linear-gradient(90deg, rgba(255,255,255,.01) 1px, transparent 1px);
   background-size: var(--space-8) var(--space-8);
   pointer-events: none;
+  z-index: 1;
+}
+.auth-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+.auth-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(229, 9, 20, 0.16) 0%, transparent 34%),
+    radial-gradient(circle at 78% 14%, rgba(255, 255, 255, 0.08) 0%, transparent 24%),
+    linear-gradient(145deg, #080808 0%, #040404 48%, #010101 100%);
+}
+.auth-bg-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(24px);
+  opacity: 0.48;
+  mix-blend-mode: screen;
+  animation: heroOrbFloat 14s ease-in-out infinite, heroGlowPulse 8s ease-in-out infinite;
+}
+.auth-bg-glow--primary {
+  width: 300px;
+  height: 300px;
+  left: -90px;
+  top: 12%;
+  background: radial-gradient(circle, rgba(229, 9, 20, 0.3) 0%, rgba(229, 9, 20, 0.06) 48%, transparent 74%);
+}
+.auth-bg-glow--secondary {
+  width: 240px;
+  height: 240px;
+  right: -50px;
+  bottom: -40px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.03) 50%, transparent 76%);
+  animation-duration: 16s, 9s;
+  animation-delay: -5s, -2s;
+}
+.auth-particles-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
 }
 .auth-card {
   background: rgba(14,14,14,.92);
@@ -934,7 +984,7 @@ textarea.form-control { resize: vertical; min-height: 100px; }
   width: 100%; max-width: 420px;
   box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255,255,255,.03);
   animation: scaleIn .4s var(--spring) both;
-  position: relative; z-index: 1;
+  position: relative; z-index: 2;
 }
 
 .auth-logo { text-align: center; margin-bottom: var(--space-6); }

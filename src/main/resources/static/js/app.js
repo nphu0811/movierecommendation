@@ -46,24 +46,25 @@
 
 
 // ── CSRF helpers ─────────────────────────────────────────────
-// Hero particle backdrop
+// Hero/Auth particle backdrop
 (function() {
-  var hero = document.querySelector('.hero-section');
-  var canvas = document.getElementById('heroParticlesCanvas');
-  if (!hero || !canvas) return;
+  var particleHost = document.querySelector('.hero-section, .auth-container');
+  var canvas = document.getElementById('heroParticlesCanvas') || document.getElementById('authParticlesCanvas');
+  if (!particleHost || !canvas) return;
 
   var ctx = canvas.getContext('2d');
   if (!ctx) return;
 
   var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var finePointer = window.matchMedia && window.matchMedia('(pointer: fine)').matches;
+  var isAuthSurface = particleHost.classList.contains('auth-container');
   var particles = [];
   var ripples = [];
   var pointer = {
     x: 0,
     y: 0,
     active: false,
-    radius: reduceMotion || !finePointer ? 0 : 150
+    radius: reduceMotion || !finePointer ? 0 : (isAuthSurface ? 120 : 150)
   };
   var width = 0;
   var height = 0;
@@ -91,16 +92,16 @@
   }
 
   function particleCount() {
-    var density = finePointer ? 18 : 28;
-    var maxCount = finePointer ? 84 : 42;
-    var minCount = finePointer ? 42 : 24;
+    var density = finePointer ? (isAuthSurface ? 22 : 18) : (isAuthSurface ? 32 : 28);
+    var maxCount = finePointer ? (isAuthSurface ? 62 : 84) : (isAuthSurface ? 34 : 42);
+    var minCount = finePointer ? (isAuthSurface ? 28 : 42) : (isAuthSurface ? 16 : 24);
     var count = Math.round(width / density);
     if (reduceMotion) count = Math.round(count * 0.65);
     return Math.max(minCount, Math.min(maxCount, count));
   }
 
   function resizeCanvas() {
-    var rect = hero.getBoundingClientRect();
+    var rect = particleHost.getBoundingClientRect();
     var dpr = Math.min(window.devicePixelRatio || 1, 2);
     width = Math.max(1, rect.width);
     height = Math.max(1, rect.height);
@@ -137,7 +138,7 @@
   }
 
   function updatePointer(event) {
-    var rect = hero.getBoundingClientRect();
+    var rect = particleHost.getBoundingClientRect();
     pointer.x = event.clientX - rect.left;
     pointer.y = event.clientY - rect.top;
     pointer.active = true;
@@ -255,10 +256,10 @@
     frameId = window.requestAnimationFrame(render);
   }
 
-  hero.addEventListener('pointerenter', updatePointer);
-  hero.addEventListener('pointermove', updatePointer);
-  hero.addEventListener('pointerleave', fadePointer);
-  hero.addEventListener('pointerdown', function(event) {
+  particleHost.addEventListener('pointerenter', updatePointer);
+  particleHost.addEventListener('pointermove', updatePointer);
+  particleHost.addEventListener('pointerleave', fadePointer);
+  particleHost.addEventListener('pointerdown', function(event) {
     updatePointer(event);
     if (pointer.radius > 0) spawnRipple(pointer.x, pointer.y, 2);
   });
@@ -392,7 +393,7 @@ function showToast(message, type) {
   onScroll();
 })();
 
-// -- IntersectionObserver � bidirectional reveal/hide ----------
+// -- IntersectionObserver - bidirectional reveal/hide ----------
 (function() {
   var revealSelector = '.movie-card, .reveal';
 

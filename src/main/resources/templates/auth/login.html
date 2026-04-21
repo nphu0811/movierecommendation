@@ -9,6 +9,11 @@
 </head>
 <body>
 <div class="auth-container">
+  <div class="auth-bg" aria-hidden="true">
+    <div class="auth-bg-glow auth-bg-glow--primary"></div>
+    <div class="auth-bg-glow auth-bg-glow--secondary"></div>
+    <canvas class="auth-particles-canvas" id="authParticlesCanvas"></canvas>
+  </div>
   <div class="auth-card">
     <div class="auth-logo">
       <div class="auth-logo-mark">Movie<span>Rec</span></div>
@@ -53,5 +58,6 @@
     </div>
   </div>
 </div>
+<script th:src="@{/js/app.js}"></script>
 </body>
 </html>
