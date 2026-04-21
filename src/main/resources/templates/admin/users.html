@@ -4,6 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Manage Users – Admin</title>
+  <link rel="icon" type="image/svg+xml" th:href="@{/favicon.svg}"/>
   <link rel="stylesheet" th:href="@{/css/style.css}"/>
 </head>
 <body>
@@ -25,6 +26,7 @@
             <th>ID</th>
             <th>Username</th>
             <th>Email</th>
+            <th>Verified?</th>
             <th>Role</th>
             <th>Status</th>
             <th>Joined</th>
@@ -44,6 +46,10 @@
               </div>
             </td>
             <td style="color:#b3b3b3" th:text="${user.email}">email</td>
+            <td>
+              <span class="badge" th:classappend="${user.isEmailVerified} ? 'badge-success' : 'badge-danger'"
+                    th:text="${user.isEmailVerified} ? 'Verified' : 'Unverified'">Unverified</span>
+            </td>
             <td>
               <span class="badge" th:classappend="${user.role == 'ADMIN'} ? 'badge-warn' : 'badge-info'"
                     th:text="${user.role}">USER</span>

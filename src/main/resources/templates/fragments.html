@@ -45,6 +45,30 @@
   </div>
 </nav>
 
+<!-- MOBILE BOTTOM NAV fragment -->
+<div th:fragment="mobileNav(activeMenu)" class="footer-mobile-nav">
+  <a href="/" class="mobile-nav-item" th:classappend="${#strings.equals(activeMenu,'home')} ? 'active'">
+    <i class="ph-fill ph-house"></i>
+    <span>Home</span>
+  </a>
+  <a href="/movies" class="mobile-nav-item" th:classappend="${#strings.equals(activeMenu,'movies')} ? 'active'">
+    <i class="ph-fill ph-film-slate"></i>
+    <span>Movies</span>
+  </a>
+  <a href="/user/recommendations" class="mobile-nav-item" th:classappend="${#strings.equals(activeMenu,'rec')} ? 'active'">
+    <i class="ph-fill ph-sparkle"></i>
+    <span>For You</span>
+  </a>
+  <a href="/user/watchlist" class="mobile-nav-item" th:classappend="${#strings.equals(activeMenu,'watchlist')} ? 'active'">
+    <i class="ph-fill ph-heart"></i>
+    <span>Watchlist</span>
+  </a>
+  <a href="/user/profile" class="mobile-nav-item" th:classappend="${#strings.equals(activeMenu,'profile')} ? 'active'">
+    <i class="ph-fill ph-user-circle"></i>
+    <span>Profile</span>
+  </a>
+</div>
+
 <!-- MOVIE CARD fragment -->
 <div th:fragment="movieCard(movie)" class="movie-card"
      th:if="${movie != null}"
@@ -54,12 +78,12 @@
          th:src="${movie.posterUrl}" th:alt="${movie.title}" loading="lazy"
          onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
     <div class="movie-poster-placeholder"
-         th:style="${movie.posterUrl != null and !#strings.isEmpty(movie.posterUrl)} ? 'display:none' : 'display:flex'">🎬</div>
+         th:style="${movie.posterUrl != null and !#strings.isEmpty(movie.posterUrl)} ? 'display:none' : 'display:flex'"><i class="ph-fill ph-film-strip"></i></div>
     <div class="movie-overlay">
       <div class="overlay-actions">
         <a th:href="@{/movies/{id}(id=${movie.movieId})}"
            class="btn btn-primary btn-sm"
-           onclick="event.stopPropagation()">▶ View</a>
+           onclick="event.stopPropagation()"><i class="ph-fill ph-play" style="margin-right:4px"></i> View</a>
       </div>
     </div>
   </div>
@@ -69,7 +93,7 @@
       <span class="movie-year" th:text="${movie.releaseYear}">2024</span>
       <span class="movie-rating"
             th:if="${movie.averageRating != null and movie.averageRating > 0}">
-        ⭐ <span th:text="${#numbers.formatDecimal(movie.averageRating,1,1)}">4.5</span>
+        <i class="ph-fill ph-star" style="color:var(--gold);vertical-align:-2px;margin-right:2px"></i> <span th:text="${#numbers.formatDecimal(movie.averageRating,1,1)}">4.5</span>
       </span>
     </div>
     <div class="genre-tags" th:if="${movie.genres != null and !movie.genres.empty}">

@@ -1,7 +1,9 @@
 package com.example.movierecommendation.dto;
 
 import com.example.movierecommendation.entity.Comment;
+import com.example.movierecommendation.entity.Link;
 import com.example.movierecommendation.entity.Movie;
+import com.example.movierecommendation.entity.Tag;
 import com.example.movierecommendation.entity.User;
 
 import java.util.List;
@@ -14,6 +16,9 @@ public class MovieDetailDTO {
     private boolean inWatchlist;
     private boolean hasWatched;
     private List<Movie> similarMovies;
+    private Link movieLink;
+    private List<Tag> tags;
+    private List<Object[]> topTags;
 
     public Movie getMovie() { return movie; }
     public void setMovie(Movie movie) { this.movie = movie; }
@@ -35,4 +40,13 @@ public class MovieDetailDTO {
 
     public List<Movie> getSimilarMovies() { return similarMovies; }
     public void setSimilarMovies(List<Movie> similarMovies) { this.similarMovies = similarMovies; }
+
+    public Link getMovieLink() { return movieLink; }
+    public void setMovieLink(Link movieLink) { this.movieLink = movieLink; }
+
+    public List<Tag> getTags() { return tags; }
+    public void setTags(List<Tag> tags) { this.tags = tags; }
+
+    public List<Object[]> getTopTags() { return topTags; }
+    public void setTopTags(List<Object[]> topTags) { this.topTags = topTags; }
 }

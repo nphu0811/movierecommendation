@@ -1,6 +1,7 @@
 package com.example.movierecommendation.service;
 
 import com.example.movierecommendation.dto.MovieDetailDTO;
+import com.example.movierecommendation.entity.Link;
 import com.example.movierecommendation.entity.Movie;
 import com.example.movierecommendation.entity.Rating;
 import com.example.movierecommendation.entity.User;
@@ -32,6 +33,12 @@ public class MovieFacade {
         MovieDetailDTO dto = new MovieDetailDTO();
         dto.setMovie(movie);
         dto.setComments(interactionService.getCommentsByMovie(movieId));
+
+        // Load IMDb/TMDB link
+        interactionService.getLinkForMovie(movieId).ifPresent(dto::setMovieLink);
+
+        // Load top tags for this movie
+        dto.setTopTags(interactionService.getTopTagsForMovie(movieId));
 
         Integer currentUserId = null;
         if (username != null) {

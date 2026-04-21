@@ -5,7 +5,7 @@ import com.example.movierecommendation.entity.User;
 import com.example.movierecommendation.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Async;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
@@ -21,41 +21,55 @@ public class HomeController {
     @Autowired private MovieService movieService;
     @Autowired private RecommendationService recommendationService;
     @Autowired private UserService userService;
+    @Autowired @Qualifier("homePageExecutor") private Executor homeExecutor;
 
     @GetMapping({"/", "/home"})
     public String home(@AuthenticationPrincipal UserDetails userDetails, Model model) {
 
+        User currentUser = null;
         if (userDetails != null) {
-            User currentUser = userService.getCurrentUser(userDetails.getUsername());
+            currentUser = userService.getCurrentUser(userDetails.getUsername());
             model.addAttribute("currentUser", currentUser);
 
-            // Chạy recommendations và genrePicks song song thay vì tuần tự
-            // (AI call tốn 1-3s nên chạy song song tiết kiệm thời gian đáng kể)
-            ExecutorService exec = Executors.newFixedThreadPool(2);
-            Future<List<Movie>> recFuture = exec.submit(() ->
-                recommendationService.getPersonalizedRecommendations(currentUser.getUserId()));
-            Future<List<Movie>> genreFuture = exec.submit(() ->
-                recommendationService.getGenreBasedRecommendations(currentUser.getUserId()));
+            // Run recommendations and genre picks in parallel (AI call may take 1-3s).
+            // Use shared homePageExecutor instead of creating a new pool per request.
+            final User finalUser = currentUser;
+
+            CompletableFuture<List<Movie>> recFuture = CompletableFuture.supplyAsync(
+                () -> recommendationService.getPersonalizedRecommendations(finalUser.getUserId()),
+                homeExecutor);
+            CompletableFuture<List<Movie>> genreFuture = CompletableFuture.supplyAsync(
+                () -> recommendationService.getGenreBasedRecommendations(finalUser.getUserId()),
+                homeExecutor);
 
             try {
-                model.addAttribute("recommendations",
-                    recFuture.get(12, TimeUnit.SECONDS));   // timeout 12s
-                model.addAttribute("genrePicks",
-                    genreFuture.get(3, TimeUnit.SECONDS));  // genre nhanh hơn
+                model.addAttribute("recommendations", recFuture.get(2, TimeUnit.SECONDS)); // faster failover
             } catch (TimeoutException e) {
-                // Nếu AI timeout → fallback về trending
-                model.addAttribute("recommendations", recommendationService.getTrendingMovies());
+                recFuture.cancel(true);
+                model.addAttribute("recommendations",
+                    recommendationService.getTrendingMoviesForUser(currentUser.getUserId()));
+            } catch (Exception e) {
+                model.addAttribute("recommendations",
+                    recommendationService.getTrendingMoviesForUser(currentUser.getUserId()));
+            }
+
+            try {
+                model.addAttribute("genrePicks", genreFuture.get(1, TimeUnit.SECONDS));
+            } catch (TimeoutException e) {
+                genreFuture.cancel(true);
                 model.addAttribute("genrePicks", Collections.emptyList());
             } catch (Exception e) {
-                model.addAttribute("recommendations", recommendationService.getTrendingMovies());
                 model.addAttribute("genrePicks", Collections.emptyList());
-            } finally {
-                exec.shutdown();
             }
         }
 
-        model.addAttribute("trending", recommendationService.getTrendingMovies());
-        model.addAttribute("topRated", recommendationService.getTopRatedMovies());
+        if (currentUser != null) {
+            model.addAttribute("trending", recommendationService.getTrendingMoviesForUser(currentUser.getUserId()));
+            model.addAttribute("topRated", recommendationService.getTopRatedMoviesForUser(currentUser.getUserId()));
+        } else {
+            model.addAttribute("trending", recommendationService.getTrendingMovies());
+            model.addAttribute("topRated", recommendationService.getTopRatedMovies());
+        }
         model.addAttribute("newReleases", movieService.getAllMovies(0, 8).getContent());
         model.addAttribute("allGenres", movieService.getAllGenres());
         return "home";
@@ -101,3 +115,6 @@ public class HomeController {
         return ResponseEntity.ok(results);
     }
 }
+
+
+

@@ -6,9 +6,9 @@ import com.example.movierecommendation.repository.MovieRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
@@ -21,20 +21,36 @@ public class RecommendationService {
     @Autowired private MovieRepository movieRepository;
     @Autowired private OpenAIService openAIService;
 
-    @Cacheable(value = "user_ai_recommendations", key = "#userId", unless = "#result == null or #result.isEmpty()")
+    private List<Movie> removeExcludedMovies(Integer userId, List<Movie> movies) {
+        if (movies == null || movies.isEmpty()) return movies == null ? Collections.emptyList() : movies;
+        Set<Integer> ex = engine.getExcludedMovieIdsForRecommendations(userId);
+        if (ex.isEmpty()) return movies;
+        List<Movie> out = new ArrayList<>();
+        for (Movie m : movies) {
+            if (!ex.contains(m.getMovieId())) out.add(m);
+        }
+        return out;
+    }
+
+    private static List<Movie> limitSize(List<Movie> list, int max) {
+        if (list.size() <= max) return list;
+        return new ArrayList<>(list.subList(0, max));
+    }
+
+    @Transactional(readOnly = true)
     public List<Movie> getPersonalizedRecommendations(Integer userId) {
-        List<Movie> hybrid = engine.getRecommendations(userId);
+        List<Movie> hybrid = removeExcludedMovies(userId, engine.getRecommendations(userId));
 
         if (!openAIService.isEnabled()) return hybrid;
 
         try {
-            // FIX: Reduce payload to 20 instead of 100
-            List<Movie> candidates = movieRepository.findMostWatchedMovies(PageRequest.of(0, 20));
+            List<Movie> candidates = movieRepository.findMostWatchedMoviesExcludingUserInteractions(
+                userId, PageRequest.of(0, 20));
             List<String> aiTitles = openAIService.getAIRecommendedTitles(userId, candidates);
 
             if (aiTitles == null || aiTitles.isEmpty()) return hybrid;
 
-            // FIX: Use structured lookup Map
+            // Use structured lookup Map
             Map<String, Movie> titleIndex = new HashMap<>();
             for (Movie m : candidates) {
                 titleIndex.put(m.getTitle().toLowerCase(), m);
@@ -58,13 +74,12 @@ public class RecommendationService {
                 }
             }
 
-            // Merge: AI movies lên đầu, hybrid sau, dedup bằng Set
             List<Movie> merged = new ArrayList<>(aiMovies);
             for (Movie m : hybrid) {
                 if (seen.add(m.getMovieId())) merged.add(m);
             }
 
-            return merged.size() > 20 ? merged.subList(0, 20) : merged;
+            return limitSize(removeExcludedMovies(userId, merged), 20);
 
         } catch (Exception e) {
             log.warn("AI recommendation fallback for user {}: {}", userId, e.getMessage());
@@ -76,16 +91,26 @@ public class RecommendationService {
         return engine.getSimilarMovies(movie, userId);
     }
 
+    @Transactional(readOnly = true)
     public List<Movie> getGenreBasedRecommendations(Integer userId) {
-        return engine.getGenreBasedRecommendations(userId);
+        return removeExcludedMovies(userId, engine.getGenreBasedRecommendations(userId));
     }
 
     public List<Movie> getTrendingMovies() {
         return engine.getTrendingMovies(10);
     }
 
+    /** Trending nhưng bỏ phim user đã xem / đã rate (khi đã đăng nhập). */
+    public List<Movie> getTrendingMoviesForUser(Integer userId) {
+        return movieRepository.findMostWatchedMoviesExcludingUserInteractions(userId, PageRequest.of(0, 10));
+    }
+
     public List<Movie> getTopRatedMovies() {
         return movieRepository.findTopRatedMovies(PageRequest.of(0, 10));
+    }
+
+    public List<Movie> getTopRatedMoviesForUser(Integer userId) {
+        return movieRepository.findTopRatedMoviesExcludingUserInteractions(userId, PageRequest.of(0, 10));
     }
 
     public List<Movie> getNewReleases() {

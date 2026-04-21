@@ -3,9 +3,11 @@ package com.example.movierecommendation.service;
 import com.example.movierecommendation.entity.*;
 import com.example.movierecommendation.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
+import java.util.Optional;
 
 @Service
 public class InteractionService {
@@ -22,6 +24,10 @@ public class InteractionService {
     private MovieRepository movieRepository;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private TagRepository tagRepository;
+    @Autowired
+    private LinkRepository linkRepository;
 
     private final Map<String, Long> rateLimits = new java.util.concurrent.ConcurrentHashMap<>();
     private static final long COOLDOWN_MS = 2000;
@@ -39,6 +45,7 @@ public class InteractionService {
     // ──────────────────── RATING ────────────────────
 
     @Transactional
+    @CacheEvict(value = "user_ai_recommendations", key = "#userId")
     public Rating rateMovie(Integer userId, Integer movieId, Integer score) {
         checkRateLimit(userId, "rateMovie");
         Optional<Rating> existing = ratingRepository.findByUserUserIdAndMovieMovieId(userId, movieId);
@@ -76,15 +83,22 @@ public class InteractionService {
     // ──────────────────── WATCH HISTORY ────────────────────
 
     @Transactional
-    public void markAsWatched(Integer userId, Integer movieId) {
-        if (!watchHistoryRepository.existsByUserUserIdAndMovieMovieId(userId, movieId)) {
-            User user = userRepository.findById(userId).orElseThrow();
-            Movie movie = movieRepository.findById(movieId).orElseThrow();
-            WatchHistory wh = new WatchHistory();
-            wh.setUser(user);
-            wh.setMovie(movie);
-            watchHistoryRepository.save(wh);
-        }
+    @CacheEvict(value = "user_ai_recommendations", key = "#userId")
+    public void markAsWatched(Integer userId, Integer movieId, Integer duration, Double progress) {
+        WatchHistory wh = watchHistoryRepository.findByUserUserIdAndMovieMovieId(userId, movieId)
+            .orElseGet(() -> {
+                User user = userRepository.findById(userId).orElseThrow();
+                Movie movie = movieRepository.findById(movieId).orElseThrow();
+                WatchHistory newWh = new WatchHistory();
+                newWh.setUser(user);
+                newWh.setMovie(movie);
+                return newWh;
+            });
+        
+        if (duration != null) wh.setWatchDuration(duration);
+        if (progress != null) wh.setProgress(progress);
+        wh.setWatchedAt(java.time.LocalDateTime.now());
+        watchHistoryRepository.save(wh);
     }
 
     public List<WatchHistory> getWatchHistory(Integer userId) {
@@ -160,5 +174,48 @@ public class InteractionService {
 
     public long countActiveUsers() {
         return watchHistoryRepository.countActiveUsers();
+    }
+
+    // ──────────────────── TAGS ────────────────────
+
+    @Transactional
+    public Tag addTag(Integer userId, Integer movieId, String tagText) {
+        checkRateLimit(userId, "addTag");
+        if (tagText == null || tagText.trim().isEmpty()) {
+            throw new IllegalArgumentException("Tag cannot be empty");
+        }
+        String sanitized = org.springframework.web.util.HtmlUtils.htmlEscape(tagText.trim().toLowerCase());
+        if (sanitized.length() > 50) {
+            throw new IllegalArgumentException("Tag too long (max 50 characters)");
+        }
+        if (tagRepository.existsByUserUserIdAndMovieMovieIdAndTag(userId, movieId, sanitized)) {
+            throw new IllegalArgumentException("You already added this tag");
+        }
+        User user = userRepository.findById(userId).orElseThrow();
+        Movie movie = movieRepository.findById(movieId).orElseThrow();
+        Tag tag = new Tag();
+        tag.setUser(user);
+        tag.setMovie(movie);
+        tag.setTag(sanitized);
+        return tagRepository.save(tag);
+    }
+
+    public List<Tag> getTagsByMovie(Integer movieId) {
+        return tagRepository.findByMovieMovieIdOrderByCreatedAtDesc(movieId);
+    }
+
+    @Transactional
+    public void deleteTag(Integer tagId, Integer userId) {
+        tagRepository.deleteByTagIdAndUserUserId(tagId, userId);
+    }
+
+    public List<Object[]> getTopTagsForMovie(Integer movieId) {
+        return tagRepository.findTopTagsByMovieId(movieId);
+    }
+
+    // ──────────────────── LINKS ────────────────────
+
+    public Optional<Link> getLinkForMovie(Integer movieId) {
+        return linkRepository.findByMovieMovieId(movieId);
     }
 }

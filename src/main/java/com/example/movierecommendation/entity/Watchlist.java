@@ -4,20 +4,16 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "watchlist", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"user_id", "movie_id"})
-})
+@Table(name = "watchlist")
+@IdClass(WatchlistId.class)
 public class Watchlist {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "watchlist_id")
-    private Integer watchlistId;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Id
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "movie_id", nullable = false)
     private Movie movie;
@@ -31,9 +27,6 @@ public class Watchlist {
     protected void onCreate() {
         if (addedAt == null) addedAt = LocalDateTime.now();
     }
-
-    public Integer getWatchlistId() { return watchlistId; }
-    public void setWatchlistId(Integer watchlistId) { this.watchlistId = watchlistId; }
 
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }

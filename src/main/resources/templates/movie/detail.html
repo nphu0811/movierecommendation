@@ -7,10 +7,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="description" th:content="${movie.title} + ' – Watch trailer, rate and review on MovieRec.'"/>
   <title th:text="${movie.title} + ' – MovieRec'">Movie Detail</title>
+  <link rel="icon" type="image/svg+xml" th:href="@{/favicon.svg}"/>
   <link rel="stylesheet" th:href="@{/css/style.css}"/>
 </head>
 <body>
 <div th:replace="~{fragments :: navbar}"></div>
+<div th:replace="~{fragments :: mobileNav(${activeMenu})}"></div>
 <div th:replace="~{search-overlay :: searchOverlay}"></div>
 
 <!-- ── HERO BACKDROP ── -->
@@ -24,7 +26,7 @@
          th:src="${movie.posterUrl}" th:alt="${movie.title}"
          class="movie-poster-large" onerror="this.style.display='none'"/>
     <div th:unless="${movie.posterUrl != null and !#strings.isEmpty(movie.posterUrl)}"
-         class="movie-poster-placeholder">🎬</div>
+         class="movie-poster-placeholder"><i class="ph-fill ph-film-strip"></i></div>
 
     <!-- Info -->
     <div style="flex:1;min-width:0">
@@ -36,10 +38,10 @@
 
       <div class="movie-meta-bar">
         <span class="movie-meta-year" th:if="${movie.releaseYear != null}">
-          📅 <span th:text="${movie.releaseYear}">2024</span>
+          <i class="ph-bold ph-calendar-blank" style="vertical-align:-2px;margin-right:2px;color:var(--text-secondary)"></i> <span th:text="${movie.releaseYear}">2024</span>
         </span>
         <span class="movie-meta-rating" th:if="${movie.averageRating != null and movie.averageRating > 0}">
-          ⭐ <span class="avg-rating" th:text="${#numbers.formatDecimal(movie.averageRating,1,1)}">4.5</span>
+          <i class="ph-fill ph-star" style="color:var(--gold);vertical-align:-2px;margin-right:2px"></i> <span class="avg-rating" th:text="${#numbers.formatDecimal(movie.averageRating,1,1)}">4.5</span>
           <span class="rating-count-text" th:text="'(' + ${movie.totalRatings} + ')'"></span>
         </span>
         <span style="color:#606060" th:if="${movie.averageRating == null or movie.averageRating == 0}">No ratings yet</span>
@@ -55,28 +57,28 @@
                 th:if="${movie.trailerKey != null and !#strings.isEmpty(movie.trailerKey)}"
                 th:data-trailer-key="${movie.trailerKey}"
                 onclick="openTrailer(this.dataset.trailerKey)">
-          ▶ Watch Trailer
+          <i class="ph-fill ph-play-circle" style="margin-right:6px"></i> Watch Trailer
         </button>
         <th:block th:if="${currentUser != null}">
           <a class="watch-btn netflix"
              th:href="|https://www.netflix.com/search?q=${movie.title}|"
-             target="_blank" rel="noopener">🎬 Netflix</a>
+             target="_blank" rel="noopener"><i class="ph-fill ph-play-circle" style="margin-right:6px"></i> Netflix</a>
           <a class="watch-btn fpt"
              th:href="|https://fptplay.vn/tim-kiem?keyword=${movie.title}|"
-             target="_blank" rel="noopener">📺 FPT Play</a>
+             target="_blank" rel="noopener"><i class="ph-fill ph-television" style="margin-right:6px"></i> FPT Play</a>
         </th:block>
       </div>
 
       <!-- User actions -->
       <div style="display:flex;gap:10px;flex-wrap:wrap">
         <th:block th:if="${currentUser != null}">
-          <button th:if="${hasWatched}" class="btn btn-success" disabled>✅ Watched</button>
+          <button th:if="${hasWatched}" class="btn btn-success" disabled><i class="ph-bold ph-check" style="margin-right:6px"></i> Watched</button>
           <button th:unless="${hasWatched}" class="btn btn-primary"
-                  th:onclick="|markWatched(${movie.movieId}, this)|">✓ Mark Watched</button>
+                  th:onclick="|markWatched(${movie.movieId}, this)|"><i class="ph-bold ph-check" style="margin-right:6px"></i> Mark Watched</button>
           <button class="btn btn-outline watchlist-btn"
                   th:classappend="${inWatchlist} ? 'in-list'"
                   th:onclick="|toggleWatchlist(${movie.movieId}, this)|"
-                  th:text="${inWatchlist} ? '❤️ In Watchlist' : '🤍 Add to Watchlist'">Watchlist</button>
+                  th:utext="${inWatchlist} ? '<i class=''ph-fill ph-heart'' style=''margin-right:6px''></i> In Watchlist' : '<i class=''ph ph-heart'' style=''margin-right:6px''></i> Add to Watchlist'">Watchlist</button>
         </th:block>
         <th:block th:if="${currentUser == null}">
           <a href="/auth/login" class="btn btn-primary">Login to interact</a>
@@ -103,7 +105,7 @@
   <div>
     <!-- Rate -->
     <div th:if="${currentUser != null}" class="detail-card">
-      <h3>⭐ Rate This Movie</h3>
+      <h3><i class="ph-fill ph-star" style="color:var(--gold);margin-right:6px;vertical-align:-3px"></i> Rate This Movie</h3>
       <div class="star-rating" data-star-rating
            th:data-movie-id="${movie.movieId}"
            th:data-current="${userRating}">
@@ -118,30 +120,37 @@
     <!-- Overview -->
     <div class="detail-card"
          th:if="${movie.description != null and !#strings.isEmpty(movie.description)}">
-      <h3>📖 Overview</h3>
+      <h3><i class="ph-bold ph-book-open" style="margin-right:6px;vertical-align:-3px;color:var(--text-secondary)"></i> Overview</h3>
       <p class="text-secondary-md" th:text="${movie.description}">Description</p>
     </div>
 
-    <!-- Where to Watch -->
     <div class="detail-card" th:if="${currentUser != null}">
-      <h3>📡 Where to Watch</h3>
+      <h3><i class="ph-bold ph-broadcast" style="margin-right:6px;vertical-align:-3px;color:var(--text-secondary)"></i> Where to Watch</h3>
       <div style="display:flex;flex-wrap:wrap;gap:10px">
         <a class="watch-btn netflix"
            th:href="|https://www.netflix.com/search?q=${movie.title}|"
-           target="_blank" rel="noopener">🎬 Netflix</a>
+           target="_blank" rel="noopener"><i class="ph-fill ph-play-circle" style="margin-right:6px"></i> Netflix</a>
         <a class="watch-btn fpt"
            th:href="|https://fptplay.vn/tim-kiem?keyword=${movie.title}|"
-           target="_blank" rel="noopener">📺 FPT Play</a>
+           target="_blank" rel="noopener"><i class="ph-fill ph-television" style="margin-right:6px"></i> FPT Play</a>
         <a class="watch-btn trailer"
            th:href="|https://www.youtube.com/results?search_query=${movie.title}+trailer|"
-           target="_blank" rel="noopener">▶ YouTube</a>
+           target="_blank" rel="noopener"><i class="ph-fill ph-youtube-logo" style="margin-right:6px;color:#ff0000"></i> YouTube</a>
+        <a th:if="${movieLink != null and movieLink.imdbId != null}"
+           th:href="|https://www.imdb.com/title/tt${movieLink.imdbId}|"
+           class="watch-btn" style="background:#f5c518;color:#000;font-weight:700"
+           target="_blank" rel="noopener"><i class="ph-fill ph-star" style="margin-right:6px"></i> IMDb</a>
+        <a th:if="${movieLink != null and movieLink.tmdbId != null}"
+           th:href="|https://www.themoviedb.org/movie/${movieLink.tmdbId}|"
+           class="watch-btn" style="background:#01b4e4;color:#fff"
+           target="_blank" rel="noopener"><i class="ph-fill ph-video-camera" style="margin-right:6px"></i> TMDB</a>
       </div>
       <p class="text-muted-sm" style="margin-top:10px">Click to find this film on streaming platforms.</p>
     </div>
 
     <!-- Guest: trailer only -->
     <div class="detail-card" th:if="${currentUser == null}">
-      <h3>📡 Where to Watch</h3>
+      <h3><i class="ph-bold ph-broadcast" style="margin-right:6px;vertical-align:-3px;color:var(--text-secondary)"></i> Where to Watch</h3>
       <p class="text-muted-md">
         <a href="/auth/login" class="login-link-highlight">Sign in</a> to access Netflix, FPT Play and more.
       </p>
@@ -149,13 +158,44 @@
               th:if="${movie.trailerKey != null and !#strings.isEmpty(movie.trailerKey)}"
               th:data-trailer-key="${movie.trailerKey}"
               onclick="openTrailer(this.dataset.trailerKey)">
-        ▶ Watch Trailer
+        <i class="ph-fill ph-play-circle" style="margin-right:6px"></i> Watch Trailer
       </button>
+    </div>
+
+    <!-- Tags -->
+    <div class="detail-card">
+      <h3><i class="ph-fill ph-tag" style="margin-right:6px;vertical-align:-3px;color:var(--text-secondary)"></i> Tags
+        <span style="color:#606060;font-size:.8rem;font-weight:400;text-transform:none;letter-spacing:0"
+              th:text="${#lists.isEmpty(topTags)} ? '' : '(' + ${#lists.size(topTags)} + ' nhãn)'"></span>
+      </h3>
+
+      <!-- Top tags display -->
+      <div id="tag-list" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">
+        <div th:if="${not #lists.isEmpty(topTags)}" th:each="row : ${topTags}"
+             class="tag-pill">
+          <span th:text="${row[0]}">tag</span>
+          <span class="tag-count" th:text="'×' + ${row[1]}">×1</span>
+        </div>
+        <div th:if="${#lists.isEmpty(topTags)}" class="empty-comments-state" style="font-size:.9rem;padding:8px 0">
+          Chưa có tag nào. Hãy là người đầu tiên!
+        </div>
+      </div>
+
+      <!-- Add tag form (logged-in users only) -->
+      <div th:if="${currentUser != null}" style="display:flex;gap:8px;align-items:center">
+        <input id="tag-input" class="form-control" type="text"
+               placeholder="Nhập tag (VD: hay, buồn, hành động)" maxlength="50"
+               style="flex:1;padding:8px 12px"/>
+        <button class="btn btn-primary btn-sm" onclick="submitTag()">＋ Add</button>
+      </div>
+      <div th:if="${currentUser == null}" class="comment-login-box">
+        <a href="/auth/login" class="login-link-highlight">Đăng nhập</a> để gắn tag cho phim.
+      </div>
     </div>
 
     <!-- Comments -->
     <div class="detail-card">
-      <h3>💬 Comments
+      <h3><i class="ph-fill ph-chat-circle-text" style="margin-right:6px;vertical-align:-3px;color:var(--text-secondary)"></i> Comments
         <span style="color:#606060;font-size:.8rem;font-weight:400;text-transform:none;letter-spacing:0"
               th:text="'(' + ${#lists.size(comments)} + ')'"></span>
       </h3>
@@ -174,14 +214,14 @@
       <div id="comment-list">
         <div class="comment-box" th:each="c : ${comments}">
           <div class="comment-header">
-            <span class="comment-author">👤 <span th:text="${c.user.username}">User</span></span>
+            <span class="comment-author"><i class="ph-fill ph-user" style="color:var(--text-secondary);margin-right:4px"></i> <span th:text="${c.user.username}">User</span></span>
             <span class="comment-date"
                   th:text="${#temporals.format(c.createdAt, 'MMM dd, yyyy HH:mm')}">Date</span>
           </div>
           <p class="comment-text" th:text="${c.commentText}">Comment text</p>
         </div>
         <div th:if="${#lists.isEmpty(comments)}" class="empty-comments-state">
-          <div style="font-size:2rem;margin-bottom:8px">💬</div>
+          <div style="font-size:2rem;margin-bottom:8px;color:var(--text-muted)"><i class="ph-fill ph-chat-circle-text"></i></div>
           <p>No comments yet. Be the first!</p>
         </div>
       </div>
@@ -191,7 +231,7 @@
   <!-- RIGHT – Similar Movies -->
   <div>
     <div class="detail-card">
-      <h3>🎯 Similar Movies</h3>
+      <h3><i class="ph-fill ph-film-strip" style="margin-right:6px;vertical-align:-3px;color:var(--text-secondary)"></i> Similar Movies</h3>
       <div style="display:flex;flex-direction:column;gap:12px" th:if="${!#lists.isEmpty(similarMovies)}">
         <a th:each="sm : ${similarMovies}"
            th:href="@{/movies/{id}(id=${sm.movieId})}"
@@ -201,7 +241,7 @@
                class="similar-movie-poster"
                onerror="this.style.display='none'"/>
           <div th:unless="${sm.posterUrl != null and !#strings.isEmpty(sm.posterUrl)}"
-               class="movie-placeholder-sm">🎬</div>
+               class="movie-placeholder-sm"><i class="ph-fill ph-film-strip"></i></div>
           <div class="similar-movie-info">
             <div class="similar-movie-title" th:text="${sm.title}">Title</div>
             <div class="similar-movie-year" th:text="${sm.releaseYear}">Year</div>
@@ -262,17 +302,61 @@
         list.insertAdjacentHTML('afterbegin',
           `<div class="comment-box" style="animation:slideUp .3s ease both">
             <div class="comment-header">
-              <span class="comment-author">👤 ${data.username}</span>
+              <span class="comment-author"><i class="ph-fill ph-user" style="color:var(--text-secondary);margin-right:4px"></i> ${data.username}</span>
               <span class="comment-date">${dateStr}</span>
             </div>
             <p class="comment-text">${data.text}</p>
           </div>`);
         input.value = '';
         btn.disabled = false; btn.textContent = 'Post Comment';
-        showToast('Comment posted! 💬', 'success');
+        showToast('Comment posted!', 'success');
       })
       .catch(() => { btn.disabled = false; btn.textContent = 'Post Comment'; showToast('Error posting comment', 'error'); });
   }
+
+  function submitTag() {
+    const input = document.getElementById('tag-input');
+    if (!input) return;
+    const tag = input.value.trim();
+    if (!tag) return;
+    const headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
+    const csrfMeta = document.querySelector('meta[name="_csrf"]');
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]');
+    if (csrfMeta) headers[csrfHeader.content] = csrfMeta.content;
+    fetch(`/api/movies/${MOVIE_ID}/tags?tag=${encodeURIComponent(tag)}`, { method: 'POST', headers })
+      .then(r => r.json())
+      .then(data => {
+        if (data.error) { showToast(data.error, 'error'); return; }
+        const list = document.getElementById('tag-list');
+        // Remove "no tags" placeholder if present
+        const empty = list.querySelector('.empty-comments-state');
+        if (empty) empty.remove();
+        // Add new pill or increment existing
+        const existing = [...list.querySelectorAll('.tag-pill')].find(p => p.querySelector('span').textContent === data.tag);
+        if (existing) {
+          const cnt = existing.querySelector('.tag-count');
+          const n = parseInt(cnt.textContent.replace('×','')) + 1;
+          cnt.textContent = '×' + n;
+        } else {
+          list.insertAdjacentHTML('beforeend',
+            `<div class="tag-pill" style="animation:slideUp .3s ease both">
+               <span>${data.tag}</span><span class="tag-count">×1</span>
+             </div>`);
+        }
+        input.value = '';
+        showToast('Tag đã thêm!', 'success');
+      })
+      .catch(() => showToast('Lỗi thêm tag', 'error'));
+  }
+
+  // Submit tag on Enter key
+  document.addEventListener('DOMContentLoaded', () => {
+    const tagInput = document.getElementById('tag-input');
+    if (tagInput) {
+      tagInput.addEventListener('keydown', e => { if (e.key === 'Enter') submitTag(); });
+    }
+  });
+
 </script>
 </body>
 </html>

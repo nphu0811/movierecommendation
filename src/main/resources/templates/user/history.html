@@ -6,14 +6,16 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Watch History – MovieRec</title>
+  <link rel="icon" type="image/svg+xml" th:href="@{/favicon.svg}"/>
   <link rel="stylesheet" th:href="@{/css/style.css}"/>
 </head>
 <body>
 <div th:replace="~{fragments :: navbar}"></div>
+<div th:replace="~{fragments :: mobileNav(${activeMenu})}"></div>
 <div th:replace="~{search-overlay :: searchOverlay}"></div>
 <div class="section">
   <div class="section-header">
-    <h1 class="section-title">🕐 Watch <span>History</span></h1>
+    <h1 class="section-title"><i class="ph-fill ph-clock-counter-clockwise" style="margin-right:8px;vertical-align:-3px;color:var(--text-secondary)"></i> Watch <span>History</span></h1>
     <span style="color:#6c757d;font-size:.875rem"
           th:text="|${#lists.size(watchHistory)} movie(s) watched|">0 movies</span>
   </div>
@@ -31,7 +33,7 @@
            onerror="this.style.display='none'"/>
       <div th:unless="${wh.movie.posterUrl != null and !#strings.isEmpty(wh.movie.posterUrl)}"
            style="width:50px;height:75px;border-radius:6px;background:#333;
-                  display:flex;align-items:center;justify-content:center;flex-shrink:0">🎬</div>
+                  display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ph-fill ph-film-strip"></i></div>
       <div style="flex:1">
         <a th:href="@{/movies/{id}(id=${wh.movie.movieId})}"
            style="font-weight:600;font-size:.95rem" th:text="${wh.movie.title}">Title</a>
@@ -50,7 +52,7 @@
   </div>
 
   <div class="empty-state" th:if="${#lists.isEmpty(watchHistory)}">
-    <div class="icon">🎬</div>
+    <div class="icon"><i class="ph-fill ph-film-strip"></i></div>
     <h3>No watch history yet</h3>
     <p style="margin-bottom:1.5rem">Movies you mark as watched will appear here.</p>
     <a href="/movies" class="btn btn-primary">Browse Movies</a>

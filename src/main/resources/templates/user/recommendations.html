@@ -6,17 +6,19 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>My Recommendations – MovieRec</title>
+  <link rel="icon" type="image/svg+xml" th:href="@{/favicon.svg}"/>
   <link rel="stylesheet" th:href="@{/css/style.css}"/>
 </head>
 <body>
 <div th:replace="~{fragments :: navbar}"></div>
+<div th:replace="~{fragments :: mobileNav(${activeMenu})}"></div>
 <div th:replace="~{search-overlay :: searchOverlay}"></div>
 
 <div class="section">
   <!-- Page header -->
   <div style="text-align:center;padding:var(--space-5) 0 var(--space-4)">
     <h1 style="font-size:clamp(1.8rem,4vw,2.8rem);font-weight:800;letter-spacing:-.02em">
-      ✨ Your Personalized <span style="color:var(--red)">Picks</span>
+      <i class="ph-fill ph-sparkle" style="color:var(--gold);margin-right:8px;vertical-align:-2px"></i> Your Personalized <span style="color:var(--red)">Picks</span>
     </h1>
     <p style="color:var(--text-secondary);margin-top:12px;max-width:500px;margin-left:auto;margin-right:auto;font-size:.95rem">
       Powered by your watch history, ratings, and users with similar taste.
@@ -27,21 +29,21 @@
   <div style="background:rgba(229,9,20,.06);border:1px solid rgba(229,9,20,.15);border-radius:var(--radius-lg);
               padding:20px 24px;margin-bottom:var(--space-6);display:flex;gap:32px;flex-wrap:wrap">
     <div style="display:flex;align-items:center;gap:12px">
-      <span style="font-size:1.4rem">📊</span>
+      <span style="font-size:1.4rem"><i class="ph-fill ph-chart-bar"></i></span>
       <div>
         <div style="font-size:.875rem;font-weight:700">Content-Based</div>
         <div style="font-size:.75rem;color:var(--text-muted)">Based on your genre preferences</div>
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:12px">
-      <span style="font-size:1.4rem">👥</span>
+      <span style="font-size:1.4rem"><i class="ph-fill ph-users"></i></span>
       <div>
         <div style="font-size:.875rem;font-weight:700">Collaborative</div>
         <div style="font-size:.75rem;color:var(--text-muted)">From users with similar taste</div>
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:12px">
-      <span style="font-size:1.4rem">🔥</span>
+      <span style="font-size:1.4rem;color:#f97316"><i class="ph-fill ph-fire"></i></span>
       <div>
         <div style="font-size:.875rem;font-weight:700">Popularity</div>
         <div style="font-size:.75rem;color:var(--text-muted)">What everyone is watching</div>
@@ -52,7 +54,7 @@
   <!-- Personalized picks -->
   <div th:if="${recommendations != null and !#lists.isEmpty(recommendations)}">
     <div class="section-header">
-      <h2 class="section-title">🎯 Recommended <span>For You</span></h2>
+      <h2 class="section-title"><i class="ph-fill ph-sparkle" style="margin-right:8px;color:var(--red);vertical-align:-3px"></i> Recommended <span>For You</span></h2>
       <span style="color:var(--text-muted);font-size:.8rem;font-weight:500"
             th:text="${#lists.size(recommendations)} + ' picks'"></span>
     </div>
@@ -68,7 +70,7 @@
   <div th:if="${recommendations == null or #lists.isEmpty(recommendations)}"
        style="background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-lg);
               padding:var(--space-6);text-align:center;margin-bottom:var(--space-5)">
-    <div style="font-size:3rem;margin-bottom:16px">🎬</div>
+    <div style="font-size:3rem;margin-bottom:16px"><i class="ph-fill ph-film-strip"></i></div>
     <h3 style="font-size:1.25rem;font-weight:700;margin-bottom:10px">Not enough data yet!</h3>
     <p style="color:var(--text-secondary);margin-bottom:24px;font-size:.9rem">Watch and rate at least 5 movies to unlock personalized recommendations.</p>
     <a href="/movies" class="btn btn-primary">Start Watching</a>
@@ -77,7 +79,7 @@
   <!-- Genre-based -->
   <div class="reveal" style="margin-top:var(--space-5)" th:if="${genrePicks != null and !#lists.isEmpty(genrePicks)}">
     <div class="section-header">
-      <h2 class="section-title">🎭 Based on Your <span>Favorite Genres</span></h2>
+      <h2 class="section-title"><i class="ph-fill ph-mask-happy" style="margin-right:8px;color:var(--text-secondary);vertical-align:-3px"></i> Based on Your <span>Favorite Genres</span></h2>
     </div>
     <div class="movies-row">
       <th:block th:each="movie : ${genrePicks}">
@@ -90,7 +92,7 @@
   <div class="reveal" style="margin-top:var(--space-5);padding-bottom:var(--space-5)"
        th:if="${trending != null and !#lists.isEmpty(trending)}">
     <div class="section-header">
-      <h2 class="section-title">🔥 <span>Trending</span> This Week</h2>
+      <h2 class="section-title"><i class="ph-fill ph-fire" style="margin-right:8px;color:#f97316;vertical-align:-3px"></i> <span>Trending</span> This Week</h2>
     </div>
     <div class="movies-row">
       <th:block th:each="movie : ${trending}">

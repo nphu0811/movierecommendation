@@ -7,12 +7,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="description" content="MovieRec – AI-powered movie recommendations tailored for you."/>
   <title>MovieRec – Discover Movies You'll Love</title>
-  <link rel="icon" type="image/png" th:href="@{/images/favicon.png}"/>
+  <link rel="icon" type="image/svg+xml" th:href="@{/favicon.svg}"/>
   <link rel="stylesheet" th:href="@{/css/style.css}"/>
 </head>
 <body>
 
 <div th:replace="~{fragments :: navbar}"></div>
+<div th:replace="~{fragments :: mobileNav(${activeMenu})}"></div>
 <div th:replace="~{search-overlay :: searchOverlay}"></div>
 
 <!-- ── PRELOADER ── -->
@@ -20,7 +21,7 @@
   <div class="preloader-vignette"></div>
   <div class="preloader-particles" id="preloaderParticles"></div>
   <div class="preloader-aura-ring"></div>
-  <img class="preloader-logo" th:src="@{/images/favicon.png}" alt="MovieRec Logo"/>
+  <img class="preloader-logo" th:src="@{/favicon.svg}" alt="MovieRec Logo"/>
   <div class="preloader-brand">
     <span class="brand-movie">Movie</span><span class="brand-rec">Rec</span>
   </div>

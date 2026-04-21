@@ -6,16 +6,18 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title th:text="|Search: ${keyword} – MovieRec|">Search Results</title>
+  <link rel="icon" type="image/svg+xml" th:href="@{/favicon.svg}"/>
   <link rel="stylesheet" th:href="@{/css/style.css}"/>
 </head>
 <body>
 <div th:replace="~{fragments :: navbar}"></div>
+<div th:replace="~{fragments :: mobileNav('home')}"></div>
 <div th:replace="~{search-overlay :: searchOverlay}"></div>
 
 <div class="section">
   <div class="section-header">
     <h1 class="section-title">
-      🔍 Results for "<span th:text="${keyword}">query</span>"
+      <i class="ph-bold ph-magnifying-glass" style="margin-right:8px;vertical-align:-2px;color:var(--text-secondary)"></i> Results for "<span th:text="${keyword}">query</span>"
     </h1>
     <span style="color:var(--text-muted);font-size:.875rem;font-weight:500"
           th:text="${#lists.size(movies)} + ' result(s)'">0 results</span>
@@ -26,7 +28,7 @@
   </div>
 
   <div class="empty-state" th:if="${#lists.isEmpty(movies)}">
-    <div class="icon">🔍</div>
+    <div class="icon"><i class="ph-bold ph-magnifying-glass"></i></div>
     <h3>No results found</h3>
     <p style="margin-bottom:1.5rem">Try different keywords or browse all movies.</p>
     <a href="/movies" class="btn btn-primary">Browse All Movies</a>

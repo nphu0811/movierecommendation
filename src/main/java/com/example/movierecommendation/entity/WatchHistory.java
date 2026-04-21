@@ -22,6 +22,12 @@ public class WatchHistory {
     @JoinColumn(name = "movie_id", nullable = false)
     private Movie movie;
 
+    @Column(name = "watch_duration")
+    private Integer watchDuration; // in seconds
+
+    @Column(name = "progress")
+    private Double progress; // 0-100
+
     @Column(name = "watched_at")
     private LocalDateTime watchedAt;
 
@@ -41,6 +47,23 @@ public class WatchHistory {
     public Movie getMovie() { return movie; }
     public void setMovie(Movie movie) { this.movie = movie; }
 
+    public Integer getWatchDuration() { return watchDuration; }
+    public void setWatchDuration(Integer watchDuration) { this.watchDuration = watchDuration; }
+
+    public Double getProgress() { return progress; }
+    public void setProgress(Double progress) { this.progress = progress; }
+
     public LocalDateTime getWatchedAt() { return watchedAt; }
     public void setWatchedAt(LocalDateTime watchedAt) { this.watchedAt = watchedAt; }
+
+    /**
+     * Trả về thời lượng xem định dạng "X phút Y giây"
+     */
+    public String getFormattedDuration() {
+        if (watchDuration == null || watchDuration == 0) return "0 giây";
+        int minutes = watchDuration / 60;
+        int seconds = watchDuration % 60;
+        if (minutes == 0) return seconds + " giây";
+        return minutes + " phút " + seconds + " giây";
+    }
 }

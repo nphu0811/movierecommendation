@@ -7,17 +7,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="description" content="Browse all movies – filter by genre, sort by rating or year."/>
   <title>Movies – MovieRec</title>
+  <link rel="icon" type="image/svg+xml" th:href="@{/favicon.svg}"/>
   <link rel="stylesheet" th:href="@{/css/style.css}"/>
 </head>
 <body>
 <div th:replace="~{fragments :: navbar}"></div>
+<div th:replace="~{fragments :: mobileNav(${activeMenu})}"></div>
 <div th:replace="~{search-overlay :: searchOverlay}"></div>
 
 <div class="list-layout">
 
   <!-- ── FILTER SIDEBAR ── -->
   <aside class="list-filters">
-    <h3>🎭 Genres</h3>
+    <h3><i class="ph-fill ph-mask-happy" style="margin-right:8px;vertical-align:-2px;color:var(--text-secondary)"></i> Genres</h3>
     <a href="/movies" class="filter-genre-link active">All Movies</a>
     <a th:each="genre : ${allGenres}"
        th:href="@{/search(q=${genre.genreName})}"
@@ -28,7 +30,7 @@
   <!-- ── MAIN CONTENT ── -->
   <div>
     <div class="list-header">
-      <h1 class="section-title" style="font-size:1.5rem;font-weight:800">🎬 All <span>Movies</span></h1>
+      <h1 class="section-title" style="font-size:1.5rem;font-weight:800"><i class="ph-fill ph-film-strip" style="margin-right:8px;vertical-align:-3px;color:var(--text-secondary)"></i> All <span>Movies</span></h1>
       <span style="color:#606060;font-size:.875rem;font-weight:500"
             th:text="${moviePage.totalElements} + ' titles'">0 titles</span>
     </div>
@@ -52,7 +54,7 @@
     </div>
 
     <div class="empty-state" th:if="${moviePage.content.empty}">
-      <div class="icon">🎬</div>
+      <div class="icon"><i class="ph-fill ph-film-strip"></i></div>
       <h3>No movies yet</h3>
       <p>Try a different genre or come back later.</p>
     </div>

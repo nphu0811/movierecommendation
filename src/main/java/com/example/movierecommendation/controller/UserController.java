@@ -10,6 +10,9 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.http.ResponseEntity;
+import java.util.Map;
+import java.util.HashMap;
 
 @Controller
 @RequestMapping("/user")
@@ -52,11 +55,12 @@ public class UserController {
     public String changePassword(@AuthenticationPrincipal UserDetails userDetails,
                                  @RequestParam(name = "currentPassword") String currentPassword,
                                  @RequestParam(name = "newPassword") String newPassword,
+                                 @RequestParam(name = "verificationCode") String verificationCode,
                                  RedirectAttributes redirect) {
         try {
             User user = userService.getCurrentUser(userDetails.getUsername());
             // Delegate validation to service layer
-            userService.changePasswordWithVerification(user.getUserId(), currentPassword, newPassword);
+            userService.changePasswordWithVerification(user.getUserId(), currentPassword, newPassword, verificationCode);
             redirect.addFlashAttribute("success", "Password changed successfully!");
         } catch (IllegalArgumentException e) {
             redirect.addFlashAttribute("error", e.getMessage());
@@ -64,6 +68,50 @@ public class UserController {
             redirect.addFlashAttribute("error", "Failed to change password");
         }
         return "redirect:/user/profile";
+    }
+
+    @PostMapping("/email/send-code")
+    @ResponseBody
+    public ResponseEntity<?> sendEmailCode(@AuthenticationPrincipal UserDetails userDetails) {
+        Map<String, String> response = new HashMap<>();
+        try {
+            User user = userService.getCurrentUser(userDetails.getUsername());
+            userService.sendEmailVerification(user.getUserId());
+            response.put("message", "Đã gửi mã xác thực đến " + user.getEmail());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    @PostMapping("/email/confirm")
+    public String confirmEmail(@AuthenticationPrincipal UserDetails userDetails,
+                               @RequestParam("code") String code,
+                               RedirectAttributes redirect) {
+        try {
+            User user = userService.getCurrentUser(userDetails.getUsername());
+            userService.confirmEmail(user.getUserId(), code);
+            redirect.addFlashAttribute("success", "Email đã được xác thực!");
+        } catch (Exception e) {
+            redirect.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/user/profile";
+    }
+
+    @PostMapping("/profile/password/send-code")
+    @ResponseBody
+    public ResponseEntity<?> sendPasswordChangeCode(@AuthenticationPrincipal UserDetails userDetails) {
+        Map<String, String> response = new HashMap<>();
+        try {
+            User user = userService.getCurrentUser(userDetails.getUsername());
+            userService.sendPasswordChangeCode(user.getUserId());
+            response.put("message", "Mã xác thực đổi mật khẩu đã được gửi tới email của bạn.");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
     }
 
     @GetMapping("/watchlist")
@@ -97,13 +145,14 @@ public class UserController {
             model.addAttribute("recommendations", recFuture.get(5, java.util.concurrent.TimeUnit.SECONDS));
             model.addAttribute("genrePicks", genreFuture.get(3, java.util.concurrent.TimeUnit.SECONDS));
         } catch (Exception e) {
-            model.addAttribute("recommendations", recommendationService.getTrendingMovies());
+            model.addAttribute("recommendations",
+                recommendationService.getTrendingMoviesForUser(user.getUserId()));
             model.addAttribute("genrePicks", java.util.Collections.emptyList());
         } finally {
             exec.shutdown();
         }
 
-        model.addAttribute("trending", recommendationService.getTrendingMovies());
+        model.addAttribute("trending", recommendationService.getTrendingMoviesForUser(user.getUserId()));
         return "user/recommendations";
     }
 }
