@@ -7,12 +7,28 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="description" content="MovieRec – AI-powered movie recommendations tailored for you."/>
   <title>MovieRec – Discover Movies You'll Love</title>
+  <link rel="icon" type="image/png" th:href="@{/images/favicon.png}"/>
   <link rel="stylesheet" th:href="@{/css/style.css}"/>
 </head>
 <body>
 
 <div th:replace="~{fragments :: navbar}"></div>
 <div th:replace="~{search-overlay :: searchOverlay}"></div>
+
+<!-- ── PRELOADER ── -->
+<div class="preloader" id="preloader">
+  <div class="preloader-vignette"></div>
+  <div class="preloader-particles" id="preloaderParticles"></div>
+  <div class="preloader-aura-ring"></div>
+  <img class="preloader-logo" th:src="@{/images/favicon.png}" alt="MovieRec Logo"/>
+  <div class="preloader-brand">
+    <span class="brand-movie">Movie</span><span class="brand-rec">Rec</span>
+  </div>
+  <div class="preloader-bar-container">
+    <div class="preloader-bar-fill"></div>
+  </div>
+  <p class="preloader-text">Loading experience...</p>
+</div>
 
 <!-- ── HERO ── -->
 <div class="hero-section">
@@ -56,6 +72,15 @@
         <div class="hero-stat-label">Always</div>
       </div>
     </div>
+  </div>
+
+  <!-- Samurai Hero Image with Red/White/Black Aura -->
+  <div class="hero-samurai">
+    <div class="hero-samurai-aura"></div>
+    <div class="hero-samurai-aura-ring"></div>
+    <div class="hero-samurai-aura-ring-2"></div>
+    <div class="hero-samurai-particles" id="samuraiParticles"></div>
+    <img class="hero-samurai-img" th:src="@{/images/samurai-hero.png}" alt="Samurai Warrior"/>
   </div>
 </div>
 

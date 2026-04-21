@@ -130,6 +130,153 @@ ul { list-style: none; }
   75% { transform: translateX(4px); }
 }
 
+/* ── Preloader Keyframes ── */
+@keyframes preloaderPulse {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.08); opacity: 1; }
+}
+@keyframes preloaderBarFill {
+  0% { transform: scaleX(0); }
+  100% { transform: scaleX(1); }
+}
+@keyframes preloaderSlideUp {
+  0% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(-100%); opacity: 0; }
+}
+@keyframes preloaderLogoReveal {
+  0% { opacity: 0; transform: scale(0.5) translateY(20px); }
+  50% { opacity: 1; transform: scale(1.05) translateY(-2px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes preloaderGlow {
+  0%, 100% { box-shadow: 0 0 30px rgba(229,9,20,0.2), 0 0 60px rgba(229,9,20,0.1); }
+  50% { box-shadow: 0 0 50px rgba(229,9,20,0.4), 0 0 100px rgba(229,9,20,0.2); }
+}
+@keyframes preloaderTextShimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: 200px 0; }
+}
+@keyframes floatParticle {
+  0% { transform: translateY(0) translateX(0); opacity: 0.5; }
+  50% { opacity: 1; }
+  100% { transform: translateY(-60px) translateX(20px); opacity: 0; }
+}
+@keyframes samuraiFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+@keyframes auraBreath {
+  0%, 100% { transform: scale(1); opacity: 0.4; }
+  50% { transform: scale(1.12); opacity: 0.7; }
+}
+
+/* ── Preloader ── */
+.preloader {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  background: #050505;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: transform 0.8s cubic-bezier(.65,0,.35,1), opacity 0.4s ease;
+}
+.preloader.exit {
+  animation: preloaderSlideUp 0.9s cubic-bezier(.65,0,.35,1) forwards;
+}
+
+/* Vignette */
+.preloader-vignette {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at center, transparent 30%, #050505 80%);
+  pointer-events: none;
+}
+
+/* Particles */
+.preloader-particles {
+  position: absolute; inset: 0;
+  pointer-events: none;
+}
+.preloader-particle {
+  position: absolute;
+  border-radius: 50%;
+  animation: floatParticle 3s ease-out infinite;
+}
+
+/* Logo */
+.preloader-logo {
+  position: relative; z-index: 3;
+  width: 72px; height: 72px;
+  border-radius: 18px;
+  object-fit: contain;
+  animation: preloaderLogoReveal 0.8s cubic-bezier(.34,1.56,.64,1) both,
+             preloaderPulse 2.5s ease-in-out 1s infinite;
+  filter: drop-shadow(0 0 20px rgba(229,9,20,0.4));
+}
+
+/* Brand text */
+.preloader-brand {
+  position: relative; z-index: 3;
+  margin-top: 20px;
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  opacity: 0;
+  animation: fadeUp 0.6s var(--ease) 0.4s both;
+}
+.preloader-brand .brand-movie { color: var(--red); }
+.preloader-brand .brand-rec { color: var(--white); }
+
+/* Loading bar */
+.preloader-bar-container {
+  position: relative; z-index: 3;
+  width: 200px;
+  height: 2px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 2px;
+  margin-top: 28px;
+  overflow: hidden;
+  opacity: 0;
+  animation: fadeIn 0.4s ease 0.6s both;
+}
+.preloader-bar-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #8b0000, var(--red), #ffffff, var(--red), #8b0000);
+  transform-origin: left;
+  animation: preloaderBarFill 2.5s cubic-bezier(.4,0,.2,1) 0.7s both;
+  box-shadow: 0 0 12px rgba(229,9,20,0.4);
+}
+
+/* Loading text */
+.preloader-text {
+  position: relative; z-index: 3;
+  margin-top: 16px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.5em;
+  text-transform: uppercase;
+  background: linear-gradient(90deg, var(--red), #ffffff, var(--red));
+  background-size: 200px 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: preloaderTextShimmer 2s linear infinite, fadeIn 0.4s ease 0.8s both;
+}
+
+/* Aura ring */
+.preloader-aura-ring {
+  position: absolute; z-index: 1;
+  width: 200px; height: 200px;
+  border-radius: 50%;
+  border: 1px solid rgba(229,9,20,0.08);
+  box-shadow: 0 0 40px rgba(229,9,20,0.05), inset 0 0 40px rgba(229,9,20,0.03);
+  animation: auraBreath 3s ease-in-out infinite;
+}
+
 /* ── Navbar ── */
 .navbar {
   position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
@@ -617,6 +764,91 @@ body { padding-top: 64px; }
 .hero-actions {
   display: flex; gap: 12px; flex-wrap: wrap;
   align-items: center;
+}
+
+/* ── Samurai Hero Image ── */
+.hero-samurai {
+  position: absolute;
+  right: 6%;
+  bottom: 8%;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hero-samurai-aura {
+  position: absolute;
+  width: 520px;
+  height: 520px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(200, 0, 0, 0.35) 0%,
+    rgba(139, 0, 0, 0.2) 25%,
+    rgba(80, 0, 0, 0.08) 45%,
+    transparent 65%
+  );
+  filter: blur(25px);
+  animation: auraBreath 3.5s ease-in-out infinite;
+  pointer-events: none;
+}
+.hero-samurai-aura-ring {
+  position: absolute;
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.04);
+  box-shadow:
+    0 0 50px rgba(229,9,20,0.06),
+    inset 0 0 50px rgba(255,255,255,0.02);
+  animation: auraBreath 4s ease-in-out 0.5s infinite;
+  pointer-events: none;
+}
+.hero-samurai-aura-ring-2 {
+  position: absolute;
+  width: 340px;
+  height: 340px;
+  border-radius: 50%;
+  border: 1px solid rgba(229,9,20,0.06);
+  box-shadow:
+    0 0 30px rgba(229,9,20,0.04),
+    inset 0 0 30px rgba(229,9,20,0.02);
+  animation: auraBreath 3s ease-in-out 1s infinite;
+  pointer-events: none;
+}
+.hero-samurai-img {
+  position: relative;
+  z-index: 2;
+  width: 380px;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 0 40px rgba(200,0,0,0.35))
+          drop-shadow(0 0 80px rgba(229,9,20,0.15));
+  animation: samuraiFloat 5s ease-in-out infinite;
+}
+
+/* Energy particles around samurai */
+.hero-samurai-particles {
+  position: absolute;
+  inset: -60px;
+  pointer-events: none;
+  z-index: 1;
+}
+.samurai-particle {
+  position: absolute;
+  border-radius: 50%;
+  animation: floatParticle 3s ease-out infinite;
+}
+
+@media (max-width: 1100px) {
+  .hero-samurai { right: 2%; }
+  .hero-samurai-img { width: 280px; }
+  .hero-samurai-aura { width: 380px; height: 380px; }
+  .hero-samurai-aura-ring { width: 320px; height: 320px; }
+  .hero-samurai-aura-ring-2 { width: 260px; height: 260px; }
+}
+@media (max-width: 800px) {
+  .hero-samurai { display: none; }
 }
 
 /* Hero stats row */

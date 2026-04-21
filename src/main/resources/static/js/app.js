@@ -2,6 +2,75 @@
 //  MovieRec – Main JavaScript
 // ============================================================
 
+// ── Preloader ────────────────────────────────────────────────
+(function() {
+  var preloader = document.getElementById('preloader');
+  if (!preloader) return;
+
+  // Generate preloader particles
+  var particleContainer = document.getElementById('preloaderParticles');
+  if (particleContainer) {
+    for (var i = 0; i < 15; i++) {
+      var p = document.createElement('div');
+      p.className = 'preloader-particle';
+      var size = 2 + Math.random() * 3;
+      var isRed = i % 3 !== 0;
+      p.style.cssText = [
+        'width:' + size + 'px',
+        'height:' + size + 'px',
+        'left:' + (30 + Math.random() * 40) + '%',
+        'top:' + (35 + Math.random() * 30) + '%',
+        'background:' + (isRed
+          ? 'radial-gradient(circle, #ff1a1a, #8b0000)'
+          : 'radial-gradient(circle, #ffffff, #aaaaaa)'),
+        'box-shadow:' + (isRed
+          ? '0 0 6px rgba(255,26,26,0.6)'
+          : '0 0 6px rgba(255,255,255,0.4)'),
+        'opacity:0.5',
+        'animation-delay:' + (Math.random() * 2) + 's',
+        'animation-duration:' + (2 + Math.random() * 2) + 's'
+      ].join(';');
+      particleContainer.appendChild(p);
+    }
+  }
+
+  // Dismiss preloader after bar fill animation completes (~3.5s)
+  setTimeout(function() {
+    preloader.classList.add('exit');
+    setTimeout(function() {
+      preloader.style.display = 'none';
+    }, 950);
+  }, 3500);
+})();
+
+// ── Samurai Hero Particles ───────────────────────────────────
+(function() {
+  var container = document.getElementById('samuraiParticles');
+  if (!container) return;
+  for (var i = 0; i < 18; i++) {
+    var p = document.createElement('div');
+    p.className = 'samurai-particle';
+    var size = 2 + Math.random() * 4;
+    var isRed = i % 3 !== 0;
+    p.style.cssText = [
+      'width:' + size + 'px',
+      'height:' + size + 'px',
+      'left:' + (10 + Math.random() * 80) + '%',
+      'top:' + (10 + Math.random() * 80) + '%',
+      'background:' + (isRed
+        ? 'radial-gradient(circle, #ff1a1a, #8b0000)'
+        : 'radial-gradient(circle, #ffffff, #aaaaaa)'),
+      'box-shadow:' + (isRed
+        ? '0 0 6px rgba(255,26,26,0.5)'
+        : '0 0 6px rgba(255,255,255,0.3)'),
+      'opacity:0.4',
+      'animation-delay:' + (Math.random() * 3) + 's',
+      'animation-duration:' + (2.5 + Math.random() * 2.5) + 's'
+    ].join(';');
+    container.appendChild(p);
+  }
+})();
+
 // ── CSRF helpers ─────────────────────────────────────────────
 function getCsrfToken() {
   var m = document.querySelector('meta[name="_csrf"]');
