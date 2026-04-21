@@ -359,6 +359,9 @@ body { padding-top: 48px; }
 .section {
   padding: var(--space-7) 4%;
 }
+body.home-page .hero-section + .section {
+  padding-top: calc(var(--space-8) + var(--space-3));
+}
 .section-header {
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: var(--space-5);
@@ -604,7 +607,8 @@ body { padding-top: 48px; }
    ============================================================ */
 .hero-section {
   position: relative;
-  min-height: 92vh;
+  min-height: 100vh;
+  min-height: 100dvh;
   display: flex; align-items: flex-end;
   padding-bottom: var(--space-8);
   overflow: hidden;
@@ -1393,8 +1397,17 @@ textarea.form-control { resize: vertical; min-height: 100px; }
 /* ============================================================
    REVEAL ANIMATION (IntersectionObserver)
    ============================================================ */
-.reveal { opacity: 0; transform: translateY(16px); }
-.reveal.is-visible { animation: fadeUp .6s var(--ease) both; }
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity var(--t-slow) var(--ease),
+              transform var(--t-slow) var(--ease);
+  will-change: opacity, transform;
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
 
 /* ============================================================
    MISC
@@ -1599,7 +1612,7 @@ textarea.form-control { resize: vertical; min-height: 100px; }
   .movies-grid { grid-template-columns: repeat(2, 1fr); gap: var(--space-3); }
   .section { padding: var(--space-6) 5%; }
   .hero-content h1 { font-size: 2.2rem; }
-  .hero-section { min-height: 75vh; align-items: center; padding-bottom: 0; }
+  .hero-section { align-items: center; padding-bottom: 0; }
   .hero-bg-grid { opacity: 0.18; }
   .hero-bg-glow--primary { width: 320px; height: 320px; left: -100px; top: 18%; }
   .hero-bg-glow--secondary { width: 220px; height: 220px; right: -30px; top: 8%; }

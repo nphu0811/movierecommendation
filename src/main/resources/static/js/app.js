@@ -392,71 +392,66 @@ function showToast(message, type) {
   onScroll();
 })();
 
-// ── IntersectionObserver — scroll-reveal for movie cards ─────
+// -- IntersectionObserver � bidirectional reveal/hide ----------
 (function() {
+  var revealSelector = '.movie-card, .reveal';
+
+  function prepareCardDelay(card) {
+    if (card.dataset.revealDelay) return;
+    var parent = card.parentElement;
+    var idx = 0;
+    if (parent) {
+      var cards = parent.querySelectorAll('.movie-card');
+      idx = Array.prototype.indexOf.call(cards, card);
+      if (idx < 0) idx = 0;
+    }
+    var delay = Math.min(idx * 40, 400);
+    card.dataset.revealDelay = String(delay);
+  }
+
   if (!('IntersectionObserver' in window)) {
-    // Fallback: just make everything visible
-    document.querySelectorAll('.movie-card, .reveal').forEach(function(el) {
+    document.querySelectorAll(revealSelector).forEach(function(el) {
       el.classList.add('is-visible');
     });
     return;
   }
 
-  // Movie cards — staggered reveal
-  var cardObserver = new IntersectionObserver(function(entries) {
+  var revealObserver = new IntersectionObserver(function(entries) {
     entries.forEach(function(entry) {
-      if (entry.isIntersecting) {
-        var el = entry.target;
-        // Small delay based on sibling index for stagger
-        var siblings = Array.from(el.parentElement ? el.parentElement.children : [el]);
-        var idx = siblings.indexOf(el);
-        var delay = Math.min(idx * 40, 400); // cap at 400ms
-        setTimeout(function() { el.classList.add('is-visible'); }, delay);
-        cardObserver.unobserve(el);
-      }
-    });
-  }, { rootMargin: '0px 0px -40px 0px', threshold: 0.05 });
+      var el = entry.target;
+      var isVisible = entry.isIntersecting && entry.intersectionRatio > 0;
 
-  function observeCards() {
-    document.querySelectorAll('.movie-card:not(.is-visible)').forEach(function(card) {
-      cardObserver.observe(card);
+      if (el.classList.contains('movie-card')) {
+        var delay = el.dataset.revealDelay || '0';
+        el.style.transitionDelay = isVisible ? (delay + 'ms') : '0ms';
+      }
+
+      el.classList.toggle('is-visible', isVisible);
+    });
+  }, { rootMargin: '0px 0px -8% 0px', threshold: 0.12 });
+
+  function observeRevealTargets() {
+    document.querySelectorAll(revealSelector).forEach(function(el) {
+      if (el.dataset.revealObserved === '1') return;
+      if (el.classList.contains('movie-card')) prepareCardDelay(el);
+      revealObserver.observe(el);
+      el.dataset.revealObserved = '1';
     });
   }
 
-  // Section / generic reveal
-  var sectionObserver = new IntersectionObserver(function(entries) {
-    entries.forEach(function(entry) {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('is-visible');
-        sectionObserver.unobserve(entry.target);
-      }
-    });
-  }, { rootMargin: '0px 0px -60px 0px', threshold: 0.1 });
+  document.addEventListener('DOMContentLoaded', observeRevealTargets);
+  observeRevealTargets();
 
-  function observeSections() {
-    document.querySelectorAll('.reveal:not(.is-visible)').forEach(function(el) {
-      sectionObserver.observe(el);
-    });
-  }
-
-  document.addEventListener('DOMContentLoaded', function() {
-    observeCards();
-    observeSections();
-  });
-
-  // Re-observe if new cards get added dynamically
   if ('MutationObserver' in window) {
-    var mutObs = new MutationObserver(function() {
-      observeCards();
-      observeSections();
-    });
+    var mutObs = new MutationObserver(observeRevealTargets);
     document.addEventListener('DOMContentLoaded', function() {
       mutObs.observe(document.body, { childList: true, subtree: true });
     });
   }
 })();
 
-// ── Keyboard nav: Enter key on movie cards ───────────────────
+// -- Keyboard nav: Enter key on movie cards -------------------
+
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Enter' && e.target.classList.contains('movie-card')) {
     e.target.click();
