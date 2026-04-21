@@ -12,7 +12,7 @@
   <link rel="stylesheet" th:href="@{/css/style.css}" />
 </head>
 
-<body>
+<body class="home-page">
 
   <div th:replace="~{fragments :: navbar}"></div>
   <div th:replace="~{fragments :: mobileNav(${activeMenu})}"></div>
@@ -41,7 +41,12 @@
 
   <!-- ── HERO ── -->
   <div class="hero-section">
-    <div class="hero-bg">
+    <div class="hero-bg" id="heroParticleField" aria-hidden="true">
+      <div class="hero-bg-glow hero-bg-glow--primary"></div>
+      <div class="hero-bg-glow hero-bg-glow--secondary"></div>
+      <div class="hero-bg-glow hero-bg-glow--accent"></div>
+      <div class="hero-bg-grid"></div>
+      <canvas class="hero-particles-canvas" id="heroParticlesCanvas"></canvas>
     </div>
     <div class="hero-content">
       <div class="hero-eyebrow">

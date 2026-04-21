@@ -46,6 +46,237 @@
 
 
 // ── CSRF helpers ─────────────────────────────────────────────
+// Hero particle backdrop
+(function() {
+  var hero = document.querySelector('.hero-section');
+  var canvas = document.getElementById('heroParticlesCanvas');
+  if (!hero || !canvas) return;
+
+  var ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var finePointer = window.matchMedia && window.matchMedia('(pointer: fine)').matches;
+  var particles = [];
+  var ripples = [];
+  var pointer = {
+    x: 0,
+    y: 0,
+    active: false,
+    radius: reduceMotion || !finePointer ? 0 : 150
+  };
+  var width = 0;
+  var height = 0;
+  var frameId = 0;
+  var lastRippleAt = 0;
+
+  function between(min, max) {
+    return min + Math.random() * (max - min);
+  }
+
+  function createParticle() {
+    var isRed = Math.random() < 0.72;
+    return {
+      x: Math.random() * width,
+      y: Math.random() * height,
+      vx: between(-0.18, 0.18),
+      vy: between(-0.14, 0.14),
+      size: isRed ? between(1.4, 3.6) : between(1.1, 2.8),
+      alpha: isRed ? between(0.45, 0.92) : between(0.22, 0.58),
+      glow: isRed ? between(10, 18) : between(6, 12),
+      color: isRed ? '229, 9, 20' : '255, 255, 255',
+      drift: between(0.0006, 0.0016),
+      phase: Math.random() * Math.PI * 2
+    };
+  }
+
+  function particleCount() {
+    var density = finePointer ? 18 : 28;
+    var maxCount = finePointer ? 84 : 42;
+    var minCount = finePointer ? 42 : 24;
+    var count = Math.round(width / density);
+    if (reduceMotion) count = Math.round(count * 0.65);
+    return Math.max(minCount, Math.min(maxCount, count));
+  }
+
+  function resizeCanvas() {
+    var rect = hero.getBoundingClientRect();
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    width = Math.max(1, rect.width);
+    height = Math.max(1, rect.height);
+
+    canvas.width = Math.round(width * dpr);
+    canvas.height = Math.round(height * dpr);
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    var targetCount = particleCount();
+    if (particles.length > targetCount) particles.length = targetCount;
+    while (particles.length < targetCount) particles.push(createParticle());
+  }
+
+  function wrapParticle(particle) {
+    if (particle.x < -20) particle.x = width + 20;
+    if (particle.x > width + 20) particle.x = -20;
+    if (particle.y < -20) particle.y = height + 20;
+    if (particle.y > height + 20) particle.y = -20;
+  }
+
+  function spawnRipple(x, y, strength) {
+    ripples.push({
+      x: x,
+      y: y,
+      radius: strength > 1 ? 12 : 6,
+      maxRadius: strength > 1 ? 118 : 84,
+      alpha: strength > 1 ? 0.2 : 0.12,
+      speed: strength > 1 ? 2.8 : 2.15,
+      fillAlpha: strength > 1 ? 0.085 : 0.045
+    });
+    if (ripples.length > 16) ripples.shift();
+  }
+
+  function updatePointer(event) {
+    var rect = hero.getBoundingClientRect();
+    pointer.x = event.clientX - rect.left;
+    pointer.y = event.clientY - rect.top;
+    pointer.active = true;
+
+    if (pointer.radius === 0) return;
+
+    var now = performance.now();
+    if (now - lastRippleAt > 72) {
+      spawnRipple(pointer.x, pointer.y, 1);
+      lastRippleAt = now;
+    }
+  }
+
+  function fadePointer() {
+    pointer.active = false;
+  }
+
+  function drawPointerBloom() {
+    if (!pointer.active || pointer.radius === 0) return;
+
+    var glowRadius = pointer.radius * 1.2;
+    var gradient = ctx.createRadialGradient(
+      pointer.x,
+      pointer.y,
+      0,
+      pointer.x,
+      pointer.y,
+      glowRadius
+    );
+    gradient.addColorStop(0, 'rgba(255, 255, 255, 0.08)');
+    gradient.addColorStop(0.24, 'rgba(229, 9, 20, 0.08)');
+    gradient.addColorStop(0.62, 'rgba(229, 9, 20, 0.025)');
+    gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+    ctx.save();
+    ctx.fillStyle = gradient;
+    ctx.fillRect(pointer.x - glowRadius, pointer.y - glowRadius, glowRadius * 2, glowRadius * 2);
+    ctx.restore();
+  }
+
+  function drawRipples() {
+    for (var i = ripples.length - 1; i >= 0; i--) {
+      var ripple = ripples[i];
+      ripple.radius += ripple.speed;
+      ripple.alpha *= 0.965;
+      ripple.fillAlpha *= 0.955;
+
+      if (ripple.radius >= ripple.maxRadius || ripple.alpha < 0.008) {
+        ripples.splice(i, 1);
+        continue;
+      }
+
+      ctx.save();
+      ctx.lineWidth = 1.2;
+      ctx.strokeStyle = 'rgba(255, 255, 255, ' + ripple.alpha + ')';
+      ctx.beginPath();
+      ctx.arc(ripple.x, ripple.y, ripple.radius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.fillStyle = 'rgba(229, 9, 20, ' + ripple.fillAlpha + ')';
+      ctx.beginPath();
+      ctx.arc(ripple.x, ripple.y, ripple.radius * 0.62, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  function drawParticle(particle) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(' + particle.color + ', ' + particle.alpha + ')';
+    ctx.shadowBlur = particle.glow;
+    ctx.shadowColor = 'rgba(' + particle.color + ', 0.45)';
+    ctx.beginPath();
+    ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function updateParticle(particle, time) {
+    var floatX = Math.cos(time * particle.drift + particle.phase) * 0.015;
+    var floatY = Math.sin(time * particle.drift * 0.86 + particle.phase) * 0.015;
+
+    particle.vx += floatX;
+    particle.vy += floatY;
+
+    if (pointer.active && pointer.radius > 0) {
+      var dx = particle.x - pointer.x;
+      var dy = particle.y - pointer.y;
+      var dist = Math.sqrt(dx * dx + dy * dy) || 1;
+      if (dist < pointer.radius) {
+        var force = (1 - dist / pointer.radius) * 0.55;
+        particle.vx += (dx / dist) * force;
+        particle.vy += (dy / dist) * force;
+      }
+    }
+
+    particle.vx *= 0.985;
+    particle.vy *= 0.985;
+    particle.x += particle.vx;
+    particle.y += particle.vy;
+
+    wrapParticle(particle);
+    drawParticle(particle);
+  }
+
+  function render(time) {
+    ctx.clearRect(0, 0, width, height);
+    drawPointerBloom();
+    drawRipples();
+
+    for (var i = 0; i < particles.length; i++) {
+      updateParticle(particles[i], time);
+    }
+
+    frameId = window.requestAnimationFrame(render);
+  }
+
+  hero.addEventListener('pointerenter', updatePointer);
+  hero.addEventListener('pointermove', updatePointer);
+  hero.addEventListener('pointerleave', fadePointer);
+  hero.addEventListener('pointerdown', function(event) {
+    updatePointer(event);
+    if (pointer.radius > 0) spawnRipple(pointer.x, pointer.y, 2);
+  });
+
+  window.addEventListener('resize', resizeCanvas, { passive: true });
+  document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+      window.cancelAnimationFrame(frameId);
+      frameId = 0;
+      return;
+    }
+    if (!frameId) frameId = window.requestAnimationFrame(render);
+  });
+
+  resizeCanvas();
+  frameId = window.requestAnimationFrame(render);
+})();
+
 function getCsrfToken() {
   var m = document.querySelector('meta[name="_csrf"]');
   return m ? m.getAttribute('content') : '';
