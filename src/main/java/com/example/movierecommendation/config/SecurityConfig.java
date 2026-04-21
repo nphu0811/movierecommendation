@@ -81,7 +81,7 @@ public class SecurityConfig {
         http
             .authenticationProvider(authProvider())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/css/**", "/js/**", "/images/**", "/webjars/**").permitAll()
+                .requestMatchers("/css/**", "/js/**", "/images/**", "/webjars/**", "/favicon.svg", "/favicon.ico").permitAll()
                 .requestMatchers("/", "/home", "/movies", "/movies/**", "/search").permitAll()
                 .requestMatchers("/api/search/**").permitAll()
                 .requestMatchers("/auth/**").permitAll()
