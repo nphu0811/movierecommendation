@@ -78,7 +78,14 @@
           <button class="btn btn-outline watchlist-btn"
                   th:classappend="${inWatchlist} ? 'in-list'"
                   th:onclick="|toggleWatchlist(${movie.movieId}, this)|"
-                  th:utext="${inWatchlist} ? '<i class=''ph-fill ph-heart'' style=''margin-right:6px''></i> In Watchlist' : '<i class=''ph ph-heart'' style=''margin-right:6px''></i> Add to Watchlist'">Watchlist</button>
+                  >
+            <th:block th:if="${inWatchlist}">
+              <i class="ph-fill ph-heart" style="margin-right:6px"></i> In Watchlist
+            </th:block>
+            <th:block th:unless="${inWatchlist}">
+              <i class="ph ph-heart" style="margin-right:6px"></i> Add to Watchlist
+            </th:block>
+          </button>
         </th:block>
         <th:block th:if="${currentUser == null}">
           <a href="/auth/login" class="btn btn-primary">Login to interact</a>

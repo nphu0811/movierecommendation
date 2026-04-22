@@ -336,11 +336,11 @@ async function toggleWatchlist(movieId, btn) {
     var res = await postFetch('/api/movies/' + movieId + '/watchlist');
     var data = await res.json();
     if (data.added) {
-      btn.textContent = '❤️ In Watchlist';
+      btn.innerHTML = '<i class="ph-fill ph-heart" style="margin-right:6px"></i> In Watchlist';
       btn.classList.add('in-list');
       showToast('Added to Watchlist ❤️', 'success');
     } else {
-      btn.textContent = '🤍 Add to Watchlist';
+      btn.innerHTML = '<i class="ph ph-heart" style="margin-right:6px"></i> Add to Watchlist';
       btn.classList.remove('in-list');
       showToast('Removed from Watchlist', 'info');
     }
@@ -351,7 +351,7 @@ async function toggleWatchlist(movieId, btn) {
 async function markWatched(movieId, btn) {
   try {
     await postFetch('/api/movies/' + movieId + '/watch');
-    btn.textContent = '✅ Watched';
+    btn.innerHTML = '<i class="ph-bold ph-check" style="margin-right:6px"></i> Watched';
     btn.disabled = true;
     btn.className = 'btn btn-success';
     showToast('Marked as watched! 🎬', 'success');
