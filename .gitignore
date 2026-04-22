@@ -32,3 +32,11 @@ Thumbs.db
 
 # Local Gradle
 .gradle-local/
+
+# Agent local files
+.agents/
+scratch/
+skills-lock.json
+task.md
+implementation_plan.md
+walkthrough.md

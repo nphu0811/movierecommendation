@@ -75,7 +75,9 @@
      th:attr="onclick=|window.location='/movies/${movie.movieId}'|">
   <div class="movie-poster">
     <img th:if="${movie.posterUrl != null and !#strings.isEmpty(movie.posterUrl)}"
-         th:src="${movie.posterUrl}" th:alt="${movie.title}" loading="lazy"
+         th:src="${movie.posterUrl}" th:alt="${movie.title}" 
+         class="movie-poster-img"
+         loading="lazy"
          onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
     <div class="movie-poster-placeholder"
          th:style="${movie.posterUrl != null and !#strings.isEmpty(movie.posterUrl)} ? 'display:none' : 'display:flex'"><i class="ph-fill ph-film-strip"></i></div>

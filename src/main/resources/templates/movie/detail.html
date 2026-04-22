@@ -24,7 +24,7 @@
     <!-- Poster -->
     <img th:if="${movie.posterUrl != null and !#strings.isEmpty(movie.posterUrl)}"
          th:src="${movie.posterUrl}" th:alt="${movie.title}"
-         class="movie-poster-large" onerror="this.style.display='none'"/>
+         class="movie-poster-large movie-poster-img" onerror="this.style.display='none'"/>
     <div th:unless="${movie.posterUrl != null and !#strings.isEmpty(movie.posterUrl)}"
          class="movie-poster-placeholder"><i class="ph-fill ph-film-strip"></i></div>
 

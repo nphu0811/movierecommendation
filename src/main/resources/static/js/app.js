@@ -34,13 +34,13 @@
     }
   }
 
-  // Dismiss preloader after bar fill animation completes (~3.5s)
+  // Dismiss preloader quickly (~1s)
   setTimeout(function() {
     preloader.classList.add('exit');
     setTimeout(function() {
       preloader.style.display = 'none';
-    }, 950);
-  }, 3500);
+    }, 800);
+  }, 1000);
 })();
 
 
@@ -275,7 +275,18 @@
   });
 
   resizeCanvas();
-  frameId = window.requestAnimationFrame(render);
+  
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        if (!frameId) frameId = window.requestAnimationFrame(render);
+      } else {
+        window.cancelAnimationFrame(frameId);
+        frameId = 0;
+      }
+    });
+  }, { threshold: 0.1 });
+  observer.observe(canvas);
 })();
 
 function getCsrfToken() {
@@ -458,3 +469,25 @@ document.addEventListener('keydown', function(e) {
     e.target.click();
   }
 });
+
+// -- View Transitions for movie navigation --------------------
+document.addEventListener('click', function(e) {
+  var card = e.target.closest('.movie-card');
+  if (!card) return;
+  
+  var targetUrl = card.getAttribute('onclick') || '';
+  if (targetUrl.includes('window.location')) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    var url = targetUrl.match(/'([^']+)'/)[1];
+    
+    if (document.startViewTransition) {
+      document.startViewTransition(function() {
+        window.location.href = url;
+      });
+    } else {
+      window.location.href = url;
+    }
+  }
+}, true);

@@ -4,6 +4,7 @@
 @import url('https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css');
 @import url('https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css');
 @import url('https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap');
 
 /* ── Design Tokens ── */
 :root {
@@ -11,14 +12,14 @@
   --red:          #E50914;
   --red-hover:    #f6121d;
   --red-dark:     #b81d24;
-  --red-glow:     rgba(229, 9, 20, .35);
-  --red-subtle:   rgba(229, 9, 20, .08);
+  --red-glow:     rgba(229, 9, 20, .45);
+  --red-subtle:   rgba(229, 9, 20, .12);
 
   --black:        #000000;
-  --bg:           #000000;
+  --bg:           #050505;
   --bg-surface:   transparent;
-  --bg-elevated:  #1a1a1a;
-  --bg-glass:     rgba(0, 0, 0, .8);
+  --bg-elevated:  #141414;
+  --bg-glass:     rgba(5, 5, 5, .8);
 
   --white:        #FFFFFF;
   --text-primary:   #FFFFFF;
@@ -50,9 +51,9 @@
   --t-mid:  .25s;
   --t-slow: .4s;
 
-  /* Typography – Apple System Stack */
-  --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
-          "Helvetica Neue", Arial, sans-serif;
+  /* Typography – Cinematic Stack */
+  --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Outfit", "Inter", -apple-system, sans-serif;
 
   /* Spacing Scale (8px base) */
   --space-1: 4px;
@@ -78,9 +79,13 @@ body {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
-  line-height: 1.47;
-  letter-spacing: -0.374px;
+  line-height: 1.5;
+  letter-spacing: -0.01em;
   padding-bottom: var(--space-7);
+}
+
+h1, h2, h3, h4, h5, h6, .navbar-brand {
+  font-family: var(--font-display);
 }
 
 body.home-page {
@@ -138,6 +143,11 @@ ul { list-style: none; }
   0%, 100% { transform: translateX(0); }
   25% { transform: translateX(-4px); }
   75% { transform: translateX(4px); }
+}
+
+@keyframes cardShine {
+  0% { transform: translateX(-100%) skewX(-25deg); }
+  100% { transform: translateX(200%) skewX(-25deg); }
 }
 
 /* ============================================================
@@ -410,8 +420,8 @@ body.home-page .hero-section + .section {
 }
 .movies-row::-webkit-scrollbar { height: 4px; }
 .movies-row .movie-card, .movies-row .movie-card-wrapper {
-  min-width: 170px;
-  max-width: 170px;
+  min-width: 185px;
+  max-width: 185px;
   flex-shrink: 0;
   scroll-snap-align: start;
 }
@@ -446,12 +456,39 @@ body.home-page .hero-section + .section {
   border-radius: var(--radius);
   overflow: hidden;
   height: 100%;
-  transition: transform var(--t-mid) var(--spring),
-              box-shadow var(--t-mid) var(--ease);
+  position: relative;
+  transition: transform 0.45s var(--spring),
+              box-shadow 0.45s var(--ease);
+}
+
+.movie-card .card-inner::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  transform: skewX(-25deg);
+  pointer-events: none;
+  z-index: 5;
+}
+
+.movie-card:hover .card-inner::after {
+  animation: cardShine 0.75s var(--ease);
 }
 .movie-card:hover .card-inner {
-  transform: scale(1.04) translateY(-4px);
-  box-shadow: 0 16px 40px rgba(0,0,0,.65), 0 0 0 1px rgba(255,255,255,.05);
+  transform: scale(1.06) translateY(-8px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.1);
+}
+
+.movie-poster-img {
+  view-transition-name: active-movie-poster;
 }
 
 .movie-poster {
