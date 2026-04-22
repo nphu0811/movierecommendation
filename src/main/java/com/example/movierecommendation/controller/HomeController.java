@@ -76,16 +76,28 @@ public class HomeController {
     }
 
     @GetMapping("/search")
-    public String search(@RequestParam(name = "q") String q,
+    public String search(@RequestParam(name = "q", required = false) String q,
                          @AuthenticationPrincipal UserDetails userDetails,
                          Model model) {
-        model.addAttribute("movies", movieService.searchMovies(q));
-        model.addAttribute("keyword", q);
+        
+        User currentUser = null;
         if (userDetails != null) {
-            model.addAttribute("currentUser",
-                userService.getCurrentUser(userDetails.getUsername()));
+            currentUser = userService.getCurrentUser(userDetails.getUsername());
+            model.addAttribute("currentUser", currentUser);
+            
+            // Add recommendations to search page as requested
+            model.addAttribute("recommendations", 
+                recommendationService.getPersonalizedRecommendations(currentUser.getUserId()));
         }
-        return "search-results";
+
+        if (q == null || q.trim().isEmpty()) {
+            model.addAttribute("allGenres", movieService.getAllGenres());
+            return "search/index";
+        }
+
+        model.addAttribute("movies", movieService.searchMovies(q.trim()));
+        model.addAttribute("keyword", q.trim());
+        return "search/index"; // We will use the same template for landing and results
     }
 
     @GetMapping("/api/search/autocomplete")

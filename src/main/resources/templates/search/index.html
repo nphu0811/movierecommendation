@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title th:text="${keyword != null ? 'Search: ' + keyword + ' – MovieRec' : 'Search – MovieRec'}">Search</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+    <link rel="icon" type="image/svg+xml" sizes="any" th:href="@{/favicon.svg(v=2)}"/>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+<body class="search-page-active">
+    <div th:replace="~{fragments :: navbar(activeMenu='search')}"></div>
+    <div th:replace="~{fragments :: mobileNav('search')}"></div>
+
+    <main class="search-page">
+        <div class="search-container">
+            <header class="search-header-main" th:if="${keyword == null}">
+                <h1>Explore <span style="color:var(--red)">Movies</span></h1>
+                <p>Find your next favorite film, genre, or curated recommendation.</p>
+            </header>
+
+            <div class="search-input-group">
+                <div class="search-input-wrapper">
+                    <i class="ph-bold ph-magnifying-glass search-icon-large"></i>
+                    <input type="text" id="mainSearchInput" 
+                           th:value="${keyword}"
+                           placeholder="Movies, actors, or genres..." 
+                           autocomplete="off" autofocus/>
+                    <button type="button" class="search-clear-btn" id="searchClearBtn">
+                        <i class="ph-bold ph-x"></i>
+                    </button>
+                </div>
+                
+                <!-- Autocomplete Dropdown -->
+                <div class="search-autocomplete" id="searchAutocomplete">
+                    <div id="autocompleteResults"></div>
+                    <div class="autocomplete-footer">
+                        Press <strong>Enter</strong> to see all results
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recommendations Section (Shown when no search results or on landing) -->
+            <div class="search-results-section" th:if="${keyword == null or #lists.isEmpty(movies)}">
+                <div th:if="${recommendations != null and !#lists.isEmpty(recommendations)}" class="section">
+                    <div class="section-header">
+                        <h2 class="section-title"><i class="ph-fill ph-sparkle" style="color:var(--red);margin-right:8px"></i> Recommended for You</h2>
+                    </div>
+                    <div class="movies-grid">
+                        <th:block th:each="movie : ${recommendations}">
+                            <div th:replace="~{fragments :: movieCard(${movie})}"></div>
+                        </th:block>
+                    </div>
+                </div>
+                
+                <!-- Empty Search State -->
+                <div th:if="${keyword != null and #lists.isEmpty(movies)}" class="search-empty-state">
+                    <i class="ph-bold ph-magnifying-glass"></i>
+                    <h2 th:text="'No results for \"' + ${keyword} + '\"'">No results found</h2>
+                    <p>Try different keywords or explore our top picks below.</p>
+                </div>
+            </div>
+
+            <!-- Search Results Section -->
+            <div class="search-results-section" th:if="${keyword != null and !#lists.isEmpty(movies)}">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <span th:text="${#lists.size(movies)}">0</span> Results for "<span th:text="${keyword}" style="color:var(--white)">query</span>"
+                    </h2>
+                </div>
+                <div class="movies-grid">
+                    <th:block th:each="movie : ${movies}">
+                        <div th:replace="~{fragments :: movieCard(${movie})}"></div>
+                    </th:block>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script th:src="@{/js/app.js}"></script>
+    <script th:src="@{/js/search.js}"></script>
+</body>
+</html>
