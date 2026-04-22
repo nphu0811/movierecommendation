@@ -2156,3 +2156,45 @@ textarea.form-control { resize: vertical; min-height: 100px; }
   color: var(--text-secondary);
 }
 
+
+/* Search Page Enhancements */
+.rec-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: linear-gradient(45deg, var(--red), #ff4d4d);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(229, 9, 20, 0.4);
+  letter-spacing: 0.5px;
+  pointer-events: none;
+}
+
+.movie-card-wrapper {
+  position: relative;
+  transition: transform var(--t-mid) var(--ease);
+}
+
+.movie-card-wrapper:hover {
+  transform: translateY(-5px);
+}
+
+.view-all {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: all var(--t-fast);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.view-all:hover {
+  color: var(--red);
+  transform: translateX(5px);
+}

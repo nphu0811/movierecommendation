@@ -48,10 +48,14 @@
                             <i class="ph-fill ph-sparkle" style="color:var(--red);margin-right:8px"></i> 
                             <span th:text="${currentUser != null ? 'Recommended for You' : 'Trending Movies'}">Recommendations</span>
                         </h2>
+                        <a href="/user/recommendations" class="view-all">View all →</a>
                     </div>
                     <div class="movies-row">
                         <th:block th:each="movie : ${recommendations}">
-                            <div th:replace="~{fragments :: movieCard(${movie})}"></div>
+                            <div class="movie-card-wrapper">
+                                <div class="rec-badge">AI Pick</div>
+                                <div th:replace="~{fragments :: movieCard(${movie})}"></div>
+                            </div>
                         </th:block>
                     </div>
                 </div>
