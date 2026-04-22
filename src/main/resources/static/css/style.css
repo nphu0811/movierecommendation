@@ -2161,7 +2161,7 @@ textarea.form-control { resize: vertical; min-height: 100px; }
 .rec-badge {
   position: absolute;
   top: 10px;
-  right: 10px;
+  right: 12px;
   background: linear-gradient(45deg, var(--red), #ff4d4d);
   color: white;
   padding: 4px 10px;
@@ -2178,6 +2178,8 @@ textarea.form-control { resize: vertical; min-height: 100px; }
 .movie-card-wrapper {
   position: relative;
   transition: transform var(--t-mid) var(--ease);
+  width: fit-content;
+  flex-shrink: 0;
 }
 
 .movie-card-wrapper:hover {
