@@ -95,7 +95,7 @@ public class HomeController {
                 model.addAttribute("recommendations", recFuture.get(1500, TimeUnit.MILLISECONDS));
             } catch (Exception e) {
                 recFuture.cancel(true);
-                model.addAttribute("recommendations", recommendationService.getTrendingMovies());
+                model.addAttribute("recommendations", recommendationService.getTrendingMoviesForUser(finalUser.getUserId()));
             }
         } else {
             model.addAttribute("recommendations", recommendationService.getTrendingMovies());
