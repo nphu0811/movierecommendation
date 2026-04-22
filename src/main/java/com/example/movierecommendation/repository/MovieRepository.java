@@ -78,4 +78,7 @@ public interface MovieRepository extends JpaRepository<Movie, Integer> {
 
     @Query("SELECT m FROM Movie m WHERE m.movieId NOT IN :watchedIds ORDER BY m.createdAt DESC")
     List<Movie> findNewMoviesNotWatched(@Param("watchedIds") List<Integer> watchedIds, Pageable pageable);
+
+    @Query("SELECT DISTINCT m FROM Movie m LEFT JOIN FETCH m.genres WHERE m.movieId IN :ids")
+    List<Movie> findAllByIdWithGenres(@Param("ids") List<Integer> ids);
 }
