@@ -85,9 +85,12 @@ public class HomeController {
             currentUser = userService.getCurrentUser(userDetails.getUsername());
             model.addAttribute("currentUser", currentUser);
             
-            // Add recommendations to search page as requested
+            // Personalized recommendations for logged-in users
             model.addAttribute("recommendations", 
                 recommendationService.getPersonalizedRecommendations(currentUser.getUserId()));
+        } else {
+            // Trending movies as fallback for guest users
+            model.addAttribute("recommendations", recommendationService.getTrendingMovies());
         }
 
         if (q == null || q.trim().isEmpty()) {

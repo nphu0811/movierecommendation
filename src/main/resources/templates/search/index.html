@@ -44,7 +44,10 @@
             <div class="search-results-section" th:if="${keyword == null or #lists.isEmpty(movies)}">
                 <div th:if="${recommendations != null and !#lists.isEmpty(recommendations)}" class="section">
                     <div class="section-header">
-                        <h2 class="section-title"><i class="ph-fill ph-sparkle" style="color:var(--red);margin-right:8px"></i> Recommended for You</h2>
+                        <h2 class="section-title">
+                            <i class="ph-fill ph-sparkle" style="color:var(--red);margin-right:8px"></i> 
+                            <span th:text="${currentUser != null ? 'Recommended for You' : 'Trending Movies'}">Recommendations</span>
+                        </h2>
                     </div>
                     <div class="movies-grid">
                         <th:block th:each="movie : ${recommendations}">
