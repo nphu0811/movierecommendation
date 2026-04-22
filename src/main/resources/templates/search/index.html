@@ -9,7 +9,7 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
 <body class="search-page-active">
-    <div th:replace="~{fragments :: navbar(activeMenu='search')}"></div>
+    <div th:replace="~{fragments :: navbar}" th:with="activeMenu='search'"></div>
     <div th:replace="~{fragments :: mobileNav('search')}"></div>
 
     <main class="search-page">
@@ -56,7 +56,7 @@
                 <!-- Empty Search State -->
                 <div th:if="${keyword != null and #lists.isEmpty(movies)}" class="search-empty-state">
                     <i class="ph-bold ph-magnifying-glass"></i>
-                    <h2 th:text="'No results for \"' + ${keyword} + '\"'">No results found</h2>
+                    <h2 th:text="|No results for &quot;${keyword}&quot;|">No results found</h2>
                     <p>Try different keywords or explore our top picks below.</p>
                 </div>
             </div>
