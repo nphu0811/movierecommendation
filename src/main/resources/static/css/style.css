@@ -1925,7 +1925,7 @@ textarea.form-control { resize: vertical; min-height: 100px; }
 
 
 /* ============================================================
-   SEARCH PAGE – Premium Search Experience
+   SEARCH PAGE  Premium Search Experience
    ============================================================ */
 .search-page {
   min-height: 80vh;
@@ -1937,9 +1937,7 @@ textarea.form-control { resize: vertical; min-height: 100px; }
 
 .search-container {
   width: 100%;
-  max-width: 800px;
   margin: 0 auto;
-  padding: 0 var(--space-5);
   animation: fadeUp .8s var(--ease) both;
 }
 
@@ -1963,6 +1961,8 @@ textarea.form-control { resize: vertical; min-height: 100px; }
 .search-input-group {
   position: relative;
   width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
   z-index: 100;
 }
 

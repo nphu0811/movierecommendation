@@ -41,8 +41,8 @@
             </div>
 
             <!-- Recommendations Section (Shown when no search results or on landing) -->
-            <div class="search-results-section" th:if="${keyword == null or #lists.isEmpty(movies)}">
-                <div th:if="${recommendations != null and !#lists.isEmpty(recommendations)}" class="section">
+            <div class="search-results-section section" th:if="${keyword == null or #lists.isEmpty(movies)}">
+                <div th:if="${recommendations != null and !#lists.isEmpty(recommendations)}">
                     <div class="section-header">
                         <h2 class="section-title">
                             <i class="ph-fill ph-sparkle" style="color:var(--red);margin-right:8px"></i> 
@@ -65,7 +65,7 @@
             </div>
 
             <!-- Search Results Section -->
-            <div class="search-results-section" th:if="${keyword != null and !#lists.isEmpty(movies)}">
+            <div class="search-results-section section" th:if="${keyword != null and !#lists.isEmpty(movies)}">
                 <div class="section-header">
                     <h2 class="section-title">
                         <span th:text="${#lists.size(movies)}">0</span> Results for "<span th:text="${keyword}" style="color:var(--white)">query</span>"
