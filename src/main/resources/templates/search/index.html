@@ -49,7 +49,7 @@
                             <span th:text="${currentUser != null ? 'Recommended for You' : 'Trending Movies'}">Recommendations</span>
                         </h2>
                     </div>
-                    <div class="movies-grid">
+                    <div class="movies-row">
                         <th:block th:each="movie : ${recommendations}">
                             <div th:replace="~{fragments :: movieCard(${movie})}"></div>
                         </th:block>

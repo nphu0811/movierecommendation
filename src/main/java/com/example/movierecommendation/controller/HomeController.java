@@ -85,11 +85,19 @@ public class HomeController {
             currentUser = userService.getCurrentUser(userDetails.getUsername());
             model.addAttribute("currentUser", currentUser);
             
-            // Personalized recommendations for logged-in users
-            model.addAttribute("recommendations", 
-                recommendationService.getPersonalizedRecommendations(currentUser.getUserId()));
+            // Optimization: Run AI recommendations in parallel to speed up page load
+            final User finalUser = currentUser;
+            CompletableFuture<List<Movie>> recFuture = CompletableFuture.supplyAsync(
+                () -> recommendationService.getPersonalizedRecommendations(finalUser.getUserId()),
+                homeExecutor);
+
+            try {
+                model.addAttribute("recommendations", recFuture.get(1500, TimeUnit.MILLISECONDS));
+            } catch (Exception e) {
+                recFuture.cancel(true);
+                model.addAttribute("recommendations", recommendationService.getTrendingMovies());
+            }
         } else {
-            // Trending movies as fallback for guest users
             model.addAttribute("recommendations", recommendationService.getTrendingMovies());
         }
 
