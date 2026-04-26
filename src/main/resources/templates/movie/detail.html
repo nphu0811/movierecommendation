@@ -54,7 +54,8 @@
       <div class="action-buttons-group">
         <a class="watch-btn trailer"
            th:if="${movieLink != null and ((movieLink.imdbId != null and !#strings.isEmpty(movieLink.imdbId)) or (movieLink.tmdbId != null))}"
-           th:href="@{/movies/{id}/play(id=${movie.movieId})}">
+           href="javascript:void(0)"
+           th:onclick="|recordAndPlay(${movie.movieId})|">
           <i class="ph-fill ph-play-circle" style="margin-right:6px"></i> Play
         </a>
         <button class="watch-btn trailer"
@@ -333,6 +334,19 @@
         showToast('Tag đã thêm!', 'success');
       })
       .catch(() => showToast('Lỗi thêm tag', 'error'));
+  function recordAndPlay(movieId) {
+      const headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
+      const csrfMeta = document.querySelector('meta[name="_csrf"]');
+      const csrfHeader = document.querySelector('meta[name="_csrf_header"]');
+      if (csrfMeta && csrfHeader) headers[csrfHeader.content] = csrfMeta.content;
+
+      // Mark as watched (initial) then redirect
+      fetch(`/api/movies/${movieId}/watch?duration=0&progress=0`, { 
+          method: 'POST', 
+          headers 
+      }).finally(() => {
+          window.location.href = `/movies/${movieId}/play`;
+      });
   }
 </script>
 </body>

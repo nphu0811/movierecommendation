@@ -190,14 +190,23 @@
     sessionSeconds = Math.floor((Date.now() - startTime) / 1000);
     const total = (LAST_DURATION || 0) + sessionSeconds;
     
+    // Estimate progress (assume 100 mins = 6000s for recommendation purposes if real duration is unknown)
+    const estimatedDuration = 6000;
+    const progress = Math.min((total / estimatedDuration) * 100, 99.9).toFixed(2);
+    
+    const body = new URLSearchParams();
+    body.append('duration', total);
+    body.append('progress', progress);
+
     const headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
     const csrfMeta = document.querySelector('meta[name="_csrf"]');
     const csrfHeader = document.querySelector('meta[name="_csrf_header"]');
-    if (csrfMeta) headers[csrfHeader.content] = csrfMeta.content;
+    if (csrfMeta && csrfHeader) headers[csrfHeader.content] = csrfMeta.content;
 
-    fetch(`/api/movies/${MOVIE_ID}/watch?duration=${total}`, { 
+    fetch(`/api/movies/${MOVIE_ID}/watch`, { 
       method: 'POST', 
-      headers 
+      headers,
+      body: body
     }).catch(console.error);
   }
 
