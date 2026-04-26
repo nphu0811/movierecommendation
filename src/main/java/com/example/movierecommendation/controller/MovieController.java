@@ -121,19 +121,8 @@ public class MovieController {
 
     private String buildSuperEmbedUrl(String imdbId) {
         return UriComponentsBuilder
-                .fromHttpUrl("https://getsuperembed.link/")
+                .fromHttpUrl("https://multiembed.mov/")
                 .queryParam("video_id", imdbId)
-                .queryParam("tmdb", 0)
-                .queryParam("season", 0)
-                .queryParam("episode", 0)
-                .queryParam("player_font", PLAYER_FONT)
-                .queryParam("player_bg_color", PLAYER_BG_COLOR)
-                .queryParam("player_font_color", PLAYER_FONT_COLOR)
-                .queryParam("player_primary_color", PLAYER_PRIMARY_COLOR)
-                .queryParam("player_secondary_color", PLAYER_SECONDARY_COLOR)
-                .queryParam("player_loader", PLAYER_LOADER)
-                .queryParam("preferred_server", PREFERRED_SERVER)
-                .queryParam("player_sources_toggle_type", PLAYER_SOURCES_TOGGLE_TYPE)
                 .build()
                 .toUriString();
     }
