@@ -57,92 +57,101 @@
     </div>
   </div>
 
-  <!-- Player Info & Meta -->
-  <div class="player-footer-info">
-    <div>
-      <div class="genre-tags" style="margin-bottom:16px">
-        <span class="genre-tag" th:each="g : ${movie.genres}" th:text="${g.genreName}">Genre</span>
+  <!-- Player Info & Meta - Reorganized into detail-grid -->
+  <div class="detail-grid" style="margin-top: var(--space-6); padding-top: 0;">
+    <!-- LEFT COLUMN -->
+    <div class="detail-left">
+      <!-- Description Card -->
+      <div class="detail-card">
+        <h3><i class="ph-bold ph-book-open" style="margin-right:6px;vertical-align:-3px;color:var(--text-secondary)"></i> Overview</h3>
+        <div class="genre-tags" style="margin-bottom:16px">
+          <span class="genre-tag" th:each="g : ${movie.genres}" th:text="${g.genreName}">Genre</span>
+        </div>
+        <p class="text-secondary-md" style="line-height:1.6;color:rgba(255,255,255,0.7)" th:text="${movie.description}">Description</p>
       </div>
-      <p class="text-secondary-md" style="line-height:1.6;color:rgba(255,255,255,0.7)" th:text="${movie.description}">Description</p>
-    </div>
-    
-    <div class="detail-card" style="margin:0;background:rgba(255,255,255,0.02)">
-       <div style="display:flex;justify-content:space-between;margin-bottom:12px">
-         <span class="text-muted-sm">Release Year</span>
-         <span th:text="${movie.releaseYear}">2024</span>
-       </div>
-       <div style="display:flex;justify-content:space-between;margin-bottom:12px">
-         <span class="text-muted-sm">Rating</span>
-         <span>
-           <i class="ph-fill ph-star" style="color:var(--gold)"></i> 
-           <span th:text="${#numbers.formatDecimal(movie.averageRating,1,1)}">4.5</span>
-         </span>
-       </div>
+
+      <!-- Comments Section moved into left column -->
+      <section class="play-comments-section" style="margin-top: 0; border-top: none; padding-top: 0;">
+        <div class="play-comments-header">
+          <i class="ph-fill ph-chat-circle-text" style="font-size:1.5rem;color:var(--red)"></i>
+          <h2>Discussion <span class="text-muted-sm" th:text="'(' + ${#lists.size(comments)} + ')'"></span></h2>
+        </div>
+
+        <div class="detail-card" style="margin-bottom:32px">
+          <div th:if="${currentUser != null}">
+            <textarea id="comment-input" class="form-control"
+                      placeholder="What did you think of the movie?" rows="3"
+                      style="background:rgba(255,255,255,0.03);border-color:rgba(255,255,255,0.1);padding:16px;font-size:1rem"></textarea>
+            <div style="display:flex;justify-content:flex-end;margin-top:12px">
+              <button class="btn btn-primary" onclick="submitCommentInline(this)">Post Comment</button>
+            </div>
+          </div>
+          <div th:if="${currentUser == null}" class="comment-login-box" style="text-align:center;padding:24px">
+            <p class="text-secondary-md">Want to join the discussion?</p>
+            <a href="/auth/login" class="btn btn-primary btn-sm" style="margin-top:12px">Login to Comment</a>
+          </div>
+        </div>
+
+        <div id="comment-list">
+          <div class="comment-box" th:each="c : ${comments}" style="margin-bottom:20px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05)">
+            <div class="comment-header">
+              <span class="comment-author">
+                <i class="ph-fill ph-user" style="color:var(--text-secondary);margin-right:8px"></i>
+                <span th:text="${c.user.username}" style="font-weight:600">User</span>
+              </span>
+              <span class="comment-date" th:text="${#temporals.format(c.createdAt, 'MMM dd, yyyy HH:mm')}">Date</span>
+            </div>
+            <p class="comment-text" th:text="${c.commentText}" style="margin-top:10px;font-size:0.95rem;line-height:1.5;color:rgba(255,255,255,0.85)">Comment text</p>
+          </div>
+          
+          <div th:if="${#lists.isEmpty(comments)}" class="empty-comments-state" id="noCommentsState">
+            <div style="font-size:3rem;margin-bottom:12px;color:rgba(255,255,255,0.1)">
+              <i class="ph-fill ph-chat-circle-dots"></i>
+            </div>
+            <p>No comments yet. Start the conversation!</p>
+          </div>
+        </div>
+      </section>
     </div>
 
-    <!-- Similar Movies -->
-    <div class="detail-card" th:if="${!#lists.isEmpty(similarMovies)}" style="margin-top:20px;background:rgba(255,255,255,0.02)">
-      <h3 style="font-size:0.85rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;color:rgba(255,255,255,0.5)">
-        <i class="ph-fill ph-film-strip" style="margin-right:8px"></i> Similar Movies
-      </h3>
-      <div style="display:flex;flex-direction:column;gap:12px">
-        <a th:each="sm : ${similarMovies}"
-           th:href="@{/movies/{id}/play(id=${sm.movieId})}"
-           class="similar-movie-link" style="display:flex;gap:12px;text-decoration:none;align-items:center;padding:8px;border-radius:12px;transition:all 0.3s var(--ease)">
-          <img th:if="${sm.posterUrl != null and !#strings.isEmpty(sm.posterUrl)}"
-               th:src="${sm.posterUrl}" th:alt="${sm.title}"
-               style="width:50px;height:70px;object-fit:cover;border-radius:8px;box-shadow:0 4px 10px rgba(0,0,0,0.3)"/>
-          <div class="similar-movie-info" style="flex:1">
-            <div class="similar-movie-title" th:text="${sm.title}" style="color:white;font-weight:600;font-size:0.9rem;margin-bottom:2px">Title</div>
-            <div class="similar-movie-year" th:text="${sm.releaseYear}" style="color:rgba(255,255,255,0.4);font-size:0.8rem">Year</div>
-          </div>
-        </a>
+    <!-- RIGHT COLUMN (SIDEBAR) -->
+    <div class="detail-sidebar">
+      <!-- Meta Card -->
+      <div class="detail-card" style="margin-bottom:20px; background:rgba(255,255,255,0.02)">
+         <h3><i class="ph-bold ph-info" style="margin-right:8px"></i> Details</h3>
+         <div style="display:flex;justify-content:space-between;margin-bottom:12px">
+           <span class="text-muted-sm">Release Year</span>
+           <span th:text="${movie.releaseYear}" style="font-weight:600">2024</span>
+         </div>
+         <div style="display:flex;justify-content:space-between;margin-bottom:12px">
+           <span class="text-muted-sm">Rating</span>
+           <span style="font-weight:600">
+             <i class="ph-fill ph-star" style="color:var(--gold)"></i> 
+             <span th:text="${#numbers.formatDecimal(movie.averageRating,1,1)}">4.5</span>
+           </span>
+         </div>
+      </div>
+
+      <!-- Similar Movies Card -->
+      <div class="detail-card" th:if="${!#lists.isEmpty(similarMovies)}" style="background:rgba(255,255,255,0.02)">
+        <h3><i class="ph-fill ph-film-strip" style="margin-right:8px"></i> Similar Movies</h3>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <a th:each="sm : ${similarMovies}"
+             th:href="@{/movies/{id}/play(id=${sm.movieId})}"
+             class="similar-movie-link">
+            <img th:if="${sm.posterUrl != null and !#strings.isEmpty(sm.posterUrl)}"
+                 th:src="${sm.posterUrl}" th:alt="${sm.title}"
+                 class="similar-movie-poster"/>
+            <div class="similar-movie-info">
+              <div class="similar-movie-title" th:text="${sm.title}">Title</div>
+              <div class="similar-movie-year" th:text="${sm.releaseYear}">Year</div>
+            </div>
+          </a>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Comments Section -->
-  <section class="play-comments-section">
-    <div class="play-comments-header">
-      <i class="ph-fill ph-chat-circle-text" style="font-size:1.5rem;color:var(--red)"></i>
-      <h2>Discussion <span class="text-muted-sm" th:text="'(' + ${#lists.size(comments)} + ')'"></span></h2>
-    </div>
-
-    <div class="detail-card" style="margin-bottom:32px">
-      <div th:if="${currentUser != null}">
-        <textarea id="comment-input" class="form-control"
-                  placeholder="What did you think of the movie?" rows="3"
-                  style="background:rgba(255,255,255,0.03);border-color:rgba(255,255,255,0.1);padding:16px;font-size:1rem"></textarea>
-        <div style="display:flex;justify-content:flex-end;margin-top:12px">
-          <button class="btn btn-primary" onclick="submitCommentInline(this)">Post Comment</button>
-        </div>
-      </div>
-      <div th:if="${currentUser == null}" class="comment-login-box" style="text-align:center;padding:24px">
-        <p class="text-secondary-md">Want to join the discussion?</p>
-        <a href="/auth/login" class="btn btn-primary btn-sm" style="margin-top:12px">Login to Comment</a>
-      </div>
-    </div>
-
-    <div id="comment-list">
-      <div class="comment-box" th:each="c : ${comments}" style="margin-bottom:20px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05)">
-        <div class="comment-header">
-          <span class="comment-author">
-            <i class="ph-fill ph-user" style="color:var(--text-secondary);margin-right:8px"></i>
-            <span th:text="${c.user.username}" style="font-weight:600">User</span>
-          </span>
-          <span class="comment-date" th:text="${#temporals.format(c.createdAt, 'MMM dd, yyyy HH:mm')}">Date</span>
-        </div>
-        <p class="comment-text" th:text="${c.commentText}" style="margin-top:10px;font-size:0.95rem;line-height:1.5;color:rgba(255,255,255,0.85)">Comment text</p>
-      </div>
-      
-      <div th:if="${#lists.isEmpty(comments)}" class="empty-comments-state" id="noCommentsState">
-        <div style="font-size:3rem;margin-bottom:12px;color:rgba(255,255,255,0.1)">
-          <i class="ph-fill ph-chat-circle-dots"></i>
-        </div>
-        <p>No comments yet. Start the conversation!</p>
-      </div>
-    </div>
-  </section>
 </main>
 
 <!-- Resume Watch Modal -->
