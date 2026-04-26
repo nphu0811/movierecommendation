@@ -202,6 +202,7 @@
   }
 
   // Save progress every 30s
+  updateProgress(); // Initial call to mark as started
   setInterval(updateProgress, 30000);
   window.onbeforeunload = updateProgress;
 

@@ -102,7 +102,7 @@ public class InteractionService {
     }
 
     public List<WatchHistory> getWatchHistory(Integer userId) {
-        return watchHistoryRepository.findByUserUserIdOrderByWatchedAtAsc(userId);
+        return watchHistoryRepository.findByUserUserIdOrderByWatchedAtDesc(userId);
     }
 
     public List<WatchHistory> getRecentWatchHistory(Integer userId, int limit) {
