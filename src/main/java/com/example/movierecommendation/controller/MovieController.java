@@ -99,8 +99,10 @@ public class MovieController {
         // Add server URLs
         String imdbId = (dto.getMovieLink() != null) ? dto.getMovieLink().getImdbId() : null;
         if (imdbId != null && !imdbId.isBlank()) {
-            model.addAttribute("server2Embed", "https://www.2embed.online/embed/movie/" + imdbId.trim());
-            model.addAttribute("serverSuperEmbed", buildSuperEmbedUrl(imdbId.trim()));
+            // Server 1 (Primary) - SuperEmbed
+            model.addAttribute("server1", buildSuperEmbedUrl(imdbId.trim()));
+            // Server 2 (Secondary) - 2Embed
+            model.addAttribute("server2", "https://www.2embed.online/embed/movie/" + imdbId.trim());
         }
 
         // Watch History / Progress
