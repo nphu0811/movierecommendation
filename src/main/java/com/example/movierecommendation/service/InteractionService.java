@@ -45,7 +45,7 @@ public class InteractionService {
     // ──────────────────── RATING ────────────────────
 
     @Transactional
-    @CacheEvict(value = {"user_ai_recommendations", "recommendations"}, key = "#userId")
+    @CacheEvict(value = "recommendations", key = "#userId")
     public Rating rateMovie(Integer userId, Integer movieId, Integer score) {
         checkRateLimit(userId, "rateMovie");
         Optional<Rating> existing = ratingRepository.findByUserUserIdAndMovieMovieId(userId, movieId);
@@ -83,7 +83,7 @@ public class InteractionService {
     // ──────────────────── WATCH HISTORY ────────────────────
 
     @Transactional
-    @CacheEvict(value = {"user_ai_recommendations", "recommendations"}, key = "#userId")
+    @CacheEvict(value = "recommendations", key = "#userId")
     public void markAsWatched(Integer userId, Integer movieId, Integer duration, Double progress) {
         WatchHistory wh = watchHistoryRepository.findByUserUserIdAndMovieMovieId(userId, movieId)
             .orElseGet(() -> {
