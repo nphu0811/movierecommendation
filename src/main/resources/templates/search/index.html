@@ -42,6 +42,14 @@
 
             <!-- Recommendations Section (Shown when no search results or on landing) -->
             <div class="search-results-section section" th:if="${keyword == null or #lists.isEmpty(movies)}">
+                
+                <!-- Empty Search State -->
+                <div th:if="${keyword != null and #lists.isEmpty(movies)}" class="search-empty-state" style="margin-bottom: 40px;">
+                    <i class="ph-bold ph-magnifying-glass"></i>
+                    <h2 th:text="|No results for &quot;${keyword}&quot;|">No results found</h2>
+                    <p>Try different keywords or explore our top picks below.</p>
+                </div>
+
                 <div th:if="${recommendations != null and !#lists.isEmpty(recommendations)}">
                     <div class="section-header">
                         <h2 class="section-title">
@@ -58,13 +66,6 @@
                             </div>
                         </th:block>
                     </div>
-                </div>
-                
-                <!-- Empty Search State -->
-                <div th:if="${keyword != null and #lists.isEmpty(movies)}" class="search-empty-state">
-                    <i class="ph-bold ph-magnifying-glass"></i>
-                    <h2 th:text="|No results for &quot;${keyword}&quot;|">No results found</h2>
-                    <p>Try different keywords or explore our top picks below.</p>
                 </div>
             </div>
 
