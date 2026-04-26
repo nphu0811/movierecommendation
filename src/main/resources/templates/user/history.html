@@ -37,13 +37,19 @@
       <div style="flex:1">
         <a th:href="@{/movies/{id}(id=${wh.movie.movieId})}"
            style="font-weight:600;font-size:.95rem" th:text="${wh.movie.title}">Title</a>
-        <div style="display:flex;gap:1rem;margin-top:.3rem">
+        <div style="display:flex;gap:1rem;margin-top:.3rem;flex-wrap:wrap">
           <span style="color:#6c757d;font-size:.8rem" th:text="${wh.movie.releaseYear}">2024</span>
           <span style="font-size:.8rem;color:#6c757d">
-            Watched: <span th:text="${#temporals.format(wh.watchedAt, 'MMM dd, yyyy')}">Date</span>
+            <i class="ph ph-calendar" style="vertical-align:-1px"></i> <span th:text="${#temporals.format(wh.watchedAt, 'MMM dd, yyyy')}">Date</span>
+          </span>
+          <span style="font-size:.8rem;color:#6c757d">
+            <i class="ph ph-clock" style="vertical-align:-1px"></i> <span th:text="${wh.getFormattedDuration()}">0s</span>
           </span>
         </div>
-        <div class="genre-tags" style="margin-top:.4rem">
+        <div style="width:120px;height:4px;background:#333;border-radius:2px;margin-top:.6rem" th:if="${wh.progress != null and wh.progress > 0}">
+          <div style="height:100%;background:var(--primary);border-radius:2px;box-shadow:0 0 8px var(--primary-glow)" th:style="'width:' + ${wh.progress} + '%'"></div>
+        </div>
+        <div class="genre-tags" style="margin-top:.5rem">
           <span class="genre-tag" th:each="g : ${wh.movie.genres}" th:text="${g.genreName}">Genre</span>
         </div>
       </div>
@@ -54,7 +60,7 @@
   <div class="empty-state" th:if="${#lists.isEmpty(watchHistory)}">
     <div class="icon"><i class="ph-fill ph-film-strip"></i></div>
     <h3>No watch history yet</h3>
-    <p style="margin-bottom:1.5rem">Movies you mark as watched will appear here.</p>
+    <p style="margin-bottom:1.5rem">Movies you start watching will appear here.</p>
     <a href="/movies" class="btn btn-primary">Browse Movies</a>
   </div>
 </div>

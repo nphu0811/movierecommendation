@@ -21,6 +21,7 @@ public class HomeController {
     @Autowired private MovieService movieService;
     @Autowired private RecommendationService recommendationService;
     @Autowired private UserService userService;
+    @Autowired private InteractionService interactionService;
     @Autowired @Qualifier("homePageExecutor") private Executor homeExecutor;
 
     @GetMapping({"/", "/home"})
@@ -61,6 +62,9 @@ public class HomeController {
             } catch (Exception e) {
                 model.addAttribute("genrePicks", Collections.emptyList());
             }
+
+            // Add Continue Watching (recent history with progress)
+            model.addAttribute("continueWatching", interactionService.getRecentWatchHistory(currentUser.getUserId(), 10));
         }
 
         if (currentUser != null) {

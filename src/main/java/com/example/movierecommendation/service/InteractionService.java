@@ -105,6 +105,12 @@ public class InteractionService {
         return watchHistoryRepository.findByUserUserIdOrderByWatchedAtAsc(userId);
     }
 
+    public List<WatchHistory> getRecentWatchHistory(Integer userId, int limit) {
+        // We might want to sort by Descending to get most recent first
+        return watchHistoryRepository.findByUserUserIdOrderByWatchedAtDesc(userId)
+            .stream().limit(limit).toList();
+    }
+
     public Optional<WatchHistory> getWatchHistoryEntry(Integer userId, Integer movieId) {
         return watchHistoryRepository.findByUserUserIdAndMovieMovieId(userId, movieId);
     }

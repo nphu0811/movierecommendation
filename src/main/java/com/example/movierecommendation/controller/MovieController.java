@@ -98,11 +98,15 @@ public class MovieController {
 
         // Add server URLs
         String imdbId = (dto.getMovieLink() != null) ? dto.getMovieLink().getImdbId() : null;
-        if (imdbId != null && !imdbId.isBlank()) {
+        Integer tmdbId = (dto.getMovieLink() != null) ? dto.getMovieLink().getTmdbId() : null;
+
+        String primaryId = (imdbId != null && !imdbId.isBlank()) ? imdbId.trim() : (tmdbId != null ? String.valueOf(tmdbId) : null);
+
+        if (primaryId != null) {
             // Server 1 (Primary) - SuperEmbed
-            model.addAttribute("server1", buildSuperEmbedUrl(imdbId.trim()));
+            model.addAttribute("server1", buildSuperEmbedUrl(primaryId));
             // Server 2 (Secondary) - 2Embed
-            model.addAttribute("server2", "https://www.2embed.online/embed/movie/" + imdbId.trim());
+            model.addAttribute("server2", "https://www.2embed.online/embed/movie/" + primaryId);
         }
 
         // Watch History / Progress
@@ -121,12 +125,19 @@ public class MovieController {
                                        @AuthenticationPrincipal UserDetails userDetails) {
         String username = userDetails != null ? userDetails.getUsername() : null;
         MovieDetailDTO dto = movieFacade.getMovieDetail(id, username);
-        if (dto == null || dto.getMovieLink() == null || dto.getMovieLink().getImdbId() == null
-                || dto.getMovieLink().getImdbId().isBlank()) {
+        if (dto == null || dto.getMovieLink() == null) {
             return "redirect:/movies/" + id + "/play";
         }
 
-        return "redirect:" + buildSuperEmbedUrl(dto.getMovieLink().getImdbId().trim());
+        String imdbId = dto.getMovieLink().getImdbId();
+        Integer tmdbId = dto.getMovieLink().getTmdbId();
+        String primaryId = (imdbId != null && !imdbId.isBlank()) ? imdbId.trim() : (tmdbId != null ? String.valueOf(tmdbId) : null);
+
+        if (primaryId == null) {
+            return "redirect:/movies/" + id + "/play";
+        }
+
+        return "redirect:" + buildSuperEmbedUrl(primaryId);
     }
 
     private String buildSuperEmbedUrl(String imdbId) {

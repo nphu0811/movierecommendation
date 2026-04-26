@@ -133,7 +133,7 @@
     </div>
     <div class="movies-row" th:if="${watchHistory != null and !watchHistory.isEmpty()}">
       <th:block th:each="wh, iterWh : ${watchHistory}">
-        <div th:if="${iterWh.index < 6}" th:replace="~{fragments :: movieCard(${wh.movie})}"></div>
+        <div th:if="${iterWh.index < 6}" th:replace="~{fragments :: movieCard(movie=${wh.movie}, progress=${wh.progress})}"></div>
       </th:block>
     </div>
     <div class="empty-state" th:if="${watchHistory == null or watchHistory.isEmpty()}" style="padding:2rem">
@@ -206,19 +206,14 @@ function manageCountdown(btnId, forceStart = false) {
 }
 
 async function handleSendCode(btnId, url) {
-  // Bắt đầu đếm ngược ngay lập tức trên giao diện
   manageCountdown(btnId, true);
-  
   try {
-    // postFetch đã được định nghĩa trong app.js, xử lý sẵn CSRF
     const res = await postFetch(url);
     const data = await res.json();
-    
     if (res.ok) {
       showToast(data.message || 'Đã gửi mã thành công!', 'success');
     } else {
       showToast(data.error || 'Lỗi gửi mã', 'error');
-      // Nếu lỗi từ server, cho phép bấm lại ngay (không bắt chờ 60s)
       localStorage.removeItem('countdown_' + btnId);
       manageCountdown(btnId);
     }

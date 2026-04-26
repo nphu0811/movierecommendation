@@ -53,7 +53,7 @@
     <div th:unless="${server1 != null}"
          class="empty-comments-state" style="padding:100px 20px;height:100%;display:flex;flex-direction:column;justify-content:center">
       <i class="ph ph-warning-circle" style="font-size:3rem;margin-bottom:16px;opacity:0.5"></i>
-      <p>This movie is currently unavailable for streaming (IMDb ID missing).</p>
+      <p>This movie is currently unavailable for streaming (IMDb/TMDB ID missing).</p>
     </div>
   </div>
 
@@ -219,6 +219,7 @@
         document.getElementById('resumeModal').classList.add('active');
       }, 1000);
     }
+  });
 
   function switchServer(btn) {
     const src = btn.dataset.src;

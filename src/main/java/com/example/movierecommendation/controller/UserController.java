@@ -31,8 +31,21 @@ public class UserController {
     public String profile(@AuthenticationPrincipal UserDetails userDetails, Model model) {
         User user = userService.getCurrentUser(userDetails.getUsername());
         model.addAttribute("currentUser", user);
-        model.addAttribute("watchHistory", interactionService.getWatchHistory(user.getUserId()));
-        model.addAttribute("watchlist", interactionService.getWatchlist(user.getUserId()));
+        
+        List<WatchHistory> history = interactionService.getWatchHistory(user.getUserId());
+        List<Watchlist> watchlist = interactionService.getWatchlist(user.getUserId());
+        
+        model.addAttribute("watchHistory", history);
+        model.addAttribute("watchlist", watchlist);
+        
+        // Progress Map for Watchlist items
+        Map<Integer, Double> progressMap = new HashMap<>();
+        for (Watchlist wl : watchlist) {
+            interactionService.getWatchHistoryEntry(user.getUserId(), wl.getMovie().getMovieId())
+                .ifPresent(wh -> progressMap.put(wl.getMovie().getMovieId(), wh.getProgress()));
+        }
+        model.addAttribute("progressMap", progressMap);
+        
         return "user/profile";
     }
 
@@ -118,7 +131,17 @@ public class UserController {
     public String watchlist(@AuthenticationPrincipal UserDetails userDetails, Model model) {
         User user = userService.getCurrentUser(userDetails.getUsername());
         model.addAttribute("currentUser", user);
-        model.addAttribute("watchlist", interactionService.getWatchlist(user.getUserId()));
+        
+        List<Watchlist> watchlist = interactionService.getWatchlist(user.getUserId());
+        model.addAttribute("watchlist", watchlist);
+        
+        Map<Integer, Double> progressMap = new HashMap<>();
+        for (Watchlist wl : watchlist) {
+            interactionService.getWatchHistoryEntry(user.getUserId(), wl.getMovie().getMovieId())
+                .ifPresent(wh -> progressMap.put(wl.getMovie().getMovieId(), wh.getProgress()));
+        }
+        model.addAttribute("progressMap", progressMap);
+        
         return "user/watchlist";
     }
 

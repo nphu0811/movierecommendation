@@ -13,6 +13,7 @@ import java.util.Optional;
 public interface WatchHistoryRepository extends JpaRepository<WatchHistory, Integer> {
 
     List<WatchHistory> findByUserUserIdOrderByWatchedAtAsc(Integer userId);
+    List<WatchHistory> findByUserUserIdOrderByWatchedAtDesc(Integer userId);
 
     List<WatchHistory> findByUserUserIdOrderByWatchedAtAsc(Integer userId, Pageable pageable);
 

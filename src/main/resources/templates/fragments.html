@@ -81,6 +81,12 @@
          onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
     <div class="movie-poster-placeholder"
          th:style="${movie.posterUrl != null and !#strings.isEmpty(movie.posterUrl)} ? 'display:none' : 'display:flex'"><i class="ph-fill ph-film-strip"></i></div>
+    
+    <!-- Progress Bar -->
+    <div class="movie-card-progress" th:if="${progress != null and progress > 0}">
+      <div class="progress-bar-fill" th:style="'width:' + ${progress} + '%'"></div>
+    </div>
+
     <div class="movie-overlay">
       <div class="overlay-actions">
         <a th:href="@{/movies/{id}(id=${movie.movieId})}"
