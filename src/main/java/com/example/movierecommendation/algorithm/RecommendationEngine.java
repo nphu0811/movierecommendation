@@ -203,8 +203,23 @@ public class RecommendationEngine {
         for (WatchHistory wh : history) {
             Movie movie = wh.getMovie();
             if (movie == null || movie.getGenres() == null) continue;
+            
+            // Base weight for having watched the movie
+            double weight = 1.0;
+            
+            // Increase weight based on time watched
+            if (wh.getWatchDuration() != null) {
+                if (wh.getWatchDuration() > 600) weight += 1.0;  // > 10 minutes
+                if (wh.getWatchDuration() > 3600) weight += 1.0; // > 1 hour
+            }
+            
+            // Significant weight for finishing or nearly finishing the movie
+            if (wh.getProgress() != null && wh.getProgress() > 80) {
+                weight += 2.0;
+            }
+            
             for (Genre g : movie.getGenres()) {
-                genreProfile.merge(g.getGenreId(), 2.0, Double::sum);
+                genreProfile.merge(g.getGenreId(), weight, Double::sum);
             }
         }
         return genreProfile;

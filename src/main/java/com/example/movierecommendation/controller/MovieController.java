@@ -111,6 +111,9 @@ public class MovieController {
 
         // Watch History / Progress
         if (dto.getCurrentUser() != null) {
+            // Auto-record in history (initial)
+            interactionService.markAsWatched(dto.getCurrentUser().getUserId(), id, null, null);
+            
             interactionService.getWatchHistoryEntry(dto.getCurrentUser().getUserId(), id)
                 .ifPresent(wh -> model.addAttribute("lastDuration", wh.getWatchDuration()));
         }
