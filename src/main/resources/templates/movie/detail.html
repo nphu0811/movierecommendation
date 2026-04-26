@@ -334,6 +334,8 @@
         showToast('Tag đã thêm!', 'success');
       })
       .catch(() => showToast('Lỗi thêm tag', 'error'));
+  }
+
   function recordAndPlay(movieId) {
       const headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
       const csrfMeta = document.querySelector('meta[name="_csrf"]');
