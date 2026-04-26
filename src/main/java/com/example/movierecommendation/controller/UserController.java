@@ -1,7 +1,10 @@
 package com.example.movierecommendation.controller;
 
 import com.example.movierecommendation.entity.User;
+import com.example.movierecommendation.entity.WatchHistory;
+import com.example.movierecommendation.entity.Watchlist;
 import com.example.movierecommendation.service.*;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
