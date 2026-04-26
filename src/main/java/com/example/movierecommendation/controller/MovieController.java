@@ -11,6 +11,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.util.UriComponentsBuilder;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import org.springframework.validation.annotation.Validated;
@@ -22,6 +23,14 @@ import java.util.Optional;
 @Controller
 @Validated
 public class MovieController {
+    private static final String PLAYER_FONT = "Poppins";
+    private static final String PLAYER_BG_COLOR = "000000";
+    private static final String PLAYER_FONT_COLOR = "ffffff";
+    private static final String PLAYER_PRIMARY_COLOR = "34cfeb";
+    private static final String PLAYER_SECONDARY_COLOR = "6900e0";
+    private static final int PLAYER_LOADER = 1;
+    private static final int PREFERRED_SERVER = 0;
+    private static final int PLAYER_SOURCES_TOGGLE_TYPE = 2;
 
     @Autowired
     private MovieService movieService;
@@ -70,6 +79,63 @@ public class MovieController {
         
         model.addAttribute("similarMovies", dto.getSimilarMovies());
         return "movie/detail";
+    }
+
+    @GetMapping("/movies/{id}/play")
+    public String moviePlay(@PathVariable("id") @Min(1) @Max(Integer.MAX_VALUE) Integer id,
+                            @AuthenticationPrincipal UserDetails userDetails,
+                            Model model) {
+        String username = userDetails != null ? userDetails.getUsername() : null;
+        MovieDetailDTO dto = movieFacade.getMovieDetail(id, username);
+        if (dto == null) return "redirect:/movies";
+
+        model.addAttribute("movie", dto.getMovie());
+        model.addAttribute("movieLink", dto.getMovieLink());
+        model.addAttribute("comments", dto.getComments());
+        if (dto.getCurrentUser() != null) {
+            model.addAttribute("currentUser", dto.getCurrentUser());
+        }
+
+        // Add server URLs
+        String imdbId = (dto.getMovieLink() != null) ? dto.getMovieLink().getImdbId() : null;
+        if (imdbId != null && !imdbId.isBlank()) {
+            model.addAttribute("server2Embed", "https://www.2embed.online/embed/movie/" + imdbId.trim());
+            model.addAttribute("serverSuperEmbed", buildSuperEmbedUrl(imdbId.trim()));
+        }
+
+        return "movie/play";
+    }
+
+    @GetMapping("/movies/{id}/play/superembed")
+    public String redirectToSuperEmbed(@PathVariable("id") @Min(1) @Max(Integer.MAX_VALUE) Integer id,
+                                       @AuthenticationPrincipal UserDetails userDetails) {
+        String username = userDetails != null ? userDetails.getUsername() : null;
+        MovieDetailDTO dto = movieFacade.getMovieDetail(id, username);
+        if (dto == null || dto.getMovieLink() == null || dto.getMovieLink().getImdbId() == null
+                || dto.getMovieLink().getImdbId().isBlank()) {
+            return "redirect:/movies/" + id + "/play";
+        }
+
+        return "redirect:" + buildSuperEmbedUrl(dto.getMovieLink().getImdbId().trim());
+    }
+
+    private String buildSuperEmbedUrl(String imdbId) {
+        return UriComponentsBuilder
+                .fromHttpUrl("https://getsuperembed.link/")
+                .queryParam("video_id", imdbId)
+                .queryParam("tmdb", 0)
+                .queryParam("season", 0)
+                .queryParam("episode", 0)
+                .queryParam("player_font", PLAYER_FONT)
+                .queryParam("player_bg_color", PLAYER_BG_COLOR)
+                .queryParam("player_font_color", PLAYER_FONT_COLOR)
+                .queryParam("player_primary_color", PLAYER_PRIMARY_COLOR)
+                .queryParam("player_secondary_color", PLAYER_SECONDARY_COLOR)
+                .queryParam("player_loader", PLAYER_LOADER)
+                .queryParam("preferred_server", PREFERRED_SERVER)
+                .queryParam("player_sources_toggle_type", PLAYER_SOURCES_TOGGLE_TYPE)
+                .build()
+                .toUriString();
     }
 
     @PostMapping("/api/movies/{id}/rate")

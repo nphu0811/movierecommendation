@@ -53,6 +53,11 @@
 
       <!-- Primary action: Trailer -->
       <div class="action-buttons-group">
+        <a class="watch-btn trailer"
+           th:if="${movieLink != null and movieLink.imdbId != null and !#strings.isEmpty(movieLink.imdbId)}"
+           th:href="@{/movies/{id}/play(id=${movie.movieId})}">
+          <i class="ph-fill ph-play-circle" style="margin-right:6px"></i> Play
+        </a>
         <button class="watch-btn trailer"
                 th:if="${movie.trailerKey != null and !#strings.isEmpty(movie.trailerKey)}"
                 th:data-trailer-key="${movie.trailerKey}"
