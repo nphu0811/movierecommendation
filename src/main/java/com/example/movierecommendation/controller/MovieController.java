@@ -103,6 +103,12 @@ public class MovieController {
             model.addAttribute("serverSuperEmbed", buildSuperEmbedUrl(imdbId.trim()));
         }
 
+        // Watch History / Progress
+        if (dto.getCurrentUser() != null) {
+            interactionService.getWatchHistoryEntry(dto.getCurrentUser().getUserId(), id)
+                .ifPresent(wh -> model.addAttribute("lastDuration", wh.getWatchDuration()));
+        }
+
         return "movie/play";
     }
 

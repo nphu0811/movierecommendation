@@ -125,9 +125,80 @@
   </section>
 </main>
 
+<!-- Resume Watch Modal -->
+<div id="resumeModal" class="resume-modal" th:if="${lastDuration != null and lastDuration > 10}">
+  <div class="resume-content">
+    <div class="resume-icon">
+      <i class="ph-fill ph-play"></i>
+    </div>
+    <div class="resume-text">Hệ thống ghi nhận bạn đã từng xem phim này trước đó! Bạn có muốn xem tiếp từ đoạn:</div>
+    <div class="resume-timestamp" id="resumeTimestampDisplay">00:00:00</div>
+    <div class="resume-actions">
+      <button class="resume-btn resume-btn-primary" onclick="resumeFromLast()">Xem tiếp</button>
+      <button class="resume-btn resume-btn-secondary" onclick="closeResumeModal()">Từ đầu</button>
+    </div>
+  </div>
+</div>
+
 <script th:src="@{/js/app.js}"></script>
 <script th:inline="javascript">
   const MOVIE_ID = /*[[${movie.movieId}]]*/ 0;
+  const LAST_DURATION = /*[[${lastDuration}]]*/ 0;
+  let startTime = Date.now();
+  let totalWatchedSeconds = LAST_DURATION || 0;
+  let sessionSeconds = 0;
+
+  // Format seconds to HH:MM:SS
+  function formatTime(seconds) {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    return [h, m, s].map(v => v < 10 ? '0' + v : v).join(':');
+  }
+
+  // Progress Tracking
+  function updateProgress() {
+    sessionSeconds = Math.floor((Date.now() - startTime) / 1000);
+    const total = (LAST_DURATION || 0) + sessionSeconds;
+    
+    const headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
+    const csrfMeta = document.querySelector('meta[name="_csrf"]');
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]');
+    if (csrfMeta) headers[csrfHeader.content] = csrfMeta.content;
+
+    fetch(`/api/movies/${MOVIE_ID}/watch?duration=${total}`, { 
+      method: 'POST', 
+      headers 
+    }).catch(console.error);
+  }
+
+  // Save progress every 30s
+  setInterval(updateProgress, 30000);
+  window.onbeforeunload = updateProgress;
+
+  // Resume Logic
+  function resumeFromLast() {
+    const player = document.getElementById('mainPlayer');
+    if (player && LAST_DURATION > 0) {
+      const currentSrc = player.src;
+      // Append start parameter (works for 2Embed and SuperEmbed)
+      const connector = currentSrc.includes('?') ? '&' : '?';
+      player.src = currentSrc + connector + 'start=' + LAST_DURATION;
+    }
+    closeResumeModal();
+  }
+
+  function closeResumeModal() {
+    document.getElementById('resumeModal').classList.remove('active');
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    if (LAST_DURATION > 10) {
+      document.getElementById('resumeTimestampDisplay').textContent = formatTime(LAST_DURATION);
+      setTimeout(() => {
+        document.getElementById('resumeModal').classList.add('active');
+      }, 1000);
+    }
 
   function switchServer(btn) {
     const src = btn.dataset.src;

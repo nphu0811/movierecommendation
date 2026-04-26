@@ -2528,3 +2528,110 @@ textarea.form-control { resize: vertical; min-height: 100px; }
   font-size: 1.5rem;
   margin: 0;
 }
+
+/* ── RESUME WATCH MODAL ── */
+.resume-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.4s var(--ease);
+}
+
+.resume-modal.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.resume-content {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 24px;
+  padding: 40px;
+  max-width: 450px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+  transform: translateY(20px);
+  transition: transform 0.4s var(--ease);
+}
+
+.resume-modal.active .resume-content {
+  transform: translateY(0);
+}
+
+.resume-icon {
+  width: 64px;
+  height: 64px;
+  background: var(--red);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+  font-size: 2rem;
+  color: white;
+  box-shadow: 0 0 20px var(--red-glow);
+}
+
+.resume-text {
+  font-size: 1rem;
+  color: rgba(255,255,255,0.8);
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+
+.resume-timestamp {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--red);
+  margin: 16px 0 32px;
+  font-family: 'Poppins', sans-serif;
+  letter-spacing: 2px;
+}
+
+.resume-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.resume-btn {
+  padding: 14px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+}
+
+.resume-btn-primary {
+  background: var(--red);
+  color: white;
+}
+
+.resume-btn-primary:hover {
+  background: #e50914;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px var(--red-glow);
+}
+
+.resume-btn-secondary {
+  background: rgba(255,255,255,0.1);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.resume-btn-secondary:hover {
+  background: rgba(255,255,255,0.15);
+  transform: translateY(-2px);
+}

@@ -51,7 +51,6 @@
          th:if="${movie.description != null and !#strings.isEmpty(movie.description)}"
          th:text="${movie.description}">Description</p>
 
-      <!-- Primary action: Trailer -->
       <div class="action-buttons-group">
         <a class="watch-btn trailer"
            th:if="${movieLink != null and movieLink.imdbId != null and !#strings.isEmpty(movieLink.imdbId)}"
@@ -77,13 +76,9 @@
       <!-- User actions -->
       <div style="display:flex;gap:10px;flex-wrap:wrap">
         <th:block th:if="${currentUser != null}">
-          <button th:if="${hasWatched}" class="btn btn-success" disabled><i class="ph-bold ph-check" style="margin-right:6px"></i> Watched</button>
-          <button th:unless="${hasWatched}" class="btn btn-primary"
-                  th:onclick="|markWatched(${movie.movieId}, this)|"><i class="ph-bold ph-check" style="margin-right:6px"></i> Mark Watched</button>
           <button class="btn btn-outline watchlist-btn"
                   th:classappend="${inWatchlist} ? 'in-list'"
-                  th:onclick="|toggleWatchlist(${movie.movieId}, this)|"
-                  >
+                  th:onclick="|toggleWatchlist(${movie.movieId}, this)|">
             <th:block th:if="${inWatchlist}">
               <i class="ph-fill ph-heart" style="margin-right:6px"></i> In Watchlist
             </th:block>
@@ -200,9 +195,6 @@
                style="flex:1;padding:8px 12px"/>
         <button class="btn btn-primary btn-sm" onclick="submitTag()">＋ Add</button>
       </div>
-      <div th:if="${currentUser == null}" class="comment-login-box">
-        <a href="/auth/login" class="login-link-highlight">Đăng nhập</a> để gắn tag cho phim.
-      </div>
     </div>
 
     <!-- Comments -->
@@ -217,10 +209,6 @@
                   placeholder="Share your thoughts…" rows="3"></textarea>
         <button class="btn btn-primary btn-sm" style="margin-top:10px"
                 onclick="submitCommentInline(this)">Post Comment</button>
-      </div>
-
-      <div th:if="${currentUser == null}" class="comment-login-box">
-        <a href="/auth/login" class="login-link-highlight">Login</a> to leave a comment.
       </div>
 
       <div id="comment-list">
@@ -252,18 +240,12 @@
                th:src="${sm.posterUrl}" th:alt="${sm.title}"
                class="similar-movie-poster"
                onerror="this.style.display='none'"/>
-          <div th:unless="${sm.posterUrl != null and !#strings.isEmpty(sm.posterUrl)}"
-               class="movie-placeholder-sm"><i class="ph-fill ph-film-strip"></i></div>
           <div class="similar-movie-info">
             <div class="similar-movie-title" th:text="${sm.title}">Title</div>
             <div class="similar-movie-year" th:text="${sm.releaseYear}">Year</div>
-            <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">
-              <span class="genre-tag" th:each="g : ${sm.genres}" th:text="${g.genreName}">G</span>
-            </div>
           </div>
         </a>
       </div>
-      <p th:if="${#lists.isEmpty(similarMovies)}" class="text-muted-md">No similar movies found.</p>
     </div>
   </div>
 </div>
@@ -272,7 +254,6 @@
 <script th:src="@{/js/app.js}"></script>
 <script th:inline="javascript">
   const MOVIE_ID = /*[[${movie.movieId}]]*/ 0;
-
   document.addEventListener('DOMContentLoaded', () => {
     const container = document.querySelector('[data-star-rating]');
     if (container) initStarRating(container, container.dataset.movieId, parseInt(container.dataset.current || '0'));
@@ -288,11 +269,6 @@
     document.getElementById('trailerModal').classList.remove('active');
     document.body.style.overflow = '';
   }
-  function closeTrailerOnBg(e) {
-    if (e.target === document.getElementById('trailerModal')) closeTrailer();
-  }
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeTrailer(); });
-
   function submitCommentInline(btn) {
     const input = document.getElementById('comment-input');
     const text = input.value.trim();
@@ -306,7 +282,7 @@
       .then(r => r.json())
       .then(data => {
         const list = document.getElementById('comment-list');
-        const empty = list.querySelector('[style*="text-align:center"]');
+        const empty = list.querySelector('.empty-comments-state');
         if (empty) empty.remove();
         const now = new Date();
         const dateStr = now.toLocaleDateString('en-US',{month:'short',day:'2-digit',year:'numeric'})
@@ -340,10 +316,8 @@
       .then(data => {
         if (data.error) { showToast(data.error, 'error'); return; }
         const list = document.getElementById('tag-list');
-        // Remove "no tags" placeholder if present
         const empty = list.querySelector('.empty-comments-state');
         if (empty) empty.remove();
-        // Add new pill or increment existing
         const existing = [...list.querySelectorAll('.tag-pill')].find(p => p.querySelector('span').textContent === data.tag);
         if (existing) {
           const cnt = existing.querySelector('.tag-count');
@@ -360,15 +334,6 @@
       })
       .catch(() => showToast('Lỗi thêm tag', 'error'));
   }
-
-  // Submit tag on Enter key
-  document.addEventListener('DOMContentLoaded', () => {
-    const tagInput = document.getElementById('tag-input');
-    if (tagInput) {
-      tagInput.addEventListener('keydown', e => { if (e.key === 'Enter') submitTag(); });
-    }
-  });
-
 </script>
 </body>
 </html>

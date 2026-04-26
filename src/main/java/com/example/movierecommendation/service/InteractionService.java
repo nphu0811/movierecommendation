@@ -105,6 +105,10 @@ public class InteractionService {
         return watchHistoryRepository.findByUserUserIdOrderByWatchedAtAsc(userId);
     }
 
+    public Optional<WatchHistory> getWatchHistoryEntry(Integer userId, Integer movieId) {
+        return watchHistoryRepository.findByUserUserIdAndMovieMovieId(userId, movieId);
+    }
+
     public boolean hasWatched(Integer userId, Integer movieId) {
         return watchHistoryRepository.existsByUserUserIdAndMovieMovieId(userId, movieId);
     }
