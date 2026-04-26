@@ -79,6 +79,26 @@
          </span>
        </div>
     </div>
+
+    <!-- Similar Movies -->
+    <div class="detail-card" th:if="${!#lists.isEmpty(similarMovies)}" style="margin-top:20px;background:rgba(255,255,255,0.02)">
+      <h3 style="font-size:0.85rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;color:rgba(255,255,255,0.5)">
+        <i class="ph-fill ph-film-strip" style="margin-right:8px"></i> Similar Movies
+      </h3>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <a th:each="sm : ${similarMovies}"
+           th:href="@{/movies/{id}/play(id=${sm.movieId})}"
+           class="similar-movie-link" style="display:flex;gap:12px;text-decoration:none;align-items:center;padding:8px;border-radius:12px;transition:all 0.3s var(--ease)">
+          <img th:if="${sm.posterUrl != null and !#strings.isEmpty(sm.posterUrl)}"
+               th:src="${sm.posterUrl}" th:alt="${sm.title}"
+               style="width:50px;height:70px;object-fit:cover;border-radius:8px;box-shadow:0 4px 10px rgba(0,0,0,0.3)"/>
+          <div class="similar-movie-info" style="flex:1">
+            <div class="similar-movie-title" th:text="${sm.title}" style="color:white;font-weight:600;font-size:0.9rem;margin-bottom:2px">Title</div>
+            <div class="similar-movie-year" th:text="${sm.releaseYear}" style="color:rgba(255,255,255,0.4);font-size:0.8rem">Year</div>
+          </div>
+        </a>
+      </div>
+    </div>
   </div>
 
   <!-- Comments Section -->

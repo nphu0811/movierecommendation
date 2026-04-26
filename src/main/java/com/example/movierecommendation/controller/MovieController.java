@@ -111,6 +111,8 @@ public class MovieController {
                 .ifPresent(wh -> model.addAttribute("lastDuration", wh.getWatchDuration()));
         }
 
+        model.addAttribute("similarMovies", dto.getSimilarMovies());
+
         return "movie/play";
     }
 
