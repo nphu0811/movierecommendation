@@ -269,6 +269,9 @@
     document.getElementById('trailerModal').classList.remove('active');
     document.body.style.overflow = '';
   }
+  function closeTrailerOnBg(event) {
+    if (event.target === document.getElementById('trailerModal')) closeTrailer();
+  }
   function submitCommentInline(btn) {
     const input = document.getElementById('comment-input');
     const text = input.value.trim();
@@ -333,8 +336,6 @@
         showToast('Tag đã thêm!', 'success');
       })
       .catch(() => showToast('Lỗi thêm tag', 'error'));
-  }
-
   }
 </script>
 </body>
