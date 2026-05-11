@@ -2304,6 +2304,37 @@ textarea.form-control { resize: vertical; min-height: 100px; }
   margin-bottom: var(--space-5);
 }
 
+.search-subheader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin: var(--space-6) 0 var(--space-3);
+}
+
+.search-subheader h3 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--white);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.search-subheader h3 i {
+  color: var(--red);
+}
+
+.search-subheader span {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.vector-results-block {
+  margin-bottom: var(--space-6);
+}
+
 /* Empty State Enhancements */
 .search-empty-state {
   text-align: center;
@@ -2346,11 +2377,14 @@ textarea.form-control { resize: vertical; min-height: 100px; }
   pointer-events: none;
 }
 
+.vector-badge {
+  background: linear-gradient(45deg, #22c55e, #38bdf8);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.28);
+}
+
 .movie-card-wrapper {
   position: relative;
   transition: transform var(--t-mid) var(--ease);
-  width: 185px;
-  flex: 0 0 185px;
   overflow: visible;
 }
 

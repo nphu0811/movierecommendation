@@ -81,4 +81,7 @@ public interface MovieRepository extends JpaRepository<Movie, Integer> {
 
     @Query("SELECT DISTINCT m FROM Movie m LEFT JOIN FETCH m.genres WHERE m.movieId IN :ids")
     List<Movie> findAllByIdWithGenres(@Param("ids") List<Integer> ids);
+
+    @Query("SELECT DISTINCT m FROM Movie m LEFT JOIN FETCH m.genres")
+    List<Movie> findAllWithGenres();
 }

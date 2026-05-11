@@ -76,10 +76,40 @@
                         <span th:text="${#lists.size(movies)}">0</span> Results for "<span th:text="${keyword}" style="color:var(--white)">query</span>"
                     </h2>
                 </div>
-                <div class="movies-grid">
-                    <th:block th:each="movie : ${movies}">
-                        <div th:replace="~{fragments :: movieCard(${movie})}"></div>
-                    </th:block>
+
+                <div class="vector-results-block" th:if="${vectorMovies != null and !#lists.isEmpty(vectorMovies)}">
+                    <div class="search-subheader">
+                        <h3><i class="ph-bold ph-sparkle"></i> Vector Search</h3>
+                        <span th:text="${#lists.size(vectorMovies)} + ' semantic matches'">0 semantic matches</span>
+                    </div>
+                    <div class="movies-grid">
+                        <th:block th:each="movie : ${vectorMovies}">
+                            <div class="movie-card-wrapper">
+                                <div class="rec-badge vector-badge">Vector</div>
+                                <div th:replace="~{fragments :: movieCard(${movie})}"></div>
+                            </div>
+                        </th:block>
+                    </div>
+                </div>
+
+                <div th:if="${otherMatches != null and !#lists.isEmpty(otherMatches)}">
+                    <div class="search-subheader">
+                        <h3><i class="ph-bold ph-list-magnifying-glass"></i> Keyword Matches</h3>
+                        <span th:text="${#lists.size(otherMatches)} + ' direct matches'">0 direct matches</span>
+                    </div>
+                    <div class="movies-grid">
+                        <th:block th:each="movie : ${otherMatches}">
+                            <div th:replace="~{fragments :: movieCard(${movie})}"></div>
+                        </th:block>
+                    </div>
+                </div>
+
+                <div th:if="${(vectorMovies == null or #lists.isEmpty(vectorMovies)) and (otherMatches == null or #lists.isEmpty(otherMatches))}">
+                    <div class="movies-grid">
+                        <th:block th:each="movie : ${movies}">
+                            <div th:replace="~{fragments :: movieCard(${movie})}"></div>
+                        </th:block>
+                    </div>
                 </div>
             </div>
         </div>

@@ -110,8 +110,26 @@ public class HomeController {
             return "search/index";
         }
 
-        model.addAttribute("movies", movieService.searchMovies(q.trim()));
-        model.addAttribute("keyword", q.trim());
+        String keyword = q.trim();
+        List<Movie> vectorMovies = movieService.searchMoviesByVector(keyword);
+        List<Movie> textMovies = movieService.searchMoviesTextOnly(keyword);
+        Set<Integer> vectorIds = new HashSet<>();
+        for (Movie movie : vectorMovies) {
+            vectorIds.add(movie.getMovieId());
+        }
+        List<Movie> otherMatches = new ArrayList<>();
+        for (Movie movie : textMovies) {
+            if (!vectorIds.contains(movie.getMovieId())) {
+                otherMatches.add(movie);
+            }
+        }
+        List<Movie> movies = new ArrayList<>(vectorMovies);
+        movies.addAll(otherMatches);
+
+        model.addAttribute("movies", movies);
+        model.addAttribute("vectorMovies", vectorMovies);
+        model.addAttribute("otherMatches", otherMatches);
+        model.addAttribute("keyword", keyword);
         return "search/index"; // We will use the same template for landing and results
     }
 
