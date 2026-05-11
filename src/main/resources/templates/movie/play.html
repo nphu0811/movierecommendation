@@ -14,7 +14,7 @@
 <div th:replace="~{fragments :: mobileNav('movies')}"></div>
 
 <!-- Lights Out Overlay -->
-<div id="lightsOutOverlay" class="lights-out-overlay"></div>
+<div id="lightsOutOverlay" class="lights-out-overlay" onclick="toggleLightsOut()"></div>
 
 <main class="player-main-container">
   <div class="player-header">
@@ -277,6 +277,16 @@
       btn.querySelector('i').className = 'ph ph-lamp';
     }
   }
+
+  // Handle Escape key to turn lights back on
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const overlay = document.getElementById('lightsOutOverlay');
+      if (overlay && overlay.classList.contains('active')) {
+        toggleLightsOut();
+      }
+    }
+  });
 
   // Restore preferred server
   document.addEventListener('DOMContentLoaded', () => {

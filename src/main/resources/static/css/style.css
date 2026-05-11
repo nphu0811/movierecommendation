@@ -2493,6 +2493,8 @@ textarea.form-control { resize: vertical; min-height: 100px; }
   font-weight: 600;
   cursor: pointer;
   transition: all var(--t-fast);
+  position: relative;
+  z-index: 101;
 }
 
 .lights-out-btn:hover {
