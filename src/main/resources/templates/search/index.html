@@ -52,8 +52,11 @@
 
                 <div th:if="${recommendations != null and !#lists.isEmpty(recommendations)}">
                     <div class="section-header">
-                        <h2 class="section-title">
-                            <i class="ph-fill ph-sparkle" style="color:var(--red);margin-right:8px"></i> 
+                         <h2 class="section-title section-title--lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 256 256"
+                                style="margin-right:8px; vertical-align:middle">
+                                <path d="M239.29,144.29l-49.95,14.65a25.86,25.86,0,0,0-17.4,17.4l-14.65,49.95a15.89,15.89,0,0,1-30.58,0l-14.65-49.95a25.86,25.86,0,0,0-17.4-17.4l-49.95-14.65a15.89,15.89,0,0,1,0-30.58l49.95-14.65a25.86,25.86,0,0,0,17.4-17.4l14.65-49.95a15.89,15.89,0,0,1,30.58,0l14.65,49.95a25.86,25.86,0,0,0,17.4,17.4l49.95,14.65A15.89,15.89,0,0,1,239.29,144.29Z"></path>
+                            </svg>  
                             <span th:text="${currentUser != null ? 'Recommended for You' : 'Trending Movies'}">Recommendations</span>
                         </h2>
                         <a href="/user/recommendations" class="view-all">View all →</a>
