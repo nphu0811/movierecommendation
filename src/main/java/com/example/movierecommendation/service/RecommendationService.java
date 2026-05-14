@@ -9,6 +9,8 @@ import com.example.movierecommendation.repository.MovieRepository;
 import com.example.movierecommendation.repository.RecommendationLogRepository;
 import com.example.movierecommendation.repository.UserRecommendationRepository;
 import com.example.movierecommendation.repository.UserRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +25,8 @@ import java.util.*;
 public class RecommendationService {
 
     private static final Logger log = LoggerFactory.getLogger(RecommendationService.class);
+
+    @PersistenceContext private EntityManager entityManager;
 
     @Autowired private RecommendationEngine engine;
     @Autowired private MovieRepository movieRepository;
@@ -108,11 +112,13 @@ public class RecommendationService {
         }
     }
 
+    @Transactional
     private void persistRecommendations(Integer userId, String algorithmType, List<Movie> movies, long started, String notes) {
         try {
             User user = userRepository.findById(userId).orElse(null);
             if (user != null) {
-                userRecommendationRepository.deleteByUserUserIdAndAlgorithmType(userId, algorithmType);
+                userRecommendationRepository.deleteAndFlushByUserIdAndAlgorithmType(userId, algorithmType);
+                entityManager.flush();
                 List<UserRecommendation> rows = new ArrayList<>();
                 for (int i = 0; i < movies.size(); i++) {
                     UserRecommendation row = new UserRecommendation();
@@ -133,7 +139,7 @@ public class RecommendationService {
             logRow.setNotes(notes);
             recommendationLogRepository.save(logRow);
         } catch (Exception e) {
-            log.debug("Could not persist recommendation metadata for user {}: {}", userId, e.getMessage());
+            log.warn("Could not persist recommendations for user {}: {}", userId, e.getMessage());
         }
     }
 
