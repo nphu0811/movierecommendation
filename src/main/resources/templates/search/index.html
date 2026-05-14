@@ -85,7 +85,7 @@
                     <div class="section-header">
                         <h2 class="section-title">
                             <i class="ph-bold ph-magnifying-glass" style="color:var(--red);margin-right:8px"></i>
-                            Kết quả tìm kiếm "<span th:text="${keyword}" style="color:var(--white)">query</span>"
+                            Search Results for "<span th:text="${keyword}" style="color:var(--white)">query</span>"
                         </h2>
                         <span class="view-all" th:text="${#lists.size(movies)} + ' kết quả'">0 kết quả</span>
                     </div>
@@ -107,11 +107,14 @@
                 <!-- Section 2: Nội dung tương tự -->
                 <div class="search-results-section section" th:if="${similarMovies != null and !#lists.isEmpty(similarMovies)}">
                     <div class="section-header">
-                        <h2 class="section-title">
-                            <i class="ph-bold ph-filmstrip" style="color:var(--red);margin-right:8px"></i>
-                            Nội dung <span>tương tự</span>
+                        <h2 class="section-title section-title--lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 256 256"
+                                style="margin-right:8px; vertical-align:middle">
+                                <path d="M239.29,144.29l-49.95,14.65a25.86,25.86,0,0,0-17.4,17.4l-14.65,49.95a15.89,15.89,0,0,1-30.58,0l-14.65-49.95a25.86,25.86,0,0,0-17.4-17.4l-49.95-14.65a15.89,15.89,0,0,1,0-30.58l49.95-14.65a25.86,25.86,0,0,0,17.4-17.4l14.65-49.95a15.89,15.89,0,0,1,30.58,0l14.65,49.95a25.86,25.86,0,0,0,17.4,17.4l49.95,14.65A15.89,15.89,0,0,1,239.29,144.29Z"></path>
+                            </svg>
+                            Recommended <span>Similar</span>
                         </h2>
-                        <span class="view-all" th:text="'Đề xuất cho bạn'">Đề xuất cho bạn</span>
+                        <span class="view-all" th:text="'Recommended Similar'">Recommended Similar</span>
                     </div>
                     <div class="row-scroll-wrapper">
                         <button class="row-arrow row-arrow--left" aria-label="Scroll left">
@@ -131,15 +134,18 @@
                 <!-- Section 3: AI Recommendations -->
                 <div class="search-results-section section" th:if="${recommendations != null and !#lists.isEmpty(recommendations)}">
                     <div class="section-header">
-                        <h2 class="section-title">
-                            <i class="ph-fill ph-sparkle" style="color:var(--red);margin-right:8px"></i>
-                            Đề xuất dựa trên <span>tìm kiếm của bạn</span>
+                        <h2 class="section-title section-title--lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 256 256"
+                                style="margin-right:8px; vertical-align:middle">
+                                <path d="M239.29,144.29l-49.95,14.65a25.86,25.86,0,0,0-17.4,17.4l-14.65,49.95a15.89,15.89,0,0,1-30.58,0l-14.65-49.95a25.86,25.86,0,0,0-17.4-17.4l-49.95-14.65a15.89,15.89,0,0,1,0-30.58l49.95-14.65a25.86,25.86,0,0,0,17.4-17.4l14.65-49.95a15.89,15.89,0,0,1,30.58,0l14.65,49.95a25.86,25.86,0,0,0,17.4,17.4l49.95,14.65A15.89,15.89,0,0,1,239.29,144.29Z"></path>
+                            </svg>
+                            Recommended <span>For You</span>
                         </h2>
                         <span class="view-all">
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 256 256" style="margin-right:4px">
                                 <path d="M197.58,129.06,146,110l-19-51.62a15.92,15.92,0,0,0-29.88,0L78,110l-51.62,19a15.92,15.92,0,0,0,0,29.88L78,178l19,51.62a15.92,15.92,0,0,0,29.88,0L146,178l51.62-19A15.92,15.92,0,0,0,197.58,129.06Z"></path>
                             </svg>
-                            AI đề xuất cho bạn
+                            AI Recommended
                         </span>
                     </div>
                     <div class="row-scroll-wrapper">

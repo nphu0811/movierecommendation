@@ -100,7 +100,7 @@ public class HomeController {
 
         if (q == null || q.trim().isEmpty()) {
             // No search query — resolve recommendations now
-            resolveRecommendations(model, recFuture, currentUser);
+            resolveRecommendations(model, recFuture, currentUser, null);
             model.addAttribute("allGenres", movieService.getAllGenres());
             return "search/index";
         }
@@ -142,9 +142,6 @@ public class HomeController {
         List<Movie> movies = new ArrayList<>(vectorMovies);
         movies.addAll(otherMatches);
 
-        // Resolve recommendations (should be done by now since search took time)
-        resolveRecommendations(model, recFuture, currentUser);
-
         // Build "similar movies" from genres of top search results
         Set<Integer> genreIds = new LinkedHashSet<>();
         int topN = Math.min(5, movies.size());
@@ -161,25 +158,45 @@ public class HomeController {
             similarMovies = movieService.findByGenreIdsExcluding(new ArrayList<>(genreIds), excludeIds, 20);
         }
 
+        Set<Integer> allSeenIds = new HashSet<>(seenIds);
+        for (Movie sm : similarMovies) {
+            allSeenIds.add(sm.getMovieId());
+        }
+
+        // Resolve recommendations (should be done by now since search took time)
+        resolveRecommendations(model, recFuture, currentUser, allSeenIds);
+
         model.addAttribute("movies", movies);
         model.addAttribute("similarMovies", similarMovies);
         model.addAttribute("keyword", keyword);
         return "search/index";
     }
 
-    private void resolveRecommendations(Model model, CompletableFuture<List<Movie>> recFuture, User currentUser) {
+    private void resolveRecommendations(Model model, CompletableFuture<List<Movie>> recFuture, User currentUser, Set<Integer> excludeIds) {
+        List<Movie> recs;
         if (recFuture != null && currentUser != null) {
             try {
-                model.addAttribute("recommendations", recFuture.get(1500, TimeUnit.MILLISECONDS));
+                recs = recFuture.get(1500, TimeUnit.MILLISECONDS);
             } catch (Exception e) {
                 recFuture.cancel(true);
-                model.addAttribute("recommendations", recommendationService.getTrendingMoviesForUser(currentUser.getUserId()));
+                recs = recommendationService.getTrendingMoviesForUser(currentUser.getUserId());
             }
         } else if (currentUser != null) {
-            model.addAttribute("recommendations", recommendationService.getTrendingMoviesForUser(currentUser.getUserId()));
+            recs = recommendationService.getTrendingMoviesForUser(currentUser.getUserId());
         } else {
-            model.addAttribute("recommendations", recommendationService.getTrendingMovies());
+            recs = recommendationService.getTrendingMovies();
         }
+
+        if (excludeIds != null && !excludeIds.isEmpty() && recs != null) {
+            List<Movie> filteredRecs = new ArrayList<>();
+            for (Movie m : recs) {
+                if (!excludeIds.contains(m.getMovieId())) {
+                    filteredRecs.add(m);
+                }
+            }
+            recs = filteredRecs;
+        }
+        model.addAttribute("recommendations", recs);
     }
 
     @GetMapping("/api/search/autocomplete")
