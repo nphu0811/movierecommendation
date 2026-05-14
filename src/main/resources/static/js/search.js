@@ -1,5 +1,5 @@
 /**
- * Search Page Autocomplete & Interaction
+ * Search Page Autocomplete & Row Scroll Arrows
  */
 (function() {
     const input = document.getElementById('mainSearchInput');
@@ -130,4 +130,43 @@
     // Initial clear button check
     toggleClearBtn();
 
+})();
+
+/**
+ * Row Scroll Arrow Navigation
+ */
+(function() {
+    const SCROLL_AMOUNT = 600; // px to scroll per click
+
+    document.querySelectorAll('.row-scroll-wrapper').forEach(wrapper => {
+        const row = wrapper.querySelector('.movies-row');
+        const leftBtn = wrapper.querySelector('.row-arrow--left');
+        const rightBtn = wrapper.querySelector('.row-arrow--right');
+
+        if (!row || !leftBtn || !rightBtn) return;
+
+        function updateArrows() {
+            const atStart = row.scrollLeft <= 4;
+            const atEnd = row.scrollLeft + row.clientWidth >= row.scrollWidth - 4;
+
+            leftBtn.classList.toggle('hidden', atStart);
+            rightBtn.classList.toggle('hidden', atEnd);
+        }
+
+        leftBtn.addEventListener('click', () => {
+            row.scrollBy({ left: -SCROLL_AMOUNT, behavior: 'smooth' });
+        });
+
+        rightBtn.addEventListener('click', () => {
+            row.scrollBy({ left: SCROLL_AMOUNT, behavior: 'smooth' });
+        });
+
+        row.addEventListener('scroll', updateArrows, { passive: true });
+        window.addEventListener('resize', updateArrows, { passive: true });
+
+        // Initial check
+        updateArrows();
+        // Re-check after cards become visible (they start with opacity:0)
+        setTimeout(updateArrows, 500);
+    });
 })();

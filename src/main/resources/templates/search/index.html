@@ -40,7 +40,7 @@
                 </div>
             </div>
 
-            <!-- Recommendations Section (Shown when no search results or on landing) -->
+            <!-- ── Landing page (no search query) ── -->
             <div class="search-results-section section" th:if="${keyword == null or #lists.isEmpty(movies)}">
                 
                 <!-- Empty Search State -->
@@ -58,56 +58,108 @@
                         </h2>
                         <a href="/user/recommendations" class="view-all">View all →</a>
                     </div>
-                    <div class="movies-row">
-                        <th:block th:each="movie : ${recommendations}">
-                            <div class="movie-card-wrapper">
-                                <div class="rec-badge">AI Pick</div>
-                                <div th:replace="~{fragments :: movieCard(${movie})}"></div>
-                            </div>
-                        </th:block>
+                    <div class="row-scroll-wrapper">
+                        <button class="row-arrow row-arrow--left" aria-label="Scroll left">
+                            <i class="ph-bold ph-caret-left"></i>
+                        </button>
+                        <div class="movies-row">
+                            <th:block th:each="movie : ${recommendations}">
+                                <div class="movie-card-wrapper">
+                                    <div class="rec-badge">AI Pick</div>
+                                    <div th:replace="~{fragments :: movieCard(${movie})}"></div>
+                                </div>
+                            </th:block>
+                        </div>
+                        <button class="row-arrow row-arrow--right" aria-label="Scroll right">
+                            <i class="ph-bold ph-caret-right"></i>
+                        </button>
                     </div>
                 </div>
             </div>
 
-            <!-- Search Results Section -->
-            <div class="search-results-section section" th:if="${keyword != null and !#lists.isEmpty(movies)}">
-                <div class="section-header">
-                    <h2 class="section-title">
-                        <span th:text="${#lists.size(movies)}">0</span> Results for "<span th:text="${keyword}" style="color:var(--white)">query</span>"
-                    </h2>
-                </div>
+            <!-- ── Search Results ── -->
+            <div th:if="${keyword != null and !#lists.isEmpty(movies)}">
 
-                <div class="vector-results-block" th:if="${vectorMovies != null and !#lists.isEmpty(vectorMovies)}">
-                    <div class="search-subheader">
-                        <h3><i class="ph-bold ph-sparkle"></i> Vector Search</h3>
-                        <span th:text="${#lists.size(vectorMovies)} + ' semantic matches'">0 semantic matches</span>
+                <!-- Section 1: Kết quả tìm kiếm -->
+                <div class="search-results-section section">
+                    <div class="section-header">
+                        <h2 class="section-title">
+                            <i class="ph-bold ph-magnifying-glass" style="color:var(--red);margin-right:8px"></i>
+                            Kết quả tìm kiếm "<span th:text="${keyword}" style="color:var(--white)">query</span>"
+                        </h2>
+                        <span class="view-all" th:text="${#lists.size(movies)} + ' kết quả'">0 kết quả</span>
                     </div>
-                    <div class="movies-grid">
-                        <th:block th:each="movie : ${vectorMovies}">
-                            <div th:replace="~{fragments :: movieCard(${movie})}"></div>
-                        </th:block>
-                    </div>
-                </div>
-
-                <div th:if="${otherMatches != null and !#lists.isEmpty(otherMatches)}">
-                    <div class="search-subheader">
-                        <h3><i class="ph-bold ph-list-magnifying-glass"></i> Keyword Matches</h3>
-                        <span th:text="${#lists.size(otherMatches)} + ' direct matches'">0 direct matches</span>
-                    </div>
-                    <div class="movies-grid">
-                        <th:block th:each="movie : ${otherMatches}">
-                            <div th:replace="~{fragments :: movieCard(${movie})}"></div>
-                        </th:block>
+                    <div class="row-scroll-wrapper">
+                        <button class="row-arrow row-arrow--left" aria-label="Scroll left">
+                            <i class="ph-bold ph-caret-left"></i>
+                        </button>
+                        <div class="movies-row">
+                            <th:block th:each="movie : ${movies}">
+                                <div th:replace="~{fragments :: movieCard(${movie})}"></div>
+                            </th:block>
+                        </div>
+                        <button class="row-arrow row-arrow--right" aria-label="Scroll right">
+                            <i class="ph-bold ph-caret-right"></i>
+                        </button>
                     </div>
                 </div>
 
-                <div th:if="${(vectorMovies == null or #lists.isEmpty(vectorMovies)) and (otherMatches == null or #lists.isEmpty(otherMatches))}">
-                    <div class="movies-grid">
-                        <th:block th:each="movie : ${movies}">
-                            <div th:replace="~{fragments :: movieCard(${movie})}"></div>
-                        </th:block>
+                <!-- Section 2: Nội dung tương tự -->
+                <div class="search-results-section section" th:if="${similarMovies != null and !#lists.isEmpty(similarMovies)}">
+                    <div class="section-header">
+                        <h2 class="section-title">
+                            <i class="ph-bold ph-filmstrip" style="color:var(--red);margin-right:8px"></i>
+                            Nội dung <span>tương tự</span>
+                        </h2>
+                        <span class="view-all" th:text="'Đề xuất cho bạn'">Đề xuất cho bạn</span>
+                    </div>
+                    <div class="row-scroll-wrapper">
+                        <button class="row-arrow row-arrow--left" aria-label="Scroll left">
+                            <i class="ph-bold ph-caret-left"></i>
+                        </button>
+                        <div class="movies-row">
+                            <th:block th:each="movie : ${similarMovies}">
+                                <div th:replace="~{fragments :: movieCard(${movie})}"></div>
+                            </th:block>
+                        </div>
+                        <button class="row-arrow row-arrow--right" aria-label="Scroll right">
+                            <i class="ph-bold ph-caret-right"></i>
+                        </button>
                     </div>
                 </div>
+
+                <!-- Section 3: AI Recommendations -->
+                <div class="search-results-section section" th:if="${recommendations != null and !#lists.isEmpty(recommendations)}">
+                    <div class="section-header">
+                        <h2 class="section-title">
+                            <i class="ph-fill ph-sparkle" style="color:var(--red);margin-right:8px"></i>
+                            Đề xuất dựa trên <span>tìm kiếm của bạn</span>
+                        </h2>
+                        <span class="view-all">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 256 256" style="margin-right:4px">
+                                <path d="M197.58,129.06,146,110l-19-51.62a15.92,15.92,0,0,0-29.88,0L78,110l-51.62,19a15.92,15.92,0,0,0,0,29.88L78,178l19,51.62a15.92,15.92,0,0,0,29.88,0L146,178l51.62-19A15.92,15.92,0,0,0,197.58,129.06Z"></path>
+                            </svg>
+                            AI đề xuất cho bạn
+                        </span>
+                    </div>
+                    <div class="row-scroll-wrapper">
+                        <button class="row-arrow row-arrow--left" aria-label="Scroll left">
+                            <i class="ph-bold ph-caret-left"></i>
+                        </button>
+                        <div class="movies-row">
+                            <th:block th:each="movie : ${recommendations}">
+                                <div class="movie-card-wrapper">
+                                    <div class="rec-badge">AI Pick</div>
+                                    <div th:replace="~{fragments :: movieCard(${movie})}"></div>
+                                </div>
+                            </th:block>
+                        </div>
+                        <button class="row-arrow row-arrow--right" aria-label="Scroll right">
+                            <i class="ph-bold ph-caret-right"></i>
+                        </button>
+                    </div>
+                </div>
+
             </div>
         </div>
     </main>

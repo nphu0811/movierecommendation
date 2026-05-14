@@ -145,9 +145,24 @@ public class HomeController {
         // Resolve recommendations (should be done by now since search took time)
         resolveRecommendations(model, recFuture, currentUser);
 
+        // Build "similar movies" from genres of top search results
+        Set<Integer> genreIds = new LinkedHashSet<>();
+        int topN = Math.min(5, movies.size());
+        for (int i = 0; i < topN; i++) {
+            Movie m = movies.get(i);
+            if (m.getGenres() != null) {
+                for (var g : m.getGenres()) genreIds.add(g.getGenreId());
+            }
+        }
+        List<Movie> similarMovies = Collections.emptyList();
+        if (!genreIds.isEmpty()) {
+            List<Integer> excludeIds = new ArrayList<>(seenIds);
+            if (excludeIds.isEmpty()) excludeIds.add(-1);
+            similarMovies = movieService.findByGenreIdsExcluding(new ArrayList<>(genreIds), excludeIds, 20);
+        }
+
         model.addAttribute("movies", movies);
-        model.addAttribute("vectorMovies", vectorMovies);
-        model.addAttribute("otherMatches", otherMatches);
+        model.addAttribute("similarMovies", similarMovies);
         model.addAttribute("keyword", keyword);
         return "search/index";
     }

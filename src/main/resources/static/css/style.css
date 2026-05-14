@@ -2341,6 +2341,57 @@ textarea.form-control { resize: vertical; min-height: 100px; }
   margin-bottom: var(--space-6);
 }
 
+/* ── Row Scroll Wrapper with Navigation Arrows ── */
+.row-scroll-wrapper {
+  position: relative;
+  overflow: hidden;
+}
+.row-scroll-wrapper .movies-row {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.row-scroll-wrapper .movies-row::-webkit-scrollbar {
+  display: none;
+}
+.row-arrow {
+  position: absolute;
+  top: 0;
+  bottom: var(--space-4);
+  width: 48px;
+  z-index: 10;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 1.4rem;
+  opacity: 0;
+  transition: opacity var(--t-mid) var(--ease);
+  padding: 0;
+}
+.row-arrow--left {
+  left: 0;
+  background: linear-gradient(to right, rgba(0,0,0,.85) 0%, rgba(0,0,0,.4) 60%, transparent 100%);
+}
+.row-arrow--right {
+  right: 0;
+  background: linear-gradient(to left, rgba(0,0,0,.85) 0%, rgba(0,0,0,.4) 60%, transparent 100%);
+}
+.row-scroll-wrapper:hover .row-arrow {
+  opacity: 1;
+}
+.row-arrow:hover {
+  color: var(--red);
+}
+.row-arrow:active {
+  transform: scale(0.92);
+}
+.row-arrow.hidden {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
 /* Empty State Enhancements */
 .search-empty-state {
   text-align: center;

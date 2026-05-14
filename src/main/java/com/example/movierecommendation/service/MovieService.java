@@ -254,4 +254,8 @@ public class MovieService {
     public void deleteGenre(Integer id) {
         genreRepository.deleteById(id);
     }
+
+    public List<Movie> findByGenreIdsExcluding(List<Integer> genreIds, List<Integer> excludeIds, int limit) {
+        return movieRepository.findByGenreIdsAndNotInIds(genreIds, excludeIds, PageRequest.of(0, limit));
+    }
 }
