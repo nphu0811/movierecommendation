@@ -125,22 +125,23 @@ public class HomeController {
             textMovies = Collections.emptyList();
         }
 
-        // Deduplicate
+        // Deduplicate by ID and Title+Year (to handle duplicate DB records)
         Set<Integer> seenIds = new HashSet<>();
-        List<Movie> vectorMovies = new ArrayList<>();
+        Set<String> seenTitles = new HashSet<>();
+        List<Movie> movies = new ArrayList<>();
+
         for (Movie movie : vectorMoviesRaw) {
-            if (seenIds.add(movie.getMovieId())) {
-                vectorMovies.add(movie);
+            String key = (movie.getTitle() + "|" + movie.getReleaseYear()).toLowerCase();
+            if (seenIds.add(movie.getMovieId()) && seenTitles.add(key)) {
+                movies.add(movie);
             }
         }
-        List<Movie> otherMatches = new ArrayList<>();
         for (Movie movie : textMovies) {
-            if (seenIds.add(movie.getMovieId())) {
-                otherMatches.add(movie);
+            String key = (movie.getTitle() + "|" + movie.getReleaseYear()).toLowerCase();
+            if (seenIds.add(movie.getMovieId()) && seenTitles.add(key)) {
+                movies.add(movie);
             }
         }
-        List<Movie> movies = new ArrayList<>(vectorMovies);
-        movies.addAll(otherMatches);
 
         // Build "similar movies" from genres of top search results
         Set<Integer> genreIds = new LinkedHashSet<>();
