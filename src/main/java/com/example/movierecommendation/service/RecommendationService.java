@@ -114,13 +114,17 @@ public class RecommendationService {
             if (user != null) {
                 userRecommendationRepository.deleteByUserUserIdAndAlgorithmType(userId, algorithmType);
                 List<UserRecommendation> rows = new ArrayList<>();
+                Set<Integer> seenIds = new HashSet<>();
                 for (int i = 0; i < movies.size(); i++) {
-                    UserRecommendation row = new UserRecommendation();
-                    row.setUser(user);
-                    row.setMovie(movies.get(i));
-                    row.setAlgorithmType(algorithmType);
-                    row.setScore(BigDecimal.valueOf(Math.max(0.01, movies.size() - i)));
-                    rows.add(row);
+                    Movie m = movies.get(i);
+                    if (seenIds.add(m.getMovieId())) {
+                        UserRecommendation row = new UserRecommendation();
+                        row.setUser(user);
+                        row.setMovie(m);
+                        row.setAlgorithmType(algorithmType);
+                        row.setScore(BigDecimal.valueOf(Math.max(0.01, movies.size() - i)));
+                        rows.add(row);
+                    }
                 }
                 userRecommendationRepository.saveAll(rows);
             }
