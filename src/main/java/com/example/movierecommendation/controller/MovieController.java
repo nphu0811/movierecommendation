@@ -12,6 +12,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import org.springframework.validation.annotation.Validated;
@@ -155,7 +157,7 @@ public class MovieController {
     @ResponseBody
     public ResponseEntity<Map<String, Object>> rateMovie(
             @PathVariable("id") @Min(1) @Max(Integer.MAX_VALUE) Integer id,
-            @RequestParam(name = "score") @Min(1) @Max(5) Integer score,
+            @RequestParam(name = "score") @DecimalMin("0.5") @DecimalMax("5.0") Double score,
             @AuthenticationPrincipal UserDetails userDetails) {
         if (userDetails == null) return ResponseEntity.status(401).build();
         User user = userService.getCurrentUser(userDetails.getUsername());

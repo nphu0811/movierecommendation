@@ -46,8 +46,11 @@ public class InteractionService {
 
     @Transactional
     @CacheEvict(value = "recommendations", key = "#userId")
-    public Rating rateMovie(Integer userId, Integer movieId, Integer score) {
+    public Rating rateMovie(Integer userId, Integer movieId, Double score) {
         checkRateLimit(userId, "rateMovie");
+        if (score == null || score < 0.5 || score > 5.0 || Math.round(score * 2) != score * 2) {
+            throw new IllegalArgumentException("Rating must be from 0.5 to 5.0 in half-star steps");
+        }
         Optional<Rating> existing = ratingRepository.findByUserUserIdAndMovieMovieId(userId, movieId);
         Rating rating;
         if (existing.isPresent()) {

@@ -12,7 +12,7 @@ public class MovieDetailDTO {
     private Movie movie;
     private List<Comment> comments;
     private User currentUser;
-    private int userRating;
+    private Double userRating = 0.0;
     private boolean inWatchlist;
     private boolean hasWatched;
     private List<Movie> similarMovies;
@@ -29,8 +29,8 @@ public class MovieDetailDTO {
     public User getCurrentUser() { return currentUser; }
     public void setCurrentUser(User currentUser) { this.currentUser = currentUser; }
 
-    public int getUserRating() { return userRating; }
-    public void setUserRating(int userRating) { this.userRating = userRating; }
+    public Double getUserRating() { return userRating; }
+    public void setUserRating(Double userRating) { this.userRating = userRating; }
 
     public boolean isInWatchlist() { return inWatchlist; }
     public void setInWatchlist(boolean inWatchlist) { this.inWatchlist = inWatchlist; }

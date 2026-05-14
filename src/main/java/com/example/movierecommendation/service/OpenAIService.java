@@ -101,7 +101,7 @@ public class OpenAIService {
         // Lấy top 5 phim được rated cao nhất
         List<String> loved = ratings.stream()
             .filter(r -> r.getRating() >= 4 && r.getMovie() != null)
-            .sorted((a, b) -> b.getRating() - a.getRating())
+            .sorted((a, b) -> Double.compare(b.getRating(), a.getRating()))
             .limit(5)
             .map(r -> r.getMovie().getTitle())
             .collect(Collectors.toList());

@@ -31,11 +31,25 @@ public class WatchHistory {
     @Column(name = "watched_at")
     private LocalDateTime watchedAt;
 
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     public WatchHistory() {}
 
     @PrePersist
     protected void onCreate() {
         if (watchedAt == null) watchedAt = LocalDateTime.now();
+        if (watchDuration == null) watchDuration = 0;
+        if (progress == null) progress = 0.0;
+        if (updatedAt == null) updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 
     public Integer getHistoryId() { return historyId; }
@@ -55,6 +69,10 @@ public class WatchHistory {
 
     public LocalDateTime getWatchedAt() { return watchedAt; }
     public void setWatchedAt(LocalDateTime watchedAt) { this.watchedAt = watchedAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public LocalDateTime getDeletedAt() { return deletedAt; }
+    public void setDeletedAt(LocalDateTime deletedAt) { this.deletedAt = deletedAt; }
 
     /**
      * Trả về thời lượng xem định dạng "X phút Y giây"

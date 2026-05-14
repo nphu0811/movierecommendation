@@ -1,8 +1,14 @@
 package com.example.movierecommendation.service;
 
 import com.example.movierecommendation.algorithm.RecommendationEngine;
+import com.example.movierecommendation.entity.RecommendationLog;
 import com.example.movierecommendation.entity.Movie;
+import com.example.movierecommendation.entity.User;
+import com.example.movierecommendation.entity.UserRecommendation;
 import com.example.movierecommendation.repository.MovieRepository;
+import com.example.movierecommendation.repository.RecommendationLogRepository;
+import com.example.movierecommendation.repository.UserRecommendationRepository;
+import com.example.movierecommendation.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +16,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.*;
 
 @Service
@@ -20,6 +27,9 @@ public class RecommendationService {
     @Autowired private RecommendationEngine engine;
     @Autowired private MovieRepository movieRepository;
     @Autowired private OpenAIService openAIService;
+    @Autowired private UserRepository userRepository;
+    @Autowired private UserRecommendationRepository userRecommendationRepository;
+    @Autowired private RecommendationLogRepository recommendationLogRepository;
 
     private List<Movie> removeExcludedMovies(Integer userId, List<Movie> movies) {
         if (movies == null || movies.isEmpty()) return movies == null ? Collections.emptyList() : movies;
@@ -37,18 +47,26 @@ public class RecommendationService {
         return new ArrayList<>(list.subList(0, max));
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<Movie> getPersonalizedRecommendations(Integer userId) {
+        long started = System.currentTimeMillis();
         List<Movie> hybrid = removeExcludedMovies(userId, engine.getRecommendations(userId));
+        List<Movie> result = hybrid;
 
-        if (!openAIService.isEnabled()) return hybrid;
+        if (!openAIService.isEnabled()) {
+            persistRecommendations(userId, "HYBRID", result, started, "OpenAI disabled");
+            return result;
+        }
 
         try {
             List<Movie> candidates = movieRepository.findMostWatchedMoviesExcludingUserInteractions(
                 userId, PageRequest.of(0, 20));
             List<String> aiTitles = openAIService.getAIRecommendedTitles(userId, candidates);
 
-            if (aiTitles == null || aiTitles.isEmpty()) return hybrid;
+            if (aiTitles == null || aiTitles.isEmpty()) {
+                persistRecommendations(userId, "HYBRID", result, started, "OpenAI returned no titles");
+                return result;
+            }
 
             // Use structured lookup Map
             Map<String, Movie> titleIndex = new HashMap<>();
@@ -79,11 +97,43 @@ public class RecommendationService {
                 if (seen.add(m.getMovieId())) merged.add(m);
             }
 
-            return limitSize(removeExcludedMovies(userId, merged), 20);
+            result = limitSize(removeExcludedMovies(userId, merged), 20);
+            persistRecommendations(userId, "HYBRID_AI", result, started, "Generated with OpenAI reranking");
+            return result;
 
         } catch (Exception e) {
             log.warn("AI recommendation fallback for user {}: {}", userId, e.getMessage());
-            return hybrid;
+            persistRecommendations(userId, "HYBRID", result, started, "AI fallback: " + e.getMessage());
+            return result;
+        }
+    }
+
+    private void persistRecommendations(Integer userId, String algorithmType, List<Movie> movies, long started, String notes) {
+        try {
+            User user = userRepository.findById(userId).orElse(null);
+            if (user != null) {
+                userRecommendationRepository.deleteByUserUserIdAndAlgorithmType(userId, algorithmType);
+                List<UserRecommendation> rows = new ArrayList<>();
+                for (int i = 0; i < movies.size(); i++) {
+                    UserRecommendation row = new UserRecommendation();
+                    row.setUser(user);
+                    row.setMovie(movies.get(i));
+                    row.setAlgorithmType(algorithmType);
+                    row.setScore(BigDecimal.valueOf(Math.max(0.01, movies.size() - i)));
+                    rows.add(row);
+                }
+                userRecommendationRepository.saveAll(rows);
+            }
+
+            RecommendationLog logRow = new RecommendationLog();
+            logRow.setAlgorithmName(algorithmType);
+            logRow.setTotalUsers(1);
+            logRow.setTotalMovies(movies.size());
+            logRow.setExecutionTimeMs((int) (System.currentTimeMillis() - started));
+            logRow.setNotes(notes);
+            recommendationLogRepository.save(logRow);
+        } catch (Exception e) {
+            log.debug("Could not persist recommendation metadata for user {}: {}", userId, e.getMessage());
         }
     }
 

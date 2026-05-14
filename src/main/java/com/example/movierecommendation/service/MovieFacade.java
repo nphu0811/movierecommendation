@@ -47,7 +47,7 @@ public class MovieFacade {
             dto.setCurrentUser(currentUser);
 
             Optional<Rating> ratingOpt = interactionService.getUserRating(currentUserId, movieId);
-            dto.setUserRating(ratingOpt.isPresent() ? ratingOpt.get().getRating() : 0);
+            dto.setUserRating(ratingOpt.isPresent() ? ratingOpt.get().getRating() : 0.0);
             dto.setInWatchlist(interactionService.isInWatchlist(currentUserId, movieId));
             dto.setHasWatched(interactionService.hasWatched(currentUserId, movieId));
         }

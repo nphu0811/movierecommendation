@@ -1,6 +1,8 @@
 package com.example.movierecommendation.entity;
 
 import jakarta.persistence.*;
+
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -36,6 +38,18 @@ public class Movie {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
+    @Column(name = "average_rating", precision = 3, scale = 2)
+    private BigDecimal averageRating = BigDecimal.ZERO;
+
+    @Column(name = "rating_count")
+    private Integer ratingCount = 0;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "movie_genres",
@@ -59,17 +73,19 @@ public class Movie {
     @OneToMany(mappedBy = "movie", fetch = FetchType.LAZY)
     private List<Tag> tags;
 
-    @Transient
-    private Double averageRating;
-
-    @Transient
-    private Integer totalRatings;
-
     public Movie() {}
 
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) createdAt = LocalDateTime.now();
+        if (updatedAt == null) updatedAt = LocalDateTime.now();
+        if (averageRating == null) averageRating = BigDecimal.ZERO;
+        if (ratingCount == null) ratingCount = 0;
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 
     public Integer getMovieId() { return movieId; }
@@ -93,6 +109,10 @@ public class Movie {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public LocalDateTime getDeletedAt() { return deletedAt; }
+    public void setDeletedAt(LocalDateTime deletedAt) { this.deletedAt = deletedAt; }
 
     public List<Genre> getGenres() { return genres; }
     public void setGenres(List<Genre> genres) { this.genres = genres; }
@@ -112,9 +132,15 @@ public class Movie {
     public List<Tag> getTags() { return tags; }
     public void setTags(List<Tag> tags) { this.tags = tags; }
 
-    public Double getAverageRating() { return averageRating; }
-    public void setAverageRating(Double averageRating) { this.averageRating = averageRating; }
+    public Double getAverageRating() { return averageRating != null ? averageRating.doubleValue() : 0.0; }
+    public void setAverageRating(Double averageRating) {
+        this.averageRating = averageRating != null ? BigDecimal.valueOf(averageRating) : BigDecimal.ZERO;
+    }
+    public BigDecimal getAverageRatingValue() { return averageRating; }
+    public void setAverageRatingValue(BigDecimal averageRating) { this.averageRating = averageRating; }
 
-    public Integer getTotalRatings() { return totalRatings; }
-    public void setTotalRatings(Integer totalRatings) { this.totalRatings = totalRatings; }
+    public Integer getRatingCount() { return ratingCount != null ? ratingCount : 0; }
+    public void setRatingCount(Integer ratingCount) { this.ratingCount = ratingCount; }
+    public Integer getTotalRatings() { return getRatingCount(); }
+    public void setTotalRatings(Integer totalRatings) { this.ratingCount = totalRatings; }
 }

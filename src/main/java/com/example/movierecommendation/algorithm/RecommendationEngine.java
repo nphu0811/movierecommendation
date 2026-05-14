@@ -19,6 +19,7 @@ public class RecommendationEngine {
     @Autowired private RatingRepository ratingRepository;
     @Autowired private WatchHistoryRepository watchHistoryRepository;
     @Autowired private MovieRepository movieRepository;
+    @Autowired private SimilarMovieRepository similarMovieRepository;
 
     @org.springframework.beans.factory.annotation.Value("${recommendation.alpha:0.40}")
     private double alpha;
@@ -115,6 +116,16 @@ public class RecommendationEngine {
     }
 
     public List<Movie> getSimilarMovies(Movie targetMovie, Integer currentUserId) {
+        List<Movie> storedSimilar = similarMovieRepository
+            .findByMovieMovieIdOrderBySimilarityScoreDesc(targetMovie.getMovieId(), PageRequest.of(0, similarMoviesLimit))
+            .stream()
+            .map(SimilarMovie::getSimilarMovie)
+            .filter(movie -> movie.getDeletedAt() == null)
+            .toList();
+        if (!storedSimilar.isEmpty()) {
+            return currentUserId == null ? storedSimilar : removeExcluded(storedSimilar, buildExcludedMovieIds(currentUserId));
+        }
+
         List<Integer> targetGenreIds = new ArrayList<>();
         if (targetMovie.getGenres() != null) {
             for (Genre g : targetMovie.getGenres()) targetGenreIds.add(g.getGenreId());
@@ -144,6 +155,15 @@ public class RecommendationEngine {
 
         List<Movie> result = new ArrayList<>();
         for (int i = 0; i < Math.min(similarMoviesLimit, similar.size()); i++) result.add(similar.get(i));
+        return result;
+    }
+
+    private List<Movie> removeExcluded(List<Movie> movies, Set<Integer> excluded) {
+        if (excluded.isEmpty()) return movies;
+        List<Movie> result = new ArrayList<>();
+        for (Movie movie : movies) {
+            if (!excluded.contains(movie.getMovieId())) result.add(movie);
+        }
         return result;
     }
 
@@ -196,7 +216,7 @@ public class RecommendationEngine {
             Movie movie = r.getMovie();
             if (movie == null || movie.getGenres() == null) continue;
             for (Genre g : movie.getGenres()) {
-                genreProfile.merge(g.getGenreId(), (double) r.getRating(), Double::sum);
+                genreProfile.merge(g.getGenreId(), r.getRating(), Double::sum);
             }
         }
         List<WatchHistory> history = watchHistoryRepository.findByUserUserIdOrderByWatchedAtAsc(userId);
@@ -310,7 +330,7 @@ public class RecommendationEngine {
     private Map<Integer, Double> toRatingVector(List<Rating> ratings) {
         Map<Integer, Double> vector = new HashMap<>();
         for (Rating r : ratings) {
-            vector.putIfAbsent(r.getMovie().getMovieId(), (double) r.getRating());
+            vector.putIfAbsent(r.getMovie().getMovieId(), r.getRating());
         }
         return vector;
     }

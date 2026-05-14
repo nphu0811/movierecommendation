@@ -8,9 +8,17 @@ import java.util.List;
 
 @Repository
 public interface CommentRepository extends JpaRepository<Comment, Integer> {
-    List<Comment> findByMovieMovieIdOrderByCreatedAtDesc(Integer movieId);
-    List<Comment> findByUserUserIdOrderByCreatedAtDesc(Integer userId);
+    List<Comment> findByMovieMovieIdAndDeletedAtIsNullOrderByCreatedAtDesc(Integer movieId);
+    List<Comment> findByUserUserIdAndDeletedAtIsNullOrderByCreatedAtDesc(Integer userId);
 
-    @Query("SELECT COUNT(c) FROM Comment c")
+    default List<Comment> findByMovieMovieIdOrderByCreatedAtDesc(Integer movieId) {
+        return findByMovieMovieIdAndDeletedAtIsNullOrderByCreatedAtDesc(movieId);
+    }
+
+    default List<Comment> findByUserUserIdOrderByCreatedAtDesc(Integer userId) {
+        return findByUserUserIdAndDeletedAtIsNullOrderByCreatedAtDesc(userId);
+    }
+
+    @Query("SELECT COUNT(c) FROM Comment c WHERE c.deletedAt IS NULL")
     Long countAllComments();
 }

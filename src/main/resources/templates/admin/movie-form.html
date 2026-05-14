@@ -42,6 +42,19 @@
           </div>
         </div>
 
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+          <div class="form-group">
+            <label class="form-label">Backdrop URL</label>
+            <input type="url" name="backdropUrl" class="form-control"
+                   th:value="${movie?.backdropUrl}" placeholder="https://..."/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">YouTube Trailer Key</label>
+            <input type="text" name="trailerKey" class="form-control"
+                   th:value="${movie?.trailerKey}" maxlength="50" placeholder="dQw4w9WgXcQ"/>
+          </div>
+        </div>
+
         <div class="form-group">
           <label class="form-label">Description</label>
           <textarea name="description" class="form-control" rows="4"

@@ -308,16 +308,24 @@ function postFetch(url) {
 // ── Star Rating ──────────────────────────────────────────────
 function initStarRating(container, movieId, currentRating) {
   var stars = container.querySelectorAll('.star');
-  var selected = currentRating || 0;
+  var selected = Number(currentRating || 0);
+  function scoreFromEvent(star, idx, event) {
+    var rect = star.getBoundingClientRect();
+    var isHalf = (event.clientX - rect.left) <= rect.width / 2;
+    return idx + (isHalf ? 0.5 : 1);
+  }
   function paint(n) {
-    stars.forEach(function(s, i) { s.classList.toggle('filled', i < n); });
+    stars.forEach(function(s, i) {
+      s.classList.toggle('filled', i + 1 <= n);
+      s.classList.toggle('half', i < n && i + 1 > n);
+    });
   }
   paint(selected);
   stars.forEach(function(star, idx) {
-    star.addEventListener('mouseenter', function() { paint(idx + 1); });
+    star.addEventListener('mousemove', function(event) { paint(scoreFromEvent(star, idx, event)); });
     star.addEventListener('mouseleave', function() { paint(selected); });
-    star.addEventListener('click', async function() {
-      selected = idx + 1;
+    star.addEventListener('click', async function(event) {
+      selected = scoreFromEvent(star, idx, event);
       paint(selected);
       try {
         var res = await postFetch('/api/movies/' + movieId + '/rate?score=' + selected);

@@ -32,49 +32,22 @@ public class MovieService {
 
 
     public Page<Movie> getAllMovies(int page, int size) {
-        Page<Movie> moviePage = movieRepository.findAll(PageRequest.of(page, size, Sort.by("movieId").ascending()));
-        enrichWithRatings(moviePage.getContent());
-        return moviePage;
+        return movieRepository.findByDeletedAtIsNull(PageRequest.of(page, size, Sort.by("movieId").ascending()));
     }
 
     private void enrichWithRatings(List<Movie> movies) {
-        if (movies == null || movies.isEmpty()) return;
-        List<Integer> ids = movies.stream().map(Movie::getMovieId).collect(Collectors.toList());
-        List<Object[]> stats = ratingRepository.findRatingStatsByMovieIds(ids);
-        
-        Map<Integer, Object[]> statsMap = stats.stream()
-            .collect(Collectors.toMap(
-                row -> (Integer) row[0],
-                row -> row
-            ));
-            
-        for (Movie m : movies) {
-            Object[] row = statsMap.get(m.getMovieId());
-            if (row != null) {
-                Double avg = (Double) row[1];
-                Long count = (Long) row[2];
-                m.setAverageRating(avg != null ? Math.round(avg * 10.0) / 10.0 : 0.0);
-                m.setTotalRatings(count != null ? count.intValue() : 0);
-            } else {
-                m.setAverageRating(0.0);
-                m.setTotalRatings(0);
-            }
-        }
+        // Rating stats are maintained by DB trigger in movies.average_rating/rating_count.
     }
 
     public Optional<Movie> findById(Integer id) {
-        Optional<Movie> opt = movieRepository.findById(id);
-        opt.ifPresent(movie -> {
-            Double avg = ratingRepository.findAverageRatingByMovieId(id);
-            Long count = ratingRepository.countByMovieId(id);
-            movie.setAverageRating(avg != null ? Math.round(avg * 10.0) / 10.0 : 0.0);
-            movie.setTotalRatings(count != null ? count.intValue() : 0);
-        });
-        return opt;
+        return movieRepository.findById(id).filter(movie -> movie.getDeletedAt() == null);
     }
 
     public List<Movie> searchMovies(String keyword) {
-        List<Movie> vectorResults = searchMoviesByVector(keyword);
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<Movie> vectorResults = movieRepository.searchByDatabaseVector(keyword);
         List<Movie> textResults = movieRepository.searchByTitleOrGenre(keyword);
         Map<Integer, Movie> merged = new LinkedHashMap<>();
         for (Movie movie : vectorResults) {
@@ -84,7 +57,6 @@ public class MovieService {
             merged.putIfAbsent(movie.getMovieId(), movie);
         }
         List<Movie> results = new ArrayList<>(merged.values());
-        enrichWithRatings(results);
         return results;
     }
 
@@ -106,7 +78,6 @@ public class MovieService {
                 .thenComparing(scored -> scored.movie().getTitle(), String.CASE_INSENSITIVE_ORDER))
             .map(MovieVectorScore::movie)
             .collect(Collectors.toList());
-        enrichWithRatings(results);
         return results;
     }
 
@@ -115,7 +86,6 @@ public class MovieService {
             return Collections.emptyList();
         }
         List<Movie> results = movieRepository.searchByTitleOrGenre(keyword);
-        enrichWithRatings(results);
         return results;
     }
 
@@ -203,13 +173,11 @@ public class MovieService {
 
     public List<Movie> getTopRatedMovies(int limit) {
         List<Movie> movies = movieRepository.findTopRatedMovies(PageRequest.of(0, limit));
-        enrichWithRatings(movies);
         return movies;
     }
 
     public List<Movie> getPopularMovies(int limit) {
         List<Movie> movies = movieRepository.findMostWatchedMovies(PageRequest.of(0, limit));
-        enrichWithRatings(movies);
         return movies;
     }
 
@@ -220,6 +188,8 @@ public class MovieService {
         movie.setDescription(request.getDescription());
         movie.setReleaseYear(request.getReleaseYear());
         movie.setPosterUrl(request.getPosterUrl());
+        movie.setTrailerKey(request.getTrailerKey());
+        movie.setBackdropUrl(request.getBackdropUrl());
         if (request.getGenreIds() != null) {
             movie.setGenres(genreRepository.findAllById(request.getGenreIds()));
         }
@@ -234,6 +204,8 @@ public class MovieService {
         movie.setDescription(request.getDescription());
         movie.setReleaseYear(request.getReleaseYear());
         movie.setPosterUrl(request.getPosterUrl());
+        movie.setTrailerKey(request.getTrailerKey());
+        movie.setBackdropUrl(request.getBackdropUrl());
         if (request.getGenreIds() != null) {
             movie.setGenres(genreRepository.findAllById(request.getGenreIds()));
         }
@@ -246,7 +218,7 @@ public class MovieService {
     }
 
     public long countMovies() {
-        return movieRepository.count();
+        return movieRepository.findByDeletedAtIsNull(PageRequest.of(0, 1)).getTotalElements();
     }
 
     public List<Genre> getAllGenres() {

@@ -1,6 +1,7 @@
 package com.example.movierecommendation.entity;
 
 import jakarta.persistence.*;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -22,11 +23,14 @@ public class Rating {
     @JoinColumn(name = "movie_id", nullable = false)
     private Movie movie;
 
-    @Column(name = "rating", nullable = false)
-    private Integer rating;
+    @Column(name = "rating", nullable = false, precision = 2, scale = 1)
+    private BigDecimal rating;
 
     @Column(name = "rated_at")
     private LocalDateTime ratedAt;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 
     public Rating() {}
 
@@ -44,9 +48,18 @@ public class Rating {
     public Movie getMovie() { return movie; }
     public void setMovie(Movie movie) { this.movie = movie; }
 
-    public Integer getRating() { return rating; }
-    public void setRating(Integer rating) { this.rating = rating; }
+    public Double getRating() { return rating != null ? rating.doubleValue() : null; }
+    public void setRating(Double rating) {
+        this.rating = rating != null ? BigDecimal.valueOf(rating) : null;
+    }
+    public void setRating(Integer rating) {
+        this.rating = rating != null ? BigDecimal.valueOf(rating.doubleValue()) : null;
+    }
+    public BigDecimal getRatingValue() { return rating; }
+    public void setRatingValue(BigDecimal rating) { this.rating = rating; }
 
     public LocalDateTime getRatedAt() { return ratedAt; }
     public void setRatedAt(LocalDateTime ratedAt) { this.ratedAt = ratedAt; }
+    public LocalDateTime getDeletedAt() { return deletedAt; }
+    public void setDeletedAt(LocalDateTime deletedAt) { this.deletedAt = deletedAt; }
 }
