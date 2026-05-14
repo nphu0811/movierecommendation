@@ -17,13 +17,15 @@ public interface MovieRepository extends JpaRepository<Movie, Integer> {
            "LOWER(g.genreName) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     List<Movie> searchByTitleOrGenre(@Param("keyword") String keyword);
 
-    @Query(value = "SELECT DISTINCT m.* FROM movies m " +
-           "LEFT JOIN movie_genres mg ON mg.movie_id = m.movie_id " +
-           "LEFT JOIN genres g ON g.genre_id = mg.genre_id " +
+    @Query(value = "SELECT m.* FROM movies m " +
            "WHERE m.deleted_at IS NULL AND (" +
            "m.search_vector @@ plainto_tsquery('english', :keyword) OR " +
            "LOWER(m.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "LOWER(COALESCE(g.genre_name, '')) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+           "EXISTS (" +
+           "    SELECT 1 FROM movie_genres mg " +
+           "    JOIN genres g ON g.genre_id = mg.genre_id " +
+           "    WHERE mg.movie_id = m.movie_id AND LOWER(g.genre_name) LIKE LOWER(CONCAT('%', :keyword, '%'))" +
+           ")) " +
            "ORDER BY ts_rank(m.search_vector, plainto_tsquery('english', :keyword)) DESC, m.average_rating DESC",
            nativeQuery = true)
     List<Movie> searchByDatabaseVector(@Param("keyword") String keyword);
