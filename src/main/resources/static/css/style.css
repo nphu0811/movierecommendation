@@ -413,6 +413,7 @@ body.home-page .hero-section + .section {
   display: flex;
   gap: var(--space-3);
   overflow-x: auto;
+  padding-top: 15px;
   padding-bottom: var(--space-4);
   scroll-snap-type: x mandatory;
   -ms-overflow-style: none;
@@ -2750,4 +2751,22 @@ textarea.form-control { resize: vertical; min-height: 100px; }
 .resume-btn-secondary:hover {
   background: rgba(255,255,255,0.15);
   transform: translateY(-2px);
+}
+
+/* Final fix for rec-badge visibility across all pages */
+.movie-card-wrapper .rec-badge {
+  position: absolute !important;
+  top: 10px !important;
+  left: 10px !important;
+  right: auto !important;
+  background: linear-gradient(45deg, var(--red), #ff4d4d) !important;
+  color: white !important;
+  padding: 3px 12px !important;
+  border-radius: 20px !important;
+  font-size: 0.65rem !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  z-index: 9999 !important;
+  display: block !important;
+  pointer-events: none !important;
 }
