@@ -95,21 +95,15 @@
         focusedIndex = -1;
         let html = '';
         movies.forEach(m => {
-            const poster = m.poster 
-                ? `<img src="${esc(m.poster)}" class="autocomplete-poster" onerror="this.src='/img/no-poster.jpg'">`
-                : `<div class="autocomplete-poster" style="display:flex;align-items:center;justify-content:center;background:#1a1a1a"><i class="ph ph-film-strip"></i></div>`;
-            
             const genres = m.genres ? m.genres.slice(0, 2).join(' · ') : '';
             const meta = [m.year, genres].filter(Boolean).join(' • ');
 
-            const badge = m.isVector ? `<span class="rec-badge" style="position: static; font-size: 0.6rem; margin-left: 6px; padding: 2px 6px; display: inline-block; vertical-align: middle;">AI PICK</span>` : '';
-
             html += `
-                <div class="autocomplete-item" data-id="${m.id}" onclick="window.location.href='/movies/${m.id}'">
-                    ${poster}
-                    <div class="autocomplete-info">
-                        <div class="autocomplete-title" style="display:flex;align-items:center;">${highlight(esc(m.title), esc(q))}${badge}</div>
-                        <div class="autocomplete-meta">${esc(meta)}</div>
+                <div class="autocomplete-item" data-id="${m.id}" onclick="window.location.href='/movies/${m.id}'" style="display:flex; align-items:center; padding: 10px 16px;">
+                    <i class="ph ph-magnifying-glass" style="color: #888; font-size: 1.2rem; margin-right: 16px;"></i>
+                    <div class="autocomplete-info" style="flex: 1;">
+                        <div class="autocomplete-title">${highlight(esc(m.title), esc(q))}</div>
+                        <div class="autocomplete-meta" style="font-size: 0.8rem; color: #888;">${esc(meta)}</div>
                     </div>
                 </div>
             `;
