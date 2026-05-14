@@ -102,11 +102,13 @@
             const genres = m.genres ? m.genres.slice(0, 2).join(' · ') : '';
             const meta = [m.year, genres].filter(Boolean).join(' • ');
 
+            const badge = m.isVector ? `<span class="rec-badge" style="position: static; font-size: 0.6rem; margin-left: 6px; padding: 2px 6px; display: inline-block; vertical-align: middle;">AI PICK</span>` : '';
+
             html += `
                 <div class="autocomplete-item" data-id="${m.id}" onclick="window.location.href='/movies/${m.id}'">
                     ${poster}
                     <div class="autocomplete-info">
-                        <div class="autocomplete-title">${highlight(esc(m.title), esc(q))}</div>
+                        <div class="autocomplete-title" style="display:flex;align-items:center;">${highlight(esc(m.title), esc(q))}${badge}</div>
                         <div class="autocomplete-meta">${esc(meta)}</div>
                     </div>
                 </div>

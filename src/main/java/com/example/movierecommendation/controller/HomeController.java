@@ -140,7 +140,11 @@ public class HomeController {
         if (q == null || q.trim().length() < 1) {
             return ResponseEntity.ok(Collections.emptyList());
         }
-        List<Movie> movies = movieService.searchMovies(q.trim());
+        String keyword = q.trim();
+        List<Movie> movies = movieService.searchMovies(keyword);
+        List<Movie> vectorMovies = movieService.searchMoviesDBVector(keyword);
+        Set<Integer> vectorIds = new HashSet<>();
+        for (Movie m : vectorMovies) vectorIds.add(m.getMovieId());
         List<Map<String, Object>> results = new ArrayList<>();
         int limit = Math.min(movies.size(), 6);
         for (int i = 0; i < limit; i++) {
@@ -150,6 +154,7 @@ public class HomeController {
             item.put("title", m.getTitle());
             item.put("year", m.getReleaseYear());
             item.put("poster", m.getPosterUrl());
+            item.put("isVector", vectorIds.contains(m.getMovieId()));
             List<String> genreNames = new ArrayList<>();
             if (m.getGenres() != null) {
                 for (var g : m.getGenres()) genreNames.add(g.getGenreName());

@@ -60,6 +60,13 @@ public class MovieService {
         return results;
     }
 
+    public List<Movie> searchMoviesDBVector(String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+        return movieRepository.searchByDatabaseVector(keyword);
+    }
+
     public List<Movie> searchMoviesByVector(String keyword) {
         if (keyword == null || keyword.trim().isEmpty()) {
             return Collections.emptyList();
