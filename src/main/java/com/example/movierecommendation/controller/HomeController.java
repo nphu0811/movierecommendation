@@ -111,18 +111,24 @@ public class HomeController {
         }
 
         String keyword = q.trim();
-        List<Movie> vectorMovies = movieService.searchMoviesByVector(keyword);
+        List<Movie> vectorMoviesRaw = movieService.searchMoviesByVector(keyword);
         List<Movie> textMovies = movieService.searchMoviesTextOnly(keyword);
-        Set<Integer> vectorIds = new HashSet<>();
-        for (Movie movie : vectorMovies) {
-            vectorIds.add(movie.getMovieId());
+        
+        Set<Integer> seenIds = new HashSet<>();
+        List<Movie> vectorMovies = new ArrayList<>();
+        for (Movie movie : vectorMoviesRaw) {
+            if (seenIds.add(movie.getMovieId())) {
+                vectorMovies.add(movie);
+            }
         }
+        
         List<Movie> otherMatches = new ArrayList<>();
         for (Movie movie : textMovies) {
-            if (!vectorIds.contains(movie.getMovieId())) {
+            if (seenIds.add(movie.getMovieId())) {
                 otherMatches.add(movie);
             }
         }
+        
         List<Movie> movies = new ArrayList<>(vectorMovies);
         movies.addAll(otherMatches);
 

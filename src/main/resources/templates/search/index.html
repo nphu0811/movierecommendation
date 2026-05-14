@@ -84,10 +84,7 @@
                     </div>
                     <div class="movies-grid">
                         <th:block th:each="movie : ${vectorMovies}">
-                            <div class="movie-card-wrapper">
-                                <div class="rec-badge vector-badge">Vector</div>
-                                <div th:replace="~{fragments :: movieCard(${movie})}"></div>
-                            </div>
+                            <div th:replace="~{fragments :: movieCard(${movie})}"></div>
                         </th:block>
                     </div>
                 </div>

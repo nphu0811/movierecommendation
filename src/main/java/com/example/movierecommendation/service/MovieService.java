@@ -86,6 +86,7 @@ public class MovieService {
 
         String normalizedKeyword = normalize(keyword);
         List<Movie> results = movieRepository.findAllWithGenres().stream()
+            .distinct()
             .map(movie -> new MovieVectorScore(movie, vectorScore(movie, queryVector, normalizedKeyword)))
             .filter(scored -> scored.score >= 0.08)
             .sorted(Comparator.comparingDouble(MovieVectorScore::score).reversed()
