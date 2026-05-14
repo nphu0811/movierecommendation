@@ -17,7 +17,7 @@ public interface MovieRepository extends JpaRepository<Movie, Integer> {
            "LOWER(g.genreName) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     List<Movie> searchByTitleOrGenre(@Param("keyword") String keyword);
 
-    @Query("SELECT m FROM Movie m WHERE m.deletedAt IS NULL AND LOWER(m.title) LIKE LOWER(CONCAT('%', :keyword, '%')) ORDER BY m.averageRating DESC")
+    @Query("SELECT m FROM Movie m WHERE m.deletedAt IS NULL AND (LOWER(m.title) LIKE LOWER(CONCAT(:keyword, '%')) OR LOWER(m.title) LIKE LOWER(CONCAT('% ', :keyword, '%'))) ORDER BY m.averageRating DESC")
     List<Movie> searchByTitleOnly(@Param("keyword") String keyword, Pageable pageable);
 
     @Query(value = "SELECT m.* FROM movies m " +

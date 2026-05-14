@@ -95,15 +95,11 @@
         focusedIndex = -1;
         let html = '';
         movies.forEach(m => {
-            const genres = m.genres ? m.genres.slice(0, 2).join(' · ') : '';
-            const meta = [m.year, genres].filter(Boolean).join(' • ');
-
             html += `
-                <div class="autocomplete-item" data-id="${m.id}" onclick="window.location.href='/movies/${m.id}'" style="display:flex; align-items:center; padding: 10px 16px;">
+                <div class="autocomplete-item" data-id="${m.id}" onclick="window.location.href='/movies/${m.id}'" style="display:flex; align-items:center; padding: 10px 16px; cursor: pointer;">
                     <i class="ph ph-magnifying-glass" style="color: #888; font-size: 1.2rem; margin-right: 16px;"></i>
                     <div class="autocomplete-info" style="flex: 1;">
-                        <div class="autocomplete-title">${highlight(esc(m.title), esc(q))}</div>
-                        <div class="autocomplete-meta" style="font-size: 0.8rem; color: #888;">${esc(meta)}</div>
+                        <div class="autocomplete-title" style="font-size: 1rem; font-weight: normal;">${highlight(esc(m.title), esc(q))}</div>
                     </div>
                 </div>
             `;
