@@ -85,35 +85,47 @@ public class HomeController {
                          Model model) {
         
         User currentUser = null;
+        CompletableFuture<List<Movie>> recFuture = null;
+
         if (userDetails != null) {
             currentUser = userService.getCurrentUser(userDetails.getUsername());
             model.addAttribute("currentUser", currentUser);
             
-            // Optimization: Run AI recommendations in parallel to speed up page load
+            // Fire recommendations in background — don't block search
             final User finalUser = currentUser;
-            CompletableFuture<List<Movie>> recFuture = CompletableFuture.supplyAsync(
+            recFuture = CompletableFuture.supplyAsync(
                 () -> recommendationService.getPersonalizedRecommendations(finalUser.getUserId()),
                 homeExecutor);
-
-            try {
-                model.addAttribute("recommendations", recFuture.get(1500, TimeUnit.MILLISECONDS));
-            } catch (Exception e) {
-                recFuture.cancel(true);
-                model.addAttribute("recommendations", recommendationService.getTrendingMoviesForUser(finalUser.getUserId()));
-            }
-        } else {
-            model.addAttribute("recommendations", recommendationService.getTrendingMovies());
         }
 
         if (q == null || q.trim().isEmpty()) {
+            // No search query — resolve recommendations now
+            resolveRecommendations(model, recFuture, currentUser);
             model.addAttribute("allGenres", movieService.getAllGenres());
             return "search/index";
         }
 
+        // --- Run search queries in parallel with recommendations ---
         String keyword = q.trim();
-        List<Movie> vectorMoviesRaw = movieService.searchMoviesByVector(keyword);
-        List<Movie> textMovies = movieService.searchMoviesTextOnly(keyword);
-        
+        CompletableFuture<List<Movie>> vectorFuture = CompletableFuture.supplyAsync(
+            () -> movieService.searchMoviesDBVector(keyword), homeExecutor);
+        CompletableFuture<List<Movie>> textFuture = CompletableFuture.supplyAsync(
+            () -> movieService.searchMoviesTextOnly(keyword), homeExecutor);
+
+        List<Movie> vectorMoviesRaw;
+        List<Movie> textMovies;
+        try {
+            vectorMoviesRaw = vectorFuture.get(3, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            vectorMoviesRaw = Collections.emptyList();
+        }
+        try {
+            textMovies = textFuture.get(3, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            textMovies = Collections.emptyList();
+        }
+
+        // Deduplicate
         Set<Integer> seenIds = new HashSet<>();
         List<Movie> vectorMovies = new ArrayList<>();
         for (Movie movie : vectorMoviesRaw) {
@@ -121,22 +133,38 @@ public class HomeController {
                 vectorMovies.add(movie);
             }
         }
-        
         List<Movie> otherMatches = new ArrayList<>();
         for (Movie movie : textMovies) {
             if (seenIds.add(movie.getMovieId())) {
                 otherMatches.add(movie);
             }
         }
-        
         List<Movie> movies = new ArrayList<>(vectorMovies);
         movies.addAll(otherMatches);
+
+        // Resolve recommendations (should be done by now since search took time)
+        resolveRecommendations(model, recFuture, currentUser);
 
         model.addAttribute("movies", movies);
         model.addAttribute("vectorMovies", vectorMovies);
         model.addAttribute("otherMatches", otherMatches);
         model.addAttribute("keyword", keyword);
-        return "search/index"; // We will use the same template for landing and results
+        return "search/index";
+    }
+
+    private void resolveRecommendations(Model model, CompletableFuture<List<Movie>> recFuture, User currentUser) {
+        if (recFuture != null && currentUser != null) {
+            try {
+                model.addAttribute("recommendations", recFuture.get(1500, TimeUnit.MILLISECONDS));
+            } catch (Exception e) {
+                recFuture.cancel(true);
+                model.addAttribute("recommendations", recommendationService.getTrendingMoviesForUser(currentUser.getUserId()));
+            }
+        } else if (currentUser != null) {
+            model.addAttribute("recommendations", recommendationService.getTrendingMoviesForUser(currentUser.getUserId()));
+        } else {
+            model.addAttribute("recommendations", recommendationService.getTrendingMovies());
+        }
     }
 
     @GetMapping("/api/search/autocomplete")
