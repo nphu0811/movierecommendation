@@ -587,28 +587,6 @@ body.home-page .hero-section + .section {
   font-size: .7rem; color: var(--gold); font-weight: 600;
 }
 
-.genre-tags { display: flex; flex-wrap: wrap; gap: var(--space-1); margin-top: 6px; }
-.genre-tag {
-  font-size: .6rem; padding: 3px var(--space-2);
-  background: rgba(229,9,20,.08); color: #ff7b7b;
-  border-radius: var(--radius-full); border: 1px solid rgba(229,9,20,.15);
-  font-weight: 500;
-  letter-spacing: -0.08px;
-}
-
-/* AI recommendation badge */
-.rec-badge {
-  position: absolute; top: var(--space-2); left: var(--space-2);
-  background: linear-gradient(135deg, var(--red), #ff4d2e);
-  color: #fff; font-size: .56rem; font-weight: 700;
-  padding: 3px var(--space-2); border-radius: var(--radius-sm);
-  text-transform: uppercase; letter-spacing: .6px;
-  box-shadow: 0 2px 8px rgba(229,9,20,.4);
-  z-index: 2;
-}
-
-/* ============================================================
-   SKELETON LOADING
    ============================================================ */
 .skeleton {
   background: linear-gradient(90deg, #1a1a1a 25%, #222 50%, #1a1a1a 75%);
@@ -2407,6 +2385,20 @@ textarea.form-control { resize: vertical; min-height: 100px; }
   opacity: 0.5;
 }
 
+/* Empty State Enhancements */
+.search-empty-state {
+  text-align: center;
+  padding: var(--space-8) 0;
+  animation: fadeIn 0.5s ease;
+}
+
+.search-empty-state i {
+  font-size: 4rem;
+  color: var(--text-muted);
+  margin-bottom: var(--space-4);
+  opacity: 0.5;
+}
+
 .search-empty-state h2 {
   font-size: 1.5rem;
   margin-bottom: var(--space-2);
@@ -2416,6 +2408,21 @@ textarea.form-control { resize: vertical; min-height: 100px; }
   color: var(--text-secondary);
 }
 
+.genre-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.genre-tag {
+  font-size: 0.75rem;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
 
 /* Search Page Enhancements */
 .rec-badge {
@@ -2430,7 +2437,7 @@ textarea.form-control { resize: vertical; min-height: 100px; }
   font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
-  z-index: 100;
+  z-index: 10;
   box-shadow: 0 4px 12px rgba(229, 9, 20, 0.4);
   letter-spacing: 0.5px;
   pointer-events: none;
@@ -2753,20 +2760,4 @@ textarea.form-control { resize: vertical; min-height: 100px; }
   transform: translateY(-2px);
 }
 
-/* Final fix for rec-badge visibility across all pages */
-.movie-card-wrapper .rec-badge {
-  position: absolute !important;
-  top: 10px !important;
-  left: 10px !important;
-  right: auto !important;
-  background: linear-gradient(45deg, var(--red), #ff4d4d) !important;
-  color: white !important;
-  padding: 3px 12px !important;
-  border-radius: 20px !important;
-  font-size: 0.65rem !important;
-  font-weight: 800 !important;
-  text-transform: uppercase !important;
-  z-index: 9999 !important;
-  display: block !important;
-  pointer-events: none !important;
-}
+
