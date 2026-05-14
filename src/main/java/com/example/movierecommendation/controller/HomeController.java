@@ -141,7 +141,7 @@ public class HomeController {
             return ResponseEntity.ok(Collections.emptyList());
         }
         String keyword = q.trim();
-        List<Movie> movies = movieService.searchMovies(keyword);
+        List<Movie> movies = movieService.searchMoviesByTitleOnly(keyword);
         
         List<Map<String, Object>> results = new ArrayList<>();
         int limit = Math.min(movies.size(), 6);
