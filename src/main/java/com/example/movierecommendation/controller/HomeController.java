@@ -79,7 +79,6 @@ public class HomeController {
         }
         model.addAttribute("newReleases", movieService.getAllMovies(0, 8).getContent());
         model.addAttribute("allGenres", movieService.getAllGenres());
-        model.addAttribute("trendingSearches", searchHistoryService.getTrendingSearches("24h"));
         return "home";
     }
 

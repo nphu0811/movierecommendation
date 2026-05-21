@@ -105,27 +105,6 @@
     </th:block>
   </div>
 
-  <!-- ── TRENDING SEARCHES ── -->
-  <div class="section reveal" th:if="${trendingSearches != null and !trendingSearches.empty}" style="margin-top: 30px; margin-bottom: 20px;">
-    <div class="section-header" style="margin-bottom: 16px;">
-      <h2 class="section-title" style="display: flex; align-items: center; gap: 8px;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256" style="color:var(--red);">
-          <path d="M244,128v64a12,12,0,0,1-12,12H168a12,12,0,0,1,0-24h35l-51-51L108,173a12,12,0,0,1-17,0l-64-64a12,12,0,0,1,17-17l55.5,55.5L144,103a12,12,0,0,1,17,0l59,59V128a12,12,0,0,1,24,0Z"></path>
-        </svg>
-        Trending <span>Searches</span>
-      </h2>
-    </div>
-    <div class="trending-pills-container" style="display: flex; flex-wrap: wrap; gap: 12px; padding: 0 4%;">
-      <th:block th:each="trend : ${trendingSearches}">
-        <a th:href="@{/search(q=${trend.query}, source='homepage_trending')}" class="trending-pill" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 50px; color: var(--white); font-size: 0.95rem; text-decoration: none; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-          <i class="ph ph-trend-up" style="color: var(--red); font-size: 1.1rem;"></i>
-          <span th:text="${trend.query}">Keyword</span>
-          <span class="trend-count" style="font-size: 0.75rem; color: rgba(255,255,255,0.4); background: rgba(255,255,255,0.08); padding: 2px 8px; border-radius: 20px; margin-left: 4px;" th:text="${trend.count}">12</span>
-        </a>
-      </th:block>
-    </div>
-  </div>
-
   <!-- ── CONTINUE WATCHING ── -->
   <div class="section reveal" th:if="${currentUser != null and continueWatching != null and !continueWatching.empty}">
     <div class="section-header">

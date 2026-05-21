@@ -52,18 +52,17 @@
          th:text="${movie.description}">Description</p>
 
       <div class="action-buttons-group">
-        <a class="watch-btn trailer"
-           th:if="${movieLink != null and ((movieLink.imdbId != null and !#strings.isEmpty(movieLink.imdbId)) or (movieLink.tmdbId != null))}"
-           th:href="@{/movies/{id}/play(id=${movie.movieId})}">
-          <i class="ph-fill ph-play-circle" style="margin-right:6px"></i> Play
-        </a>
-        <button class="watch-btn trailer"
+        <button class="movie-trailer-btn"
                 th:if="${movie.trailerKey != null and !#strings.isEmpty(movie.trailerKey)}"
                 th:data-trailer-key="${movie.trailerKey}"
                 onclick="openTrailer(this.dataset.trailerKey)">
           <i class="ph-fill ph-play-circle" style="margin-right:6px"></i> Watch Trailer
         </button>
         <th:block th:if="${currentUser != null}">
+          <a class="watch-btn trailer"
+           th:if="${movieLink != null and ((movieLink.imdbId != null and !#strings.isEmpty(movieLink.imdbId)) or (movieLink.tmdbId != null))}"
+           th:href="@{/movies/{id}/play(id=${movie.movieId})}">
+          <i class="ph-fill ph-play-circle" style="margin-right:6px"></i> Play </a>
           <a class="watch-btn netflix"
              th:href="|https://www.netflix.com/search?q=${movie.title}|"
              target="_blank" rel="noopener"><i class="ph-fill ph-play-circle" style="margin-right:6px"></i> Netflix</a>
@@ -161,7 +160,7 @@
       <p class="text-muted-md">
         <a href="/auth/login" class="login-link-highlight">Sign in</a> to access Netflix, FPT Play and more.
       </p>
-      <button class="watch-btn trailer"
+      <button class="movie-trailer-btn"
               th:if="${movie.trailerKey != null and !#strings.isEmpty(movie.trailerKey)}"
               th:data-trailer-key="${movie.trailerKey}"
               onclick="openTrailer(this.dataset.trailerKey)">

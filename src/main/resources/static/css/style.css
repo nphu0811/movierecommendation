@@ -1464,6 +1464,33 @@ textarea.form-control { resize: vertical; min-height: 100px; }
 }
 .watch-btn.trailer:hover { background: rgba(255,255,255,.15); transform: translateY(-1px); }
 
+.movie-trailer-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: var(--space-3) var(--space-5);
+  border: 1px solid rgba(229, 9, 20, 0.45);
+  border-radius: var(--radius-sm);
+  background: rgba(229, 9, 20, 0.12);
+  color: var(--white);
+  font-family: var(--font);
+  font-size: .875rem;
+  font-weight: 700;
+  letter-spacing: -0.224px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--t-mid) var(--spring), border-color var(--t-mid) var(--spring), box-shadow var(--t-mid) var(--spring), transform var(--t-mid) var(--spring);
+}
+
+.movie-trailer-btn:hover,
+.movie-trailer-btn:focus-visible {
+  background: var(--red);
+  border-color: var(--red);
+  box-shadow: var(--shadow-red);
+  transform: translateY(-1px);
+}
+
 /* ============================================================
    TRAILER MODAL
    ============================================================ */
