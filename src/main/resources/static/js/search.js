@@ -6,6 +6,8 @@
     const autocomplete = document.getElementById('searchAutocomplete');
     const resultsContainer = document.getElementById('autocompleteResults');
     const clearBtn = document.getElementById('searchClearBtn');
+    const initialTrends = document.getElementById('searchInitialTrends');
+    const searchForm = input.closest('form');
     const metadataEl = document.getElementById('search-metadata');
     const searchId = metadataEl ? metadataEl.getAttribute('data-search-id') : null;
     
@@ -18,9 +20,11 @@
     const toggleClearBtn = () => {
         if (input.value.length > 0) {
             clearBtn.classList.add('visible');
+            if (initialTrends) initialTrends.classList.add('hidden');
         } else {
             clearBtn.classList.remove('visible');
             autocomplete.classList.remove('active');
+            if (initialTrends) initialTrends.classList.remove('hidden');
         }
     };
 
@@ -44,6 +48,18 @@
         input.focus();
         toggleClearBtn();
     });
+
+    if (searchForm) {
+        searchForm.addEventListener('submit', (e) => {
+            const q = input.value.trim();
+            if (!q) {
+                e.preventDefault();
+                input.focus();
+                return;
+            }
+            input.value = q;
+        });
+    }
 
     input.addEventListener('keydown', function(e) {
         const items = resultsContainer.querySelectorAll('.autocomplete-item');

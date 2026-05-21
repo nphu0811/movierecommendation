@@ -19,16 +19,19 @@
                 <p>Find your next favorite film, genre, or curated recommendation.</p>
             </header>
 
-            <div class="search-input-group">
+            <form class="search-input-group" action="/search" method="get">
+                <input type="hidden" name="source" value="search_page"/>
                 <div class="search-input-wrapper">
                     <i class="ph-bold ph-magnifying-glass search-icon-large"></i>
                     <input type="text" id="mainSearchInput" 
+                           name="q"
                            th:value="${keyword}"
                            placeholder="Movies, actors, or genres..." 
                            autocomplete="off" autofocus/>
                     <button type="button" class="search-clear-btn" id="searchClearBtn">
                         <i class="ph-bold ph-x"></i>
                     </button>
+                    <button type="submit" class="search-submit-btn">Tìm kiếm</button>
                 </div>
                 
                 <!-- Autocomplete Dropdown -->
@@ -38,7 +41,19 @@
                         Press <strong>Enter</strong> to see all results
                     </div>
                 </div>
-            </div>
+
+                <div class="search-initial-trends"
+                     id="searchInitialTrends"
+                     th:if="${keyword == null and trendingSearches != null and !#lists.isEmpty(trendingSearches)}">
+                    <th:block th:each="trend, iter : ${trendingSearches}" th:if="${iter.index < 5}">
+                        <a class="search-initial-trend"
+                           th:href="@{/search(q=${trend.query}, source='trending')}">
+                            <i class="ph-fill ph-fire"></i>
+                            <span th:text="${trend.query}">Trending query</span>
+                        </a>
+                    </th:block>
+                </div>
+            </form>
 
             <!-- Search Metadata for Click Tracking -->
             <div id="search-metadata" th:data-search-id="${searchId}" style="display:none;"></div>
@@ -51,27 +66,6 @@
                     <i class="ph-bold ph-magnifying-glass"></i>
                     <h2 th:text="|No results for &quot;${keyword}&quot;|">No results found</h2>
                     <p>Try different keywords or explore our top picks below.</p>
-                </div>
-
-                <!-- Trending Searches -->
-                <div th:if="${trendingSearches != null and !#lists.isEmpty(trendingSearches)}" class="trending-searches-section" style="margin-bottom: 40px;">
-                    <div class="section-header" style="margin-bottom: 16px;">
-                        <h2 class="section-title section-title--lg" style="display: flex; align-items: center; gap: 8px;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 256 256" style="color:var(--red);">
-                                <path d="M244,128v64a12,12,0,0,1-12,12H168a12,12,0,0,1,0-24h35l-51-51L108,173a12,12,0,0,1-17,0l-64-64a12,12,0,0,1,17-17l55.5,55.5L144,103a12,12,0,0,1,17,0l59,59V128a12,12,0,0,1,24,0Z"></path>
-                            </svg>
-                            Trending Searches
-                        </h2>
-                    </div>
-                    <div class="trending-pills-container" style="display: flex; flex-wrap: wrap; gap: 12px;">
-                        <th:block th:each="trend : ${trendingSearches}">
-                            <a th:href="@{/search(q=${trend.query}, source='trending')}" class="trending-pill" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 50px; color: var(--white); font-size: 0.95rem; text-decoration: none; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                                <i class="ph ph-trend-up" style="color: var(--red); font-size: 1.1rem;"></i>
-                                <span th:text="${trend.query}">Keyword</span>
-                                <span class="trend-count" style="font-size: 0.75rem; color: rgba(255,255,255,0.4); background: rgba(255,255,255,0.08); padding: 2px 8px; border-radius: 20px; margin-left: 4px;" th:text="${trend.count}">12</span>
-                            </a>
-                        </th:block>
-                    </div>
                 </div>
 
                 <div th:if="${recommendations != null and !#lists.isEmpty(recommendations)}">

@@ -2143,6 +2143,7 @@ textarea.form-control { resize: vertical; min-height: 100px; }
 
 .search-input-wrapper input {
   flex: 1;
+  min-width: 0;
   background: none;
   border: none;
   color: #fff;
@@ -2192,6 +2193,77 @@ textarea.form-control { resize: vertical; min-height: 100px; }
 .search-clear-btn:hover {
   background: rgba(255, 255, 255, 0.1);
   color: var(--white);
+}
+
+.search-submit-btn {
+  flex: 0 0 auto;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  border-radius: 999px;
+  padding: 10px 24px;
+  margin-left: var(--space-2);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background var(--t-fast), color var(--t-fast), transform var(--t-fast), border-color var(--t-fast);
+}
+
+.search-submit-btn:hover,
+.search-submit-btn:focus-visible {
+  background: var(--red);
+  border-color: var(--red);
+  color: var(--white);
+  transform: translateY(-1px);
+}
+
+.search-initial-trends {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  right: 0;
+  z-index: 90;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  background: rgba(18, 18, 18, 0.98);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.48);
+  animation: slideUp 0.25s var(--ease);
+}
+
+.search-initial-trends.hidden {
+  display: none;
+}
+
+.search-initial-trend {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: 58px;
+  padding: 0 var(--space-5);
+  color: var(--white);
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 800;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background var(--t-fast), color var(--t-fast);
+}
+
+.search-initial-trend:last-child {
+  border-bottom: none;
+}
+
+.search-initial-trend:hover,
+.search-initial-trend:focus-visible {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--white);
+}
+
+.search-initial-trend i {
+  color: var(--red);
+  font-size: 1.2rem;
+  opacity: 0.95;
 }
 
 /* Autocomplete Dropdown */
@@ -2277,6 +2349,27 @@ textarea.form-control { resize: vertical; min-height: 100px; }
 
 .autocomplete-footer strong {
   color: var(--red);
+}
+
+@media (max-width: 640px) {
+  .search-input-wrapper {
+    padding: 0 var(--space-3);
+  }
+
+  .search-input-wrapper input {
+    font-size: 1rem;
+  }
+
+  .search-submit-btn {
+    padding: 8px 14px;
+    font-size: 0.82rem;
+  }
+
+  .search-initial-trend {
+    min-height: 52px;
+    padding: 0 var(--space-4);
+    font-size: 0.92rem;
+  }
 }
 
 /* Results section */
