@@ -79,11 +79,14 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+            .csrf(csrf -> csrf
+                .ignoringRequestMatchers("/api/search-history/**")
+            )
             .authenticationProvider(authProvider())
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/css/**", "/js/**", "/images/**", "/webjars/**", "/favicon.svg", "/favicon.ico").permitAll()
                 .requestMatchers("/", "/home", "/movies", "/movies/**", "/search").permitAll()
-                .requestMatchers("/api/search/**").permitAll()
+                .requestMatchers("/api/search/**", "/api/search-history/**").permitAll()
                 .requestMatchers("/auth/**").permitAll()
                 .requestMatchers("/error").permitAll()
                 .requestMatchers("/admin/**").hasRole("ADMIN")

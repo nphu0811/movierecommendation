@@ -3,6 +3,8 @@ package com.example.movierecommendation.controller;
 import com.example.movierecommendation.entity.Movie;
 import com.example.movierecommendation.entity.User;
 import com.example.movierecommendation.service.*;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -22,6 +24,7 @@ public class HomeController {
     @Autowired private RecommendationService recommendationService;
     @Autowired private UserService userService;
     @Autowired private InteractionService interactionService;
+    @Autowired private SearchHistoryService searchHistoryService;
     @Autowired @Qualifier("homePageExecutor") private Executor homeExecutor;
 
     @GetMapping({"/", "/home"})
@@ -76,14 +79,19 @@ public class HomeController {
         }
         model.addAttribute("newReleases", movieService.getAllMovies(0, 8).getContent());
         model.addAttribute("allGenres", movieService.getAllGenres());
+        model.addAttribute("trendingSearches", searchHistoryService.getTrendingSearches("24h"));
         return "home";
     }
 
     @GetMapping("/search")
     public String search(@RequestParam(name = "q", required = false) String q,
+                         @RequestParam(name = "source", required = false, defaultValue = "search_page") String source,
                          @AuthenticationPrincipal UserDetails userDetails,
+                         HttpServletRequest request,
+                         HttpSession session,
                          Model model) {
         
+        long startTime = System.currentTimeMillis();
         User currentUser = null;
         CompletableFuture<List<Movie>> recFuture = null;
 
@@ -102,6 +110,7 @@ public class HomeController {
             // No search query — resolve recommendations now
             resolveRecommendations(model, recFuture, currentUser, null);
             model.addAttribute("allGenres", movieService.getAllGenres());
+            model.addAttribute("trendingSearches", searchHistoryService.getTrendingSearches("24h"));
             return "search/index";
         }
 
@@ -170,6 +179,31 @@ public class HomeController {
         model.addAttribute("movies", movies);
         model.addAttribute("similarMovies", similarMovies);
         model.addAttribute("keyword", keyword);
+        model.addAttribute("trendingSearches", searchHistoryService.getTrendingSearches("24h"));
+
+        // Log the search query in search_history
+        long latencyMs = System.currentTimeMillis() - startTime;
+        int resultCount = movies.size();
+        Long loggedSearchId = null;
+        try {
+            var searchRecord = searchHistoryService.logSearch(
+                currentUser,
+                keyword,
+                resultCount,
+                session.getId(),
+                request.getRemoteAddr(),
+                request.getHeader("User-Agent"),
+                source,
+                latencyMs
+            );
+            if (searchRecord != null) {
+                loggedSearchId = searchRecord.getSearchId();
+            }
+        } catch (Exception e) {
+            // Service handles it internally, this is just a safeguard
+        }
+        model.addAttribute("searchId", loggedSearchId);
+
         return "search/index";
     }
 

@@ -35,6 +35,7 @@
       overlay.classList.add('active');
       document.body.style.overflow = 'hidden';
       setTimeout(function() { if (input) input.focus(); }, 80);
+      loadTrending();
     }
     function closeOverlay() {
       overlay.classList.remove('active');
@@ -61,7 +62,7 @@
     input.addEventListener('input', function() {
       var q = this.value.trim();
       clearTimeout(timer);
-      if (!q) { results.style.display = 'none'; hint.style.display = 'block'; return; }
+      if (!q) { loadTrending(); return; }
       hint.style.display = 'none';
       results.innerHTML = '<div style="padding:40px 20px;text-align:center;color:var(--text-muted);display:flex;flex-direction:column;align-items:center;gap:12px"><i class="ph-bold ph-magnifying-glass" style="font-size:2rem;animation:pulse 2s infinite"></i> Searching…</div>';
       results.style.display = 'block';
@@ -69,38 +70,97 @@
     });
     input.addEventListener('keydown', function(e) {
       if (e.key === 'Enter' && this.value.trim())
-        window.location.href = '/search?q=' + encodeURIComponent(this.value.trim());
+        window.location.href = '/search?source=overlay&q=' + encodeURIComponent(this.value.trim());
     });
 
-    function doSearch(q) {
-      fetch('/api/search/autocomplete?q=' + encodeURIComponent(q))
+    function loadTrending() {
+      fetch('/api/search/trending')
         .then(function(r) { return r.json(); })
-        .then(function(data) { if (input.value.trim() === q) renderResults(data, q); })
-        .catch(function() { results.style.display = 'none'; });
+        .then(function(trends) {
+          if (input.value.trim() !== '') return;
+          if (!trends || !trends.length) {
+            results.style.display = 'none';
+            hint.style.display = 'block';
+            return;
+          }
+          var html = '<div style="padding:14px 16px 4px;font-size:0.75rem;font-weight:bold;color:var(--red);text-transform:uppercase;letter-spacing:0.05em;opacity:0.8;">Trending Searches</div>';
+          for (var i = 0; i < trends.length; i++) {
+            var t = trends[i];
+            html += '<a class="search-overlay-item suggestion-item" href="/search?source=overlay_trending&q=' + encodeURIComponent(t.query) + '" style="display:flex;align-items:center;padding:12px 16px;text-decoration:none;">'
+                  + '<i class="ph ph-trend-up" style="color:var(--red);font-size:1.1rem;margin-right:16px;"></i>'
+                  + '<div class="search-overlay-item-info">'
+                  + '<div class="search-overlay-item-title" style="color:var(--white);font-size:0.95rem;">' + esc(t.query) + '</div>'
+                  + '</div></a>';
+          }
+          results.innerHTML = html;
+          results.style.display = 'block';
+          hint.style.display = 'none';
+        })
+        .catch(function() {
+          if (input.value.trim() === '') {
+            results.style.display = 'none';
+            hint.style.display = 'block';
+          }
+        });
     }
-    function renderResults(movies, q) {
-      if (!movies || !movies.length) {
+
+    function doSearch(q) {
+      Promise.all([
+        fetch('/api/search/suggestions?prefix=' + encodeURIComponent(q)).then(function(r) { return r.json(); }).catch(function() { return []; }),
+        fetch('/api/search/autocomplete?q=' + encodeURIComponent(q)).then(function(r) { return r.json(); }).catch(function() { return []; })
+      ]).then(function(res) {
+        if (input.value.trim() === q) {
+          renderCombinedResults(res[0], res[1], q);
+        }
+      }).catch(function() {
+        results.style.display = 'none';
+      });
+    }
+
+    function renderCombinedResults(suggestions, movies, q) {
+      if ((!suggestions || !suggestions.length) && (!movies || !movies.length)) {
         results.innerHTML = '<div style="padding:24px;text-align:center;color:#555">No results for "' + esc(q) + '"</div>';
-        results.style.display = 'block'; return;
+        results.style.display = 'block';
+        return;
       }
       var html = '';
-      for (var i = 0; i < movies.length; i++) {
-        var m = movies[i];
-        var poster = m.poster
-          ? '<img src="' + esc(m.poster) + '" alt="" style="width:44px;height:62px;object-fit:cover;border-radius:6px;flex-shrink:0" onerror="this.style.display=\'none\'">'
-          : '<div class="search-overlay-item-icon"><i class="ph-fill ph-film-strip"></i></div>';
-        var genres = (m.genres && m.genres.length) ? m.genres.slice(0,2).join(' · ') : '';
-        var meta = [m.year, genres].filter(Boolean).join(' • ');
-        html += '<a class="search-overlay-item" href="/movies/' + m.id + '">'
-              + poster + '<div class="search-overlay-item-info">'
-              + '<div class="search-overlay-item-title">' + highlight(esc(m.title), esc(q)) + '</div>'
-              + '<div class="search-overlay-item-meta">' + esc(meta) + '</div>'
-              + '</div></a>';
+
+      // 1. Suggestions Section
+      if (suggestions && suggestions.length) {
+        html += '<div style="padding:14px 16px 4px;font-size:0.75rem;font-weight:bold;color:var(--red);text-transform:uppercase;letter-spacing:0.05em;opacity:0.8;">Suggestions</div>';
+        for (var i = 0; i < suggestions.length; i++) {
+          var s = suggestions[i];
+          html += '<a class="search-overlay-item suggestion-item" href="/search?source=overlay_suggestion&q=' + encodeURIComponent(s.query) + '" style="display:flex;align-items:center;padding:12px 16px;text-decoration:none;">'
+                + '<i class="ph ph-magnifying-glass" style="color:#888;font-size:1.1rem;margin-right:16px;"></i>'
+                + '<div class="search-overlay-item-info">'
+                + '<div class="search-overlay-item-title" style="color:var(--white);font-size:0.95rem;">' + highlight(esc(s.query), esc(q)) + '</div>'
+                + '</div></a>';
+        }
       }
-      html += '<a class="search-overlay-see-all" href="/search?q=' + encodeURIComponent(q) + '">See all results for "' + esc(q) + '" →</a>';
+
+      // 2. Movies Section
+      if (movies && movies.length) {
+        html += '<div style="padding:14px 16px 4px;font-size:0.75rem;font-weight:bold;color:var(--red);text-transform:uppercase;letter-spacing:0.05em;opacity:0.8;">Movies</div>';
+        for (var i = 0; i < movies.length; i++) {
+          var m = movies[i];
+          var poster = m.poster
+            ? '<img src="' + esc(m.poster) + '" alt="" style="width:44px;height:62px;object-fit:cover;border-radius:6px;flex-shrink:0" onerror="this.style.display=\'none\'">'
+            : '<div class="search-overlay-item-icon"><i class="ph-fill ph-film-strip"></i></div>';
+          var genres = (m.genres && m.genres.length) ? m.genres.slice(0,2).join(' · ') : '';
+          var meta = [m.year, genres].filter(Boolean).join(' • ');
+          html += '<a class="search-overlay-item" href="/movies/' + m.id + '">'
+                + poster + '<div class="search-overlay-item-info">'
+                + '<div class="search-overlay-item-title">' + highlight(esc(m.title), esc(q)) + '</div>'
+                + '<div class="search-overlay-item-meta">' + esc(meta) + '</div>'
+                + '</div></a>';
+        }
+      }
+
+      html += '<a class="search-overlay-see-all" href="/search?source=overlay&q=' + encodeURIComponent(q) + '">See all results for "' + esc(q) + '" →</a>';
       results.innerHTML = html;
       results.style.display = 'block';
     }
+
     function highlight(title, q) {
       var idx = title.toLowerCase().indexOf(q.toLowerCase());
       if (idx < 0) return title;
