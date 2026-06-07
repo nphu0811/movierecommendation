@@ -354,9 +354,8 @@ MIT License - Xem file [LICENSE](LICENSE) để chi tiết.
 
 | Role | Contact |
 |------|---------|
-| Team Lead |  [@Yuhnart-07](https://github.com/Yuhnart-07) |
-| Backend |[@nphu0811](https://github.com/nphu0811) |
-| Frontend | [@nphu0811](https://github.com/nphu0811) |
+| Team Lead & Backend |  [@Yuhnart-07](https://github.com/Yuhnart-07) |
+| FullStack |[@nphu0811](https://github.com/nphu0811) |
 
 ---
 
