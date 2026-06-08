@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title th:text="${status == 404 ? 'Page Not Found - MovieRec' : (status == 403 ? 'Access Denied - MovieRec' : 'Error - MovieRec')}">Error - MovieRec</title>
+  <link rel="icon" type="image/svg+xml" sizes="any" href="/favicon.svg?v=2" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    body.error-page {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at 20% 12%, rgba(229, 9, 20, 0.18), transparent 28rem),
+        radial-gradient(circle at 82% 72%, rgba(245, 197, 24, 0.12), transparent 24rem),
+        #050505;
+      color: #f8fafc;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .error-shell {
+      width: min(92vw, 760px);
+      padding: 48px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 18px;
+      background: rgba(12, 12, 14, 0.86);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+    }
+
+    .error-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 36px;
+      font-weight: 800;
+      font-size: 1.35rem;
+      letter-spacing: 0;
+    }
+
+    .error-brand span {
+      color: #e50914;
+    }
+
+    .error-code {
+      margin-bottom: 18px;
+      color: #e50914;
+      font-size: clamp(4rem, 14vw, 8rem);
+      line-height: 0.9;
+      font-weight: 900;
+    }
+
+    .error-title {
+      margin: 0 0 14px;
+      font-size: clamp(2rem, 5vw, 3.25rem);
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    .error-copy {
+      max-width: 58ch;
+      margin: 0 0 28px;
+      color: #cbd5e1;
+      font-size: 1rem;
+      line-height: 1.7;
+    }
+
+    .error-meta {
+      display: inline-flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      max-width: 100%;
+      margin-bottom: 30px;
+      padding: 10px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.04);
+      color: #94a3b8;
+      font-size: 0.9rem;
+    }
+
+    .error-meta code {
+      overflow-wrap: anywhere;
+      color: #f8fafc;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    .error-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .error-actions .btn {
+      min-height: 42px;
+    }
+
+    @media (max-width: 640px) {
+      .error-shell {
+        padding: 30px 22px;
+        border-radius: 14px;
+      }
+
+      .error-actions {
+        flex-direction: column;
+      }
+
+      .error-actions .btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body class="error-page">
+  <main class="error-shell" role="main">
+    <a class="error-brand" href="/" aria-label="MovieRec Home">Movie<span>Rec</span></a>
+
+    <div class="error-code" th:text="${status != null ? status : 'Error'}">404</div>
+
+    <h1 class="error-title" th:if="${status == 404}">Page not found</h1>
+    <h1 class="error-title" th:if="${status == 403}">Access denied</h1>
+    <h1 class="error-title" th:unless="${status == 404 or status == 403}">Something went wrong</h1>
+
+    <p class="error-copy" th:if="${status == 404}">
+      The page you are looking for does not exist or has been moved. Continue browsing MovieRec from a valid page.
+    </p>
+    <p class="error-copy" th:if="${status == 403}">
+      Your account does not have permission to open this page. Go back to the site or sign in with an authorized account.
+    </p>
+    <p class="error-copy" th:unless="${status == 404 or status == 403}">
+      The request could not be completed. Please try again from one of the main MovieRec pages.
+    </p>
+
+    <div class="error-meta" th:if="${path != null}">
+      <span>Requested path</span>
+      <code th:text="${path}">/missing-page</code>
+    </div>
+
+    <div class="error-actions">
+      <a class="btn btn-primary" href="/">Go Home</a>
+      <a class="btn btn-outline" href="/movies">Browse Movies</a>
+      <a class="btn btn-ghost" href="/search">Search</a>
+    </div>
+  </main>
+</body>
+</html>
