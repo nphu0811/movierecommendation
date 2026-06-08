@@ -45,7 +45,10 @@
         <label class="form-label" for="password">Password</label>
         <div class="password-field">
           <input type="password" id="password" th:field="*{password}" class="form-control"
-                 placeholder="Min 6 characters" required minlength="6" autocomplete="new-password"/>
+                 placeholder="Min 8 chars, Aa1@" required minlength="8"
+                 pattern="(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&amp;+=!]).{8,}"
+                 title="Password must be at least 8 characters and include uppercase, lowercase, number, and special character"
+                 autocomplete="new-password"/>
           <button type="button" class="password-toggle" aria-label="Show password" aria-pressed="false">
             <i class="ph-bold ph-eye" aria-hidden="true"></i>
           </button>
@@ -58,7 +61,7 @@
         <label class="form-label" for="confirmPassword">Confirm Password</label>
         <div class="password-field">
           <input type="password" id="confirmPassword" th:field="*{confirmPassword}" class="form-control"
-                 placeholder="Repeat your password" required autocomplete="new-password"/>
+                 placeholder="Repeat your password" required minlength="8" autocomplete="new-password"/>
           <button type="button" class="password-toggle" aria-label="Show password" aria-pressed="false">
             <i class="ph-bold ph-eye" aria-hidden="true"></i>
           </button>
