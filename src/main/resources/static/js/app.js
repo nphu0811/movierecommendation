@@ -305,6 +305,43 @@ function postFetch(url) {
   return fetch(url, { method: 'POST', headers: headers });
 }
 
+// Password visibility toggle
+document.addEventListener('click', function(e) {
+  if (!e.target || !e.target.closest) return;
+
+  var button = e.target.closest('.password-toggle');
+  if (!button) return;
+
+  var field = button.closest('.password-field');
+  var input = field ? field.querySelector('input') : null;
+  if (!input) return;
+
+  var start = input.selectionStart;
+  var end = input.selectionEnd;
+  var isVisible = input.type === 'text';
+  var icon = button.querySelector('i');
+
+  input.type = isVisible ? 'password' : 'text';
+  button.setAttribute('aria-pressed', isVisible ? 'false' : 'true');
+  button.setAttribute('aria-label', isVisible ? 'Show password' : 'Hide password');
+
+  if (icon) {
+    icon.className = isVisible ? 'ph-bold ph-eye' : 'ph-bold ph-eye-slash';
+  }
+
+  try {
+    input.focus({ preventScroll: true });
+  } catch (err) {
+    input.focus();
+  }
+
+  if (typeof start === 'number' && typeof end === 'number') {
+    try {
+      input.setSelectionRange(start, end);
+    } catch (err) {}
+  }
+});
+
 // ── Star Rating ──────────────────────────────────────────────
 function initStarRating(container, movieId, currentRating) {
   var stars = container.querySelectorAll('.star');

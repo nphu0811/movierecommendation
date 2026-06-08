@@ -912,6 +912,42 @@ body.home-page .hero-section + .section {
 .form-control::placeholder { color: rgba(255,255,255,.2); }
 textarea.form-control { resize: vertical; min-height: 100px; }
 
+.password-field {
+  position: relative;
+}
+.password-field .form-control {
+  padding-right: 46px;
+}
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  width: 34px;
+  height: 34px;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 1.05rem;
+  cursor: pointer;
+  transition: color var(--t-fast), background var(--t-fast), transform var(--t-fast);
+}
+.password-toggle:hover {
+  color: var(--white);
+  background: rgba(255,255,255,.08);
+}
+.password-toggle:active {
+  transform: translateY(-50%) scale(.95);
+}
+.password-toggle:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: 2px;
+}
+
 .form-control.is-invalid {
   border-color: var(--red);
   background: rgba(229,9,20,.04);
