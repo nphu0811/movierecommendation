@@ -51,6 +51,11 @@ public class AdminController {
         model.addAttribute("posterRunning", posterFetchService.isRunning());
         model.addAttribute("posterDone",    posterFetchService.getDone());
         model.addAttribute("posterTotal",   posterFetchService.getTotal());
+        model.addAttribute("seedRunning",   seedDataService.isRunning());
+        model.addAttribute("seedDone",      seedDataService.getDone());
+        model.addAttribute("seedTotal",     seedDataService.getTotal());
+        model.addAttribute("seedRatingsAdded",  seedDataService.getRatingsAdded());
+        model.addAttribute("seedCommentsAdded", seedDataService.getCommentsAdded());
         return "admin/dashboard";
     }
 

@@ -14,12 +14,12 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
-import org.springframework.security.web.authentication.session.SessionFixationProtectionStrategy;
 
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -76,6 +76,16 @@ public class SecurityConfig {
         };
     }
 
+    private void handleLoginSuccess(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    Authentication authentication)
+            throws IOException {
+        boolean isAdmin = authentication.getAuthorities().stream()
+            .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
+
+        response.sendRedirect(request.getContextPath() + (isAdmin ? "/admin" : "/home"));
+    }
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -95,7 +105,7 @@ public class SecurityConfig {
             .formLogin(form -> form
                 .loginPage("/auth/login")
                 .loginProcessingUrl("/auth/login")
-                .defaultSuccessUrl("/home", false)
+                .successHandler(this::handleLoginSuccess)
                 .failureHandler(authFailureHandler())
                 .usernameParameter("email")
                 .passwordParameter("password")
