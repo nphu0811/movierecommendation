@@ -3132,6 +3132,12 @@ body.auth-page {
   letter-spacing: 0;
 }
 
+.auth-reset-panel {
+  margin-top: var(--space-5);
+  padding-top: var(--space-5);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 .profile-page {
   width: min(1120px, 100%);
   margin: 0 auto;

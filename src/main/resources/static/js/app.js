@@ -326,11 +326,10 @@
     var logo = auth.querySelector('.auth-logo');
     var formItems = toArray(auth.querySelectorAll('.auth-card .form-group, .auth-card .alert'));
     var featureCards = toArray(auth.querySelectorAll('.auth-feature-card'));
-    var submit = auth.querySelector('.auth-submit');
-    var altAction = auth.querySelector('.auth-alt-action');
+    var actionItems = toArray(auth.querySelectorAll('.auth-submit, .auth-alt-action'));
 
     if (reduceMotion) {
-      gsap.set(compact([showcase, card, logo, submit, altAction]).concat(formItems, featureCards), {
+      gsap.set(compact([showcase, card, logo]).concat(formItems, featureCards, actionItems), {
         autoAlpha: 1,
         x: 0,
         y: 0,
@@ -394,7 +393,7 @@
           duration: 0.36,
           stagger: 0.045
         }, '-=0.18')
-        .fromTo(compact([submit, altAction]), {
+        .fromTo(actionItems, {
           autoAlpha: 0,
           y: 10
         }, {
