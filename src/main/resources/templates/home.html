@@ -222,7 +222,7 @@
       </h2>
       <a href="/movies" class="view-all">View all →</a>
     </div>
-    <div class="movies-grid">
+    <div class="movies-row">
       <th:block th:each="movie : ${newReleases}">
         <div th:replace="~{fragments :: movieCard(${movie})}"></div>
       </th:block>
