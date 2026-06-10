@@ -3,82 +3,106 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Register – MovieRec</title>
+  <title>Register - MovieRec</title>
   <link rel="icon" type="image/svg+xml" sizes="any" th:href="@{/favicon.svg(v=2)}"/>
   <link rel="stylesheet" th:href="@{/css/style.css}"/>
 </head>
-<body>
-<div class="auth-container">
+<body class="auth-page">
+<div class="auth-container auth-container--register">
   <div class="auth-bg" aria-hidden="true">
     <div class="auth-bg-glow auth-bg-glow--primary"></div>
     <div class="auth-bg-glow auth-bg-glow--secondary"></div>
     <canvas class="auth-particles-canvas" id="authParticlesCanvas"></canvas>
   </div>
-  <div class="auth-card">
-    <div class="auth-logo">
-      <div class="auth-logo-mark">Movie<span>Rec</span></div>
-      <p>Create your free account</p>
-    </div>
 
-    <div class="alert alert-danger" th:if="${error}" th:text="${error}"></div>
-
-    <form th:action="@{/auth/register}" method="post" th:object="${registerRequest}">
-      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-
-      <div class="form-group">
-        <label class="form-label" for="username">Username</label>
-        <input type="text" id="username" th:field="*{username}" class="form-control"
-               placeholder="cooluser123" required minlength="3" autocomplete="username"/>
-        <span style="color:#f87171;font-size:.8rem;margin-top:4px;display:block"
-              th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></span>
+  <div class="auth-shell">
+    <aside class="auth-showcase" aria-hidden="true">
+      <div class="auth-kicker">
+        <i class="ph-fill ph-film-slate"></i>
+        Start fresh
       </div>
-
-      <div class="form-group">
-        <label class="form-label" for="email">Email Address</label>
-        <input type="email" id="email" th:field="*{email}" class="form-control"
-               placeholder="you@example.com" required autocomplete="email"/>
-        <span style="color:#f87171;font-size:.8rem;margin-top:4px;display:block"
-              th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></span>
-      </div>
-
-      <div class="form-group">
-        <label class="form-label" for="password">Password</label>
-        <div class="password-field">
-          <input type="password" id="password" th:field="*{password}" class="form-control"
-                 placeholder="Min 8 chars, Aa1@" required minlength="8"
-                 pattern="(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&amp;+=!]).{8,}"
-                 title="Password must be at least 8 characters and include uppercase, lowercase, number, and special character"
-                 autocomplete="new-password"/>
-          <button type="button" class="password-toggle" aria-label="Show password" aria-pressed="false">
-            <i class="ph-bold ph-eye" aria-hidden="true"></i>
-          </button>
+      <h1>Build a profile your recommendation engine can learn from.</h1>
+      <p>Create an account to save movies, rate titles, and unlock a more personal home screen.</p>
+      <div class="auth-feature-list">
+        <div class="auth-feature-card">
+          <i class="ph-fill ph-user-circle-plus"></i>
+          <span>Private profile</span>
         </div>
-        <span style="color:#f87171;font-size:.8rem;margin-top:4px;display:block"
-              th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></span>
-      </div>
-
-      <div class="form-group">
-        <label class="form-label" for="confirmPassword">Confirm Password</label>
-        <div class="password-field">
-          <input type="password" id="confirmPassword" th:field="*{confirmPassword}" class="form-control"
-                 placeholder="Repeat your password" required minlength="8" autocomplete="new-password"/>
-          <button type="button" class="password-toggle" aria-label="Show password" aria-pressed="false">
-            <i class="ph-bold ph-eye" aria-hidden="true"></i>
-          </button>
+        <div class="auth-feature-card">
+          <i class="ph-fill ph-star"></i>
+          <span>Ratings that matter</span>
+        </div>
+        <div class="auth-feature-card">
+          <i class="ph-fill ph-shield-check"></i>
+          <span>Email verification</span>
         </div>
       </div>
+    </aside>
 
-      <button type="submit" class="btn btn-primary" style="width:100%;padding:14px;font-size:1rem">
-        Create Account
-      </button>
-    </form>
+    <div class="auth-card auth-card--register">
+      <div class="auth-logo">
+        <div class="auth-logo-mark">Movie<span>Rec</span></div>
+        <p>Create your free account</p>
+      </div>
 
-    <div style="text-align:center;margin-top:24px;color:var(--text-muted);font-size:.875rem">
-      Already have an account?
-      <a href="/auth/login" style="color:var(--red);font-weight:600">Sign in</a>
+      <div class="alert alert-danger" th:if="${error}" th:text="${error}"></div>
+
+      <form th:action="@{/auth/register}" method="post" th:object="${registerRequest}" class="auth-form">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+        <div class="form-group">
+          <label class="form-label" for="username">Username</label>
+          <input type="text" id="username" th:field="*{username}" class="form-control"
+                 placeholder="cooluser123" required minlength="3" autocomplete="username"/>
+          <span class="error-feedback" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="email">Email Address</label>
+          <input type="email" id="email" th:field="*{email}" class="form-control"
+                 placeholder="you@example.com" required autocomplete="email"/>
+          <span class="error-feedback" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <div class="password-field">
+            <input type="password" id="password" th:field="*{password}" class="form-control"
+                   placeholder="Min 8 chars, Aa1@" required minlength="8"
+                   pattern="(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&amp;+=!]).{8,}"
+                   title="Password must be at least 8 characters and include uppercase, lowercase, number, and special character"
+                   autocomplete="new-password"/>
+            <button type="button" class="password-toggle" aria-label="Show password" aria-pressed="false">
+              <i class="ph-bold ph-eye" aria-hidden="true"></i>
+            </button>
+          </div>
+          <span class="error-feedback" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="confirmPassword">Confirm Password</label>
+          <div class="password-field">
+            <input type="password" id="confirmPassword" th:field="*{confirmPassword}" class="form-control"
+                   placeholder="Repeat your password" required minlength="8" autocomplete="new-password"/>
+            <button type="button" class="password-toggle" aria-label="Show password" aria-pressed="false">
+              <i class="ph-bold ph-eye" aria-hidden="true"></i>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary auth-submit">
+          Create Account
+        </button>
+      </form>
+
+      <div class="auth-alt-action">
+        Already have an account?
+        <a href="/auth/login">Sign in</a>
+      </div>
     </div>
   </div>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
 <script th:src="@{/js/app.js}"></script>
 </body>
 </html>

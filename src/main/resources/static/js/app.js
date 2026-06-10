@@ -289,6 +289,259 @@
   observer.observe(canvas);
 })();
 
+// GSAP page choreography
+(function() {
+  var gsap = window.gsap;
+  if (!gsap) return;
+
+  var reduceMotion = window.matchMedia &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function ready(fn) {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', fn);
+      return;
+    }
+    fn();
+  }
+
+  function toArray(collection) {
+    return Array.prototype.slice.call(collection || []);
+  }
+
+  function compact(items) {
+    return items.filter(function(item) { return !!item; });
+  }
+
+  function isVisible(el) {
+    return el && window.getComputedStyle(el).display !== 'none';
+  }
+
+  function initAuthGsap() {
+    var auth = document.querySelector('.auth-container');
+    if (!auth) return;
+
+    var showcase = auth.querySelector('.auth-showcase');
+    var card = auth.querySelector('.auth-card');
+    var logo = auth.querySelector('.auth-logo');
+    var formItems = toArray(auth.querySelectorAll('.auth-card .form-group, .auth-card .alert'));
+    var featureCards = toArray(auth.querySelectorAll('.auth-feature-card'));
+    var submit = auth.querySelector('.auth-submit');
+    var altAction = auth.querySelector('.auth-alt-action');
+
+    if (reduceMotion) {
+      gsap.set(compact([showcase, card, logo, submit, altAction]).concat(formItems, featureCards), {
+        autoAlpha: 1,
+        x: 0,
+        y: 0,
+        scale: 1,
+        clearProps: 'transform,opacity,visibility'
+      });
+      return;
+    }
+
+    function runIntro(context) {
+      var isDesktop = !context || !context.conditions || context.conditions.isDesktop;
+      var tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+
+      tl.fromTo(showcase, {
+          autoAlpha: 0,
+          x: isDesktop ? -28 : 0,
+          y: isDesktop ? 0 : 18
+        }, {
+          autoAlpha: 1,
+          x: 0,
+          y: 0,
+          duration: 0.65
+        })
+        .fromTo(featureCards, {
+          autoAlpha: 0,
+          y: 14,
+          scale: 0.97
+        }, {
+          autoAlpha: 1,
+          y: 0,
+          scale: 1,
+          duration: 0.42,
+          stagger: 0.06
+        }, '-=0.28')
+        .fromTo(card, {
+          autoAlpha: 0,
+          x: isDesktop ? 28 : 0,
+          y: isDesktop ? 0 : 20,
+          scale: 0.985
+        }, {
+          autoAlpha: 1,
+          x: 0,
+          y: 0,
+          scale: 1,
+          duration: 0.62
+        }, '-=0.42')
+        .fromTo(logo, {
+          autoAlpha: 0,
+          y: 10
+        }, {
+          autoAlpha: 1,
+          y: 0,
+          duration: 0.35
+        }, '-=0.26')
+        .fromTo(formItems, {
+          autoAlpha: 0,
+          y: 12
+        }, {
+          autoAlpha: 1,
+          y: 0,
+          duration: 0.36,
+          stagger: 0.045
+        }, '-=0.18')
+        .fromTo(compact([submit, altAction]), {
+          autoAlpha: 0,
+          y: 10
+        }, {
+          autoAlpha: 1,
+          y: 0,
+          duration: 0.32,
+          stagger: 0.05
+        }, '-=0.12');
+    }
+
+    if (gsap.matchMedia) {
+      gsap.matchMedia().add({ isDesktop: '(min-width: 900px)' }, runIntro);
+    } else {
+      runIntro({ conditions: { isDesktop: window.innerWidth >= 900 } });
+    }
+  }
+
+  function initProfileGsap() {
+    var profile = document.querySelector('.profile-page');
+    if (!profile) return;
+
+    var hero = profile.querySelector('.profile-hero');
+    var avatar = profile.querySelector('.profile-avatar');
+    var identityItems = toArray(profile.querySelectorAll('.profile-identity > *'));
+    var stats = toArray(profile.querySelectorAll('.profile-stat'));
+    var tabs = profile.querySelector('.profile-tabs');
+    var activePanelCard = toArray(profile.querySelectorAll('.profile-panel'))
+      .filter(isVisible)
+      .map(function(panel) { return panel.querySelector('.profile-panel-card'); });
+    var sections = toArray(profile.querySelectorAll('.profile-section'));
+
+    window.animateProfileTab = function(panel) {
+      if (reduceMotion || !panel) return;
+      var panelCard = panel.querySelector('.profile-panel-card');
+      var details = toArray(panel.querySelectorAll('.form-group, .verification-card, .form-note'));
+      var targets = compact([panelCard]).concat(details);
+      if (!targets.length) return;
+
+      gsap.fromTo(targets, {
+        autoAlpha: 0,
+        y: 12,
+        scale: 0.99
+      }, {
+        autoAlpha: 1,
+        y: 0,
+        scale: 1,
+        duration: 0.32,
+        ease: 'power2.out',
+        stagger: 0.035,
+        overwrite: 'auto',
+        clearProps: 'transform,opacity,visibility'
+      });
+    };
+
+    if (reduceMotion) {
+      gsap.set(compact([hero, avatar, tabs]).concat(identityItems, stats, activePanelCard, sections), {
+        autoAlpha: 1,
+        x: 0,
+        y: 0,
+        scale: 1,
+        clearProps: 'transform,opacity,visibility'
+      });
+      return;
+    }
+
+    var tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+    tl.fromTo(hero, {
+        autoAlpha: 0,
+        y: 24
+      }, {
+        autoAlpha: 1,
+        y: 0,
+        duration: 0.58
+      })
+      .fromTo(avatar, {
+        autoAlpha: 0,
+        scale: 0.88,
+        rotation: -4
+      }, {
+        autoAlpha: 1,
+        scale: 1,
+        rotation: 0,
+        duration: 0.42
+      }, '-=0.34')
+      .fromTo(identityItems.concat(stats), {
+        autoAlpha: 0,
+        y: 12
+      }, {
+        autoAlpha: 1,
+        y: 0,
+        duration: 0.34,
+        stagger: 0.045
+      }, '-=0.24')
+      .fromTo(compact([tabs]).concat(activePanelCard), {
+        autoAlpha: 0,
+        y: 14
+      }, {
+        autoAlpha: 1,
+        y: 0,
+        duration: 0.42,
+        stagger: 0.07
+      }, '-=0.1')
+      .fromTo(sections, {
+        autoAlpha: 0,
+        y: 20
+      }, {
+        autoAlpha: 1,
+        y: 0,
+        duration: 0.48,
+        stagger: 0.08
+      }, '-=0.08');
+  }
+
+  function initGsapFieldFocus() {
+    if (reduceMotion) return;
+
+    toArray(document.querySelectorAll('.auth-card .form-control, .profile-panel .form-control')).forEach(function(input) {
+      var target = input.closest('.password-field') || input;
+
+      input.addEventListener('focus', function() {
+        gsap.to(target, {
+          scale: 1.012,
+          duration: 0.18,
+          ease: 'power2.out',
+          overwrite: 'auto'
+        });
+      });
+
+      input.addEventListener('blur', function() {
+        gsap.to(target, {
+          scale: 1,
+          duration: 0.18,
+          ease: 'power2.out',
+          overwrite: 'auto',
+          clearProps: 'transform'
+        });
+      });
+    });
+  }
+
+  ready(function() {
+    initAuthGsap();
+    initProfileGsap();
+    initGsapFieldFocus();
+  });
+})();
+
 function getCsrfToken() {
   var m = document.querySelector('meta[name="_csrf"]');
   return m ? m.getAttribute('content') : '';
