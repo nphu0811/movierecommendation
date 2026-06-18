@@ -35,11 +35,18 @@ public class VerificationService {
     public void sendCode(User user, VerificationPurpose purpose) {
         String code = generateCode(codeLength);
         persistToken(user, purpose, code);
-        mailService.sendPlainText(
-                user.getEmail(),
-                subjectFor(purpose),
-                bodyFor(purpose, code)
-        );
+        System.out.println("==================================================");
+        System.out.println("GENERATED OTP CODE FOR USER " + user.getEmail() + " (" + purpose + "): " + code);
+        System.out.println("==================================================");
+        try {
+            mailService.sendPlainText(
+                    user.getEmail(),
+                    subjectFor(purpose),
+                    bodyFor(purpose, code)
+            );
+        } catch (Exception e) {
+            System.err.println("Failed to send plain text email via MailService. OTP: " + code + ". Error: " + e.getMessage());
+        }
     }
 
     public void verifyOrThrow(User user, String code, VerificationPurpose purpose) {

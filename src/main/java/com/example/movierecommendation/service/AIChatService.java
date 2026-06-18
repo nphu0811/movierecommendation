@@ -215,7 +215,7 @@ public class AIChatService {
                 mObj.put("title", movie.getTitle());
                 mObj.put("posterUrl", movie.getPosterUrl());
                 mObj.put("releaseYear", movie.getReleaseYear());
-                mObj.put("genres", movie.getGenres().stream().map(Genre::getGenreName).collect(Collectors.toList()));
+                mObj.put("genres", movie.getGenres() != null ? movie.getGenres().stream().map(Genre::getGenreName).collect(Collectors.toList()) : Collections.emptyList());
                 mObj.put("averageRating", movie.getAverageRating());
                 mObj.put("reason", "Phim phổ biến trong hệ thống phù hợp với từ khóa của bạn.");
                 recommendedMovies.add(mObj);
@@ -287,7 +287,7 @@ public class AIChatService {
         List<Movie> matchedMovies = new ArrayList<>();
         if (!matchedGenres.isEmpty()) {
             List<Integer> genreIds = matchedGenres.stream().map(Genre::getGenreId).collect(Collectors.toList());
-            matchedMovies = movieRepository.findByGenreIdsAndNotInIds(genreIds, List.of(-1), PageRequest.of(0, 30));
+            matchedMovies.addAll(movieRepository.findByGenreIdsAndNotInIds(genreIds, List.of(-1), PageRequest.of(0, 30)));
         }
 
         // Add movies matching title search / vector search
