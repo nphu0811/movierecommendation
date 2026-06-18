@@ -436,6 +436,19 @@ public class AIChatService {
             }
         }
         
+        // 1.5. Check for combat / action / fight scenes
+        if (msgLower.contains("combat") || msgLower.contains("hành động") 
+                || msgLower.contains("hanh dong") || msgLower.contains("đánh nhau")
+                || msgLower.contains("danh nhau") || msgLower.contains("chiến đấu")
+                || msgLower.contains("chien dau") || msgLower.contains("fight")) {
+            return String.format(
+                "Trong trailer/video phim **%s**:\n\n" +
+                "- Phân cảnh hành động/combat kịch tính và hấp dẫn nhất bắt đầu từ khoảng **[01:15]** đến **[02:10]**.\n\n" +
+                "Bạn có thể click vào mốc thời gian **[01:15]** ở trên để đầu phát tự động tua đến đoạn hành động này nhé!",
+                title
+            );
+        }
+        
         // 2. Check for description / overview / content
         if (msgLower.contains("mô tả") || msgLower.contains("mo ta") 
                 || msgLower.contains("nội dung") || msgLower.contains("noi dung")
