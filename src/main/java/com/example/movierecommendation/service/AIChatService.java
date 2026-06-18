@@ -83,13 +83,37 @@ public class AIChatService {
         // 1. Find candidate movies in database
         List<Movie> candidates = findCandidates(userMessage);
         
-        // If candidates are empty, get fallback popular movies
+        // If candidates are empty, get fallback popular movies or return no-results text
         if (candidates.isEmpty()) {
-            candidates = movieRepository.findAll().stream()
-                .filter(m -> m.getDeletedAt() == null)
-                .sorted((a, b) -> Integer.compare(b.getRatingCount(), a.getRatingCount()))
-                .limit(25)
-                .collect(Collectors.toList());
+            String normalized = removeAccent(userMessage.toLowerCase().trim());
+            boolean isGeneralRecommendation = normalized.contains("goi y") || normalized.contains("de xuat") 
+                    || normalized.contains("recommend") || normalized.contains("phim nao hay") 
+                    || normalized.contains("phim hay") || normalized.contains("phim nao hot")
+                    || normalized.contains("phim hot") || normalized.contains("phim moi")
+                    || normalized.contains("phim bat hu") || normalized.contains("phim pho bien");
+                    
+            if (isGeneralRecommendation) {
+                candidates = movieRepository.findAll().stream()
+                    .filter(m -> m.getDeletedAt() == null)
+                    .sorted((a, b) -> Integer.compare(b.getRatingCount(), a.getRatingCount()))
+                    .limit(25)
+                    .collect(Collectors.toList());
+            } else {
+                String reply = String.format("Rất tiếc, hiện tại hệ thống không tìm thấy bộ phim nào phù hợp với yêu cầu hoặc từ khóa '%s'. Bạn hãy thử tìm kiếm bằng tên phim hoặc thể loại khác nhé!", userMessage);
+                
+                try {
+                    AIChatLog chatLog = new AIChatLog();
+                    chatLog.setUser(user);
+                    chatLog.setMessage(userMessage);
+                    chatLog.setResponseSummary(reply);
+                    chatLog.setCreatedAt(LocalDateTime.now());
+                    aiChatLogRepository.save(chatLog);
+                } catch (Exception e) {
+                    log.warn("Failed to save AI Chat log for empty search: {}", e.getMessage());
+                }
+                
+                return new ChatResponse("TEXT", reply, Collections.emptyList());
+            }
         }
 
         // 2. Build user preference context if user is logged in
@@ -525,5 +549,13 @@ public class AIChatService {
             "Nếu bạn muốn mình tóm tắt chi tiết hơn hoặc có câu hỏi cụ thể nào khác về nội dung phim, hãy cứ hỏi nhé!",
             title, genres
         );
+    }
+
+    private String removeAccent(String s) {
+        if (s == null) return null;
+        String temp = java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD);
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
+        String result = pattern.matcher(temp).replaceAll("");
+        return result.replaceAll("[đĐ]", "d");
     }
 }
