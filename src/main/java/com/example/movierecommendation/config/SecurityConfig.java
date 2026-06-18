@@ -90,13 +90,13 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf
-                .ignoringRequestMatchers("/api/search-history/**", "/api/ai-chat/**")
+                .ignoringRequestMatchers("/api/search-history/**", "/api/ai-chat/**", "/api/movies/*/video-chat")
             )
             .authenticationProvider(authProvider())
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/css/**", "/js/**", "/images/**", "/webjars/**", "/favicon.svg", "/favicon.ico").permitAll()
                 .requestMatchers("/", "/home", "/movies", "/movies/**", "/search", "/ai-chat", "/api/ai-chat/**").permitAll()
-                .requestMatchers("/api/search/**", "/api/search-history/**").permitAll()
+                .requestMatchers("/api/search/**", "/api/search-history/**", "/api/movies/*/ai-summary", "/api/movies/*/video-chat").permitAll()
                 .requestMatchers("/auth/**").permitAll()
                 .requestMatchers("/error").permitAll()
                 .requestMatchers("/admin/**").hasRole("ADMIN")

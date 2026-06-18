@@ -604,6 +604,7 @@
   // YOUTUBE TRAILER PLAYER CONTROLLER API
   // ============================================================
   let ytPlayer = null;
+  let pendingSeekSeconds = null;
   
   // Load the YouTube API script
   const tag = document.createElement('script');
@@ -620,7 +621,19 @@
       if (iframe && iframe.src.includes('youtube.com/embed')) {
           ytPlayer = new YT.Player('mainPlayer', {
               events: {
-                  'onReady': () => console.log('YouTube trailer player instance ready')
+                  'onReady': () => {
+                      console.log('YouTube trailer player instance ready');
+                      if (pendingSeekSeconds !== null) {
+                          try {
+                              ytPlayer.seekTo(pendingSeekSeconds, true);
+                              ytPlayer.playVideo();
+                              showToast(`Đã tua đến ${formatMinutesSeconds(pendingSeekSeconds)}! 🎥`, 'success');
+                          } catch (e) {
+                              console.error("Seek on ready failed", e);
+                          }
+                          pendingSeekSeconds = null;
+                      }
+                  }
               }
           });
       } else {
@@ -642,10 +655,8 @@
       const activePill = document.querySelector('.server-pill.active');
       
       if (trailerPill && activePill !== trailerPill) {
+          pendingSeekSeconds = seconds;
           switchServer(trailerPill);
-          setTimeout(() => {
-              performSeek(seconds);
-          }, 800);
       } else {
           performSeek(seconds);
       }
