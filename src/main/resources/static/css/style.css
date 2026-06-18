@@ -4035,7 +4035,7 @@ body.auth-page {
   flex-direction: column;
   gap: var(--space-5);
   width: 100%;
-  max-width: 1000px;
+  max-width: 100%;
   margin: 0 0 var(--space-8) 0;
   padding: 0 var(--space-4);
 }
@@ -4518,7 +4518,7 @@ body.auth-page {
   position: relative;
   margin: var(--space-6) 0 var(--space-8);
   width: 100%;
-  max-width: 1000px;
+  max-width: 100%;
 }
 
 .show-more-line {
@@ -4561,6 +4561,171 @@ body.auth-page {
 
 .show-more-btn:hover i {
   transform: translateY(2px);
+}
+
+/* ============================================================
+   PREMIUM SITE FOOTER
+   ============================================================ */
+.site-footer {
+  background: linear-gradient(180deg, transparent 0%, rgba(5, 5, 5, 0.95) 40%, #000000 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding: var(--space-7) 4% var(--space-6);
+  margin-top: var(--space-8);
+  color: var(--text-secondary);
+  font-family: var(--font);
+}
+
+.footer-container {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-6);
+  flex-wrap: wrap;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding-bottom: var(--space-6);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.footer-brand-section {
+  flex: 1 1 350px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.footer-brand {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--white);
+  text-decoration: none;
+  letter-spacing: -0.03em;
+}
+
+.footer-brand span {
+  color: var(--red);
+}
+
+.footer-tagline {
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.footer-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-pill);
+  padding: 6px 14px;
+  width: fit-content;
+  margin-top: var(--space-2);
+}
+
+.footer-status .status-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #2ec4b6;
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(46, 196, 182, 0.6);
+  animation: pulseGreen 2s infinite;
+}
+
+@keyframes pulseGreen {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(46, 196, 182, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(46, 196, 182, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(46, 196, 182, 0); }
+}
+
+.footer-status .status-text {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.footer-links-grid {
+  flex: 2 1 600px;
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-5);
+  flex-wrap: wrap;
+}
+
+.footer-links-col {
+  flex: 1 1 150px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.footer-links-col h4 {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--white);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.footer-links-col ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.footer-links-col ul li a {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  transition: color var(--t-fast);
+}
+
+.footer-links-col ul li a:hover {
+  color: var(--white);
+}
+
+.footer-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  max-width: 1400px;
+  margin: var(--space-5) auto 0;
+  font-size: 0.88rem;
+}
+
+.footer-bottom p {
+  color: var(--text-muted);
+}
+
+.footer-socials {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.footer-socials a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 50%;
+  color: var(--text-secondary);
+  transition: all var(--t-fast);
+}
+
+.footer-socials a:hover {
+  background: var(--red-subtle);
+  border-color: var(--red);
+  color: var(--white);
+  transform: translateY(-2px);
 }
 
 

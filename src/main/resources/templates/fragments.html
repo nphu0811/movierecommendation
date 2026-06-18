@@ -194,5 +194,62 @@
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256"><path d="M224,128a8,8,0,0,1-8,8H59.31l58.35,58.34a8,8,0,0,1-11.32,11.32l-72-72a8,8,0,0,1,0-11.32l72-72a8,8,0,0,1,11.32,11.32L59.31,120H216A8,8,0,0,1,224,128Z"></path></svg> Back to Site</a>
   </nav>
 </aside>
+
+
+<!-- FOOTER fragment -->
+<footer th:fragment="footer" class="site-footer">
+  <div class="footer-container">
+    <div class="footer-brand-section">
+      <a href="/" class="footer-brand">Movie<span>Rec</span></a>
+      <p class="footer-tagline">Hệ thống gợi ý phim thông minh ứng dụng trí tuệ nhân tạo (AI) để mang đến trải nghiệm giải trí cá nhân hóa hoàn hảo nhất.</p>
+      <div class="footer-status">
+        <span class="status-dot"></span>
+        <span class="status-text">AI Recommendation Engine Online</span>
+      </div>
+    </div>
+    
+    <div class="footer-links-grid">
+      <div class="footer-links-col">
+        <h4>Khám phá</h4>
+        <ul>
+          <li><a href="/">Trang chủ</a></li>
+          <li><a href="/movies">Tất cả phim</a></li>
+          <li><a href="/search">Tìm kiếm</a></li>
+          <li><a href="/user/recommendations" th:if="${currentUser != null}">Gợi ý cho bạn</a></li>
+        </ul>
+      </div>
+      
+      <div class="footer-links-col">
+        <h4>Bộ sưu tập</h4>
+        <ul>
+          <li><a href="/user/watchlist" th:if="${currentUser != null}">Watchlist</a></li>
+          <li><a href="/user/profile" th:if="${currentUser != null}">Tài khoản</a></li>
+          <li><a href="/auth/login" th:if="${currentUser == null}">Đăng nhập</a></li>
+          <li><a href="/auth/register" th:if="${currentUser == null}">Đăng ký</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-links-col">
+        <h4>Trợ giúp & Liên hệ</h4>
+        <ul>
+          <li><a href="#">Trung tâm trợ giúp</a></li>
+          <li><a href="#">Điều khoản sử dụng</a></li>
+          <li><a href="#">Chính sách bảo mật</a></li>
+          <li><a href="#">Báo cáo bản quyền</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  
+  <div class="footer-bottom">
+    <p>&copy; 2026 MovieRec. Developed with <i class="ph-fill ph-heart" style="color: var(--red);"></i> and AI.</p>
+    <div class="footer-socials">
+      <a href="#" aria-label="Facebook"><i class="ph-bold ph-facebook-logo"></i></a>
+      <a href="#" aria-label="Twitter"><i class="ph-bold ph-twitter-logo"></i></a>
+      <a href="#" aria-label="Instagram"><i class="ph-bold ph-instagram-logo"></i></a>
+      <a href="#" aria-label="Github"><i class="ph-bold ph-github-logo"></i></a>
+    </div>
+  </div>
+</footer>
 </body>
 </html>
