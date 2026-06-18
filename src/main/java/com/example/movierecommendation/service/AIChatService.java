@@ -64,7 +64,7 @@ public class AIChatService {
         ChatIntent intent = intentClassifier.classify(userMessage);
         
         if (intent != ChatIntent.MOVIE_RECOMMENDATION && intent != ChatIntent.MOVIE_SEARCH) {
-            String reply = chatHelpService.getHelpResponse(intent);
+            String reply = chatHelpService.getHelpResponse(intent, userMessage);
             
             try {
                 AIChatLog chatLog = new AIChatLog();
@@ -366,7 +366,7 @@ public class AIChatService {
                     || intent == ChatIntent.ACCOUNT_HELP || intent == ChatIntent.WATCHLIST_HELP
                     || intent == ChatIntent.RATING_HELP || intent == ChatIntent.HISTORY_HELP
                     || intent == ChatIntent.SITE_NAVIGATION) {
-                return chatHelpService.getHelpResponse(intent);
+                return chatHelpService.getHelpResponse(intent, userMessage);
             }
         }
 
