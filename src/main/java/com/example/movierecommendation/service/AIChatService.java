@@ -120,8 +120,8 @@ public class AIChatService {
         for (Movie m : candidates) {
             candidateMap.put(m.getMovieId(), m);
             String genres = m.getGenres() != null ? m.getGenres().stream().map(Genre::getGenreName).collect(Collectors.joining(", ")) : "N/A";
-            candidatesBuilder.append(String.format("- ID: %d | Tên: %s | Năm: %d | Thể loại: [%s] | Rating: %.1f\n", 
-                m.getMovieId(), m.getTitle(), m.getReleaseYear(), genres, m.getAverageRating()));
+            candidatesBuilder.append(String.format("- ID: %d | Tên: %s | Năm: %s | Thể loại: [%s] | Rating: %.1f\n", 
+                m.getMovieId(), m.getTitle(), m.getReleaseYear() != null ? String.valueOf(m.getReleaseYear()) : "N/A", genres, m.getAverageRating()));
         }
 
         // 3. Build Prompt
@@ -427,7 +427,7 @@ public class AIChatService {
                 StringBuilder sb = new StringBuilder();
                 sb.append(String.format("Dưới đây là một số phim tương tự cùng thể loại với **%s** mà bạn có thể quan tâm:\n\n", title));
                 for (Movie m : similar) {
-                    sb.append(String.format("- **%s** (%d) - Rating: %.1f\n", m.getTitle(), m.getReleaseYear(), m.getAverageRating()));
+                    sb.append(String.format("- **%s** (%s) - Rating: %.1f\n", m.getTitle(), m.getReleaseYear() != null ? String.valueOf(m.getReleaseYear()) : "Chưa rõ", m.getAverageRating()));
                 }
                 sb.append("\nBạn có thể nhấn vào các bộ phim này trên trang danh sách hoặc tìm kiếm chúng để xem thêm!");
                 return sb.toString();
@@ -463,7 +463,7 @@ public class AIChatService {
                 || msgLower.contains("sản xuất") || msgLower.contains("san xuat")
                 || msgLower.contains("chiếu") || msgLower.contains("chieu")
                 || msgLower.contains("year") || msgLower.contains("release")) {
-            return String.format("Phim **%s** được phát hành vào năm **%d**.", title, movie.getReleaseYear());
+            return String.format("Phim **%s** được phát hành vào năm **%s**.", title, movie.getReleaseYear() != null ? String.valueOf(movie.getReleaseYear()) : "Chưa rõ");
         }
         
         // 4. Check for rating
