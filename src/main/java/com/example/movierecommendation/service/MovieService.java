@@ -297,7 +297,20 @@ public class MovieService {
         if (request.getGenreIds() != null) {
             movie.setGenres(genreRepository.findAllById(request.getGenreIds()));
         }
-        return movieRepository.save(movie);
+        Movie saved = movieRepository.save(movie);
+        try {
+            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                new org.springframework.transaction.support.TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        movieEmbeddingService.generateEmbeddingForMovieAsync(saved);
+                    }
+                }
+            );
+        } catch (IllegalStateException e) {
+            movieEmbeddingService.generateEmbeddingForMovieAsync(saved);
+        }
+        return saved;
     }
 
     @Transactional
@@ -313,7 +326,20 @@ public class MovieService {
         if (request.getGenreIds() != null) {
             movie.setGenres(genreRepository.findAllById(request.getGenreIds()));
         }
-        return movieRepository.save(movie);
+        Movie saved = movieRepository.save(movie);
+        try {
+            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                new org.springframework.transaction.support.TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        movieEmbeddingService.generateEmbeddingForMovieAsync(saved);
+                    }
+                }
+            );
+        } catch (IllegalStateException e) {
+            movieEmbeddingService.generateEmbeddingForMovieAsync(saved);
+        }
+        return saved;
     }
 
     @Transactional

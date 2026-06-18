@@ -42,30 +42,28 @@ public class MovieEmbeddingService {
         }
 
         try {
-            List<Movie> allMovies = movieRepository.findAll();
+            List<Object[]> existingEmbeddings = movieRepository.findAllMovieEmbeddingsOnly();
             int cachedCount = 0;
-            List<Movie> missingEmbeddings = new ArrayList<>();
 
-            for (Movie movie : allMovies) {
-                if (movie.getEmbedding() != null && !movie.getEmbedding().trim().isEmpty()) {
+            for (Object[] row : existingEmbeddings) {
+                Integer movieId = (Integer) row[0];
+                String embStr = (String) row[1];
+                if (embStr != null && !embStr.trim().isEmpty()) {
                     try {
-                        float[] vector = deserialize(movie.getEmbedding());
+                        float[] vector = deserialize(embStr);
                         if (vector.length > 0) {
-                            embeddingCache.put(movie.getMovieId(), vector);
+                            embeddingCache.put(movieId, vector);
                             cachedCount++;
-                        } else {
-                            missingEmbeddings.add(movie);
                         }
                     } catch (Exception e) {
-                        missingEmbeddings.add(movie);
+                        // ignore
                     }
-                } else {
-                    missingEmbeddings.add(movie);
                 }
             }
 
             log.info("Loaded {} movie embeddings from database to in-memory cache.", cachedCount);
 
+            List<Movie> missingEmbeddings = movieRepository.findMoviesMissingEmbedding();
             if (missingEmbeddings.isEmpty()) {
                 log.info("All movies are already vectorized!");
                 return;
@@ -73,6 +71,7 @@ public class MovieEmbeddingService {
 
             log.info("Generating embeddings for {} movies in the background...", missingEmbeddings.size());
             int generated = 0;
+            int consecutiveFailures = 0;
             for (Movie movie : missingEmbeddings) {
                 if (!openAIService.isEnabled()) break;
 
@@ -80,6 +79,7 @@ public class MovieEmbeddingService {
                     String textToEmbed = buildTextToEmbed(movie);
                     List<Double> vectorList = openAIService.getEmbedding(textToEmbed);
                     if (vectorList != null && !vectorList.isEmpty()) {
+                        consecutiveFailures = 0; // Reset consecutive failures
                         float[] vector = listToArray(vectorList);
                         movie.setEmbedding(serialize(vector));
                         movieRepository.save(movie);
@@ -90,15 +90,44 @@ public class MovieEmbeddingService {
                             log.info("Generated embeddings for {}/{} movies", generated, missingEmbeddings.size());
                         }
                         Thread.sleep(150);
+                    } else {
+                        consecutiveFailures++;
+                        if (consecutiveFailures >= 5) {
+                            log.error("Aborting background movie embedding indexing due to 5 consecutive API failures. Please check network connectivity or API key.");
+                            break;
+                        }
                     }
                 } catch (Exception e) {
+                    consecutiveFailures++;
                     log.warn("Failed to generate embedding for movie '{}': {}", movie.getTitle(), e.getMessage());
+                    if (consecutiveFailures >= 5) {
+                        log.error("Aborting background movie embedding indexing due to 5 consecutive API failures. Please check network connectivity or API key.");
+                        break;
+                    }
                 }
             }
             log.info("✅ Finished generating embeddings. Total generated: {}", generated);
 
         } catch (Exception e) {
             log.error("Error during movie embedding generation: {}", e.getMessage(), e);
+        }
+    }
+
+    @Async
+    public void generateEmbeddingForMovieAsync(Movie movie) {
+        if (!openAIService.isEnabled() || movie == null) return;
+        try {
+            String textToEmbed = buildTextToEmbed(movie);
+            List<Double> vectorList = openAIService.getEmbedding(textToEmbed);
+            if (vectorList != null && !vectorList.isEmpty()) {
+                float[] vector = listToArray(vectorList);
+                movie.setEmbedding(serialize(vector));
+                movieRepository.save(movie);
+                embeddingCache.put(movie.getMovieId(), vector);
+                log.info("Successfully generated and cached embedding for movie '{}' (ID: {})", movie.getTitle(), movie.getMovieId());
+            }
+        } catch (Exception e) {
+            log.warn("Failed to generate embedding for movie '{}' asynchronously: {}", movie.getTitle(), e.getMessage());
         }
     }
 
@@ -114,34 +143,38 @@ public class MovieEmbeddingService {
 
         float[] queryVector = listToArray(queryVectorList);
 
-        List<Movie> allMovies = movieRepository.findAll();
-        List<ScoredMovie> scoredMovies = new ArrayList<>();
-
-        for (Movie movie : allMovies) {
-            if (movie.getDeletedAt() != null) continue;
-
-            float[] movieVector = embeddingCache.get(movie.getMovieId());
-            if (movieVector == null && movie.getEmbedding() != null && !movie.getEmbedding().trim().isEmpty()) {
-                try {
-                    movieVector = deserialize(movie.getEmbedding());
-                    if (movieVector.length > 0) {
-                        embeddingCache.put(movie.getMovieId(), movieVector);
-                    }
-                } catch (Exception e) {
-                    // ignore
-                }
-            }
-
+        // Compute scores purely in memory
+        List<ScoredMovieId> scoredIds = new ArrayList<>();
+        for (Map.Entry<Integer, float[]> entry : embeddingCache.entrySet()) {
+            Integer id = entry.getKey();
+            float[] movieVector = entry.getValue();
             if (movieVector != null && movieVector.length > 0) {
                 double score = cosineSimilarity(queryVector, movieVector);
-                scoredMovies.add(new ScoredMovie(movie, score));
+                scoredIds.add(new ScoredMovieId(id, score));
             }
         }
 
-        return scoredMovies.stream()
-            .sorted((a, b) -> Double.compare(b.score, a.score))
+        // Sort and limit
+        List<Integer> topIds = scoredIds.stream()
+            .sorted((a, b) -> Double.compare(b.score(), a.score()))
             .limit(limit)
-            .map(ScoredMovie::movie)
+            .map(ScoredMovieId::movieId)
+            .collect(Collectors.toList());
+
+        if (topIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // Fetch top matching movies from database
+        List<Movie> matchedMovies = movieRepository.findAllByIdWithGenres(topIds);
+        Map<Integer, Movie> movieMap = matchedMovies.stream()
+            .collect(Collectors.toMap(Movie::getMovieId, m -> m));
+
+        // Return movies preserving the search score order and filtering deleted
+        return topIds.stream()
+            .map(movieMap::get)
+            .filter(Objects::nonNull)
+            .filter(m -> m.getDeletedAt() == null)
             .collect(Collectors.toList());
     }
 
@@ -204,4 +237,5 @@ public class MovieEmbeddingService {
     }
 
     private record ScoredMovie(Movie movie, double score) {}
+    private record ScoredMovieId(Integer movieId, double score) {}
 }

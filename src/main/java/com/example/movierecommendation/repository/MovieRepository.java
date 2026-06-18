@@ -103,4 +103,10 @@ public interface MovieRepository extends JpaRepository<Movie, Integer> {
 
     @Query("SELECT DISTINCT m FROM Movie m LEFT JOIN FETCH m.genres WHERE m.deletedAt IS NULL")
     List<Movie> findAllWithGenres();
+
+    @Query("SELECT m.movieId, m.embedding FROM Movie m WHERE m.deletedAt IS NULL AND m.embedding IS NOT NULL AND TRIM(m.embedding) <> ''")
+    List<Object[]> findAllMovieEmbeddingsOnly();
+
+    @Query("SELECT m FROM Movie m WHERE m.deletedAt IS NULL AND (m.embedding IS NULL OR TRIM(m.embedding) = '')")
+    List<Movie> findMoviesMissingEmbedding();
 }

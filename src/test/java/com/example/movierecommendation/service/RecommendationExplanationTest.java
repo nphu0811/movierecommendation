@@ -37,7 +37,7 @@ public class RecommendationExplanationTest {
         m1.setTitle("Popular Movie");
         List<Movie> recommended = List.of(m1);
 
-        recommendationService.populateExplanations(1, recommended, Collections.emptySet());
+        recommendationService.populateExplanations(1, recommended, Collections.emptyMap());
 
         assertEquals("Vì phim này đang phổ biến và được đánh giá cao trên hệ thống.", m1.getRecommendationReason());
     }
@@ -49,7 +49,7 @@ public class RecommendationExplanationTest {
         m1.setTitle("AI Movie");
         List<Movie> recommended = List.of(m1);
 
-        recommendationService.populateExplanations(1, recommended, Set.of(101));
+        recommendationService.populateExplanations(1, recommended, Map.of(101, "Vì AI chọn phim này phù hợp với sở thích của bạn."));
 
         assertEquals("Vì AI chọn phim này phù hợp với sở thích của bạn.", m1.getRecommendationReason());
     }
@@ -77,7 +77,7 @@ public class RecommendationExplanationTest {
         m1.setTitle("Action Movie");
         m1.setGenres(List.of(action));
 
-        recommendationService.populateExplanations(1, List.of(m1), Collections.emptySet());
+        recommendationService.populateExplanations(1, List.of(m1), Collections.emptyMap());
 
         assertEquals("Vì bạn đã xem/đánh giá cao nhiều phim thuộc thể loại Action.", m1.getRecommendationReason());
     }

@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 import com.example.movierecommendation.entity.*;
 import com.example.movierecommendation.repository.MovieRepository;
 import com.example.movierecommendation.repository.GenreRepository;
+import com.example.movierecommendation.repository.VideoTimelineRepository;
 import com.example.movierecommendation.dto.ChatResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -66,6 +67,8 @@ public class AiSummaryAndChatTest {
     @Test
     public void testChatAboutVideo_SummaryRequestFallback() {
         AIChatService chatService = new AIChatService();
+        VideoTimelineRepository videoTimelineRepository = mock(VideoTimelineRepository.class);
+        org.springframework.test.util.ReflectionTestUtils.setField(chatService, "videoTimelineRepository", videoTimelineRepository);
         
         Movie movie = new Movie();
         movie.setTitle("The Matrix");
@@ -84,9 +87,11 @@ public class AiSummaryAndChatTest {
         AIChatService chatService = new AIChatService();
         ChatIntentClassifier classifier = new ChatIntentClassifier();
         ChatHelpService helpService = new ChatHelpService();
+        VideoTimelineRepository videoTimelineRepository = mock(VideoTimelineRepository.class);
         
         org.springframework.test.util.ReflectionTestUtils.setField(chatService, "intentClassifier", classifier);
         org.springframework.test.util.ReflectionTestUtils.setField(chatService, "chatHelpService", helpService);
+        org.springframework.test.util.ReflectionTestUtils.setField(chatService, "videoTimelineRepository", videoTimelineRepository);
 
         Movie movie = new Movie();
         movie.setTitle("The Matrix");
