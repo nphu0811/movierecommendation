@@ -56,6 +56,9 @@ public class Movie {
     @Column(name = "directors_text", columnDefinition = "TEXT")
     private String directorsText;
 
+    @Column(name = "ai_summary", columnDefinition = "TEXT")
+    private String aiSummary;
+
     @Transient
     private String recommendationReason;
 
@@ -161,4 +164,7 @@ public class Movie {
 
     public String getDirectorsText() { return directorsText; }
     public void setDirectorsText(String directorsText) { this.directorsText = directorsText; }
+
+    public String getAiSummary() { return aiSummary; }
+    public void setAiSummary(String aiSummary) { this.aiSummary = aiSummary; }
 }

@@ -23,9 +23,14 @@
       <h1 class="player-movie-title" th:text="${movie.title}">Movie Title</h1>
       
       <div class="player-actions-row">
-        <div class="server-switcher" th:if="${server1 != null}">
-          <button class="server-pill active" data-server="1" th:data-src="${server1}" onclick="switchServer(this)">Server 1</button>
-          <button class="server-pill" data-server="2" th:data-src="${server2}" onclick="switchServer(this)">Server 2</button>
+        <div class="server-switcher">
+          <button th:if="${server1 != null}" class="server-pill active" data-server="1" th:data-src="${server1}" onclick="switchServer(this)">Server 1</button>
+          <button th:if="${server2 != null}" class="server-pill" data-server="2" th:data-src="${server2}" onclick="switchServer(this)">Server 2</button>
+          <button th:if="${movie.trailerKey != null and !#strings.isEmpty(movie.trailerKey)}"
+                  class="server-pill" data-server="trailer"
+                  th:classappend="${server1 == null} ? 'active'"
+                  th:data-src="'https://www.youtube.com/embed/' + ${movie.trailerKey} + '?enablejsapi=1'"
+                  onclick="switchServer(this)">Trailer (AI Chat)</button>
         </div>
         
         <button id="lightsOutBtn" class="lights-out-btn" onclick="toggleLightsOut()">
@@ -42,18 +47,87 @@
     </div>
   </div>
 
-  <!-- Player Wrapper -->
-  <div class="player-wrapper" id="playerWrapper">
-    <div th:if="${server1 != null}" style="width:100%;height:100%">
-      <iframe id="mainPlayer" th:src="${server1}"
-              class="player-iframe"
-              allowfullscreen frameborder="0"></iframe>
+  <div class="player-layout-row">
+    <!-- Main Player Column -->
+    <div class="player-column-main">
+      <div class="player-wrapper" id="playerWrapper">
+        <div th:if="${server1 != null or movie.trailerKey != null}" style="width:100%;height:100%">
+          <iframe id="mainPlayer" th:src="${server1 != null ? server1 : 'https://www.youtube.com/embed/' + movie.trailerKey + '?enablejsapi=1'}"
+                  class="player-iframe"
+                  allowfullscreen frameborder="0"></iframe>
+        </div>
+        
+        <div th:unless="${server1 != null or movie.trailerKey != null}"
+             class="empty-comments-state" style="padding:100px 20px;height:100%;display:flex;flex-direction:column;justify-content:center">
+          <i class="ph ph-warning-circle" style="font-size:3rem;margin-bottom:16px;opacity:0.5"></i>
+          <p>Phim này hiện chưa hỗ trợ xem trực tuyến và không có trailer.</p>
+        </div>
+      </div>
+      
+      <!-- Action Pills Bar -->
+      <div class="play-action-bar">
+        <!-- Watchlist Pill -->
+        <th:block th:if="${currentUser != null}">
+          <button class="action-btn-pill watchlist-btn-pill"
+                  th:classappend="${inWatchlist} ? 'active'"
+                  th:onclick="|toggleWatchlistPill(${movie.movieId}, this)|">
+            <i th:class="${inWatchlist} ? 'ph-fill ph-heart' : 'ph ph-heart'" style="color: var(--red);"></i>
+            <span th:text="${inWatchlist} ? 'Đã yêu thích' : 'Yêu thích'">Yêu thích</span>
+          </button>
+        </th:block>
+
+        <!-- Star Rating Pill -->
+        <th:block th:if="${currentUser != null}">
+          <div class="action-btn-pill" style="gap: var(--space-3);">
+            <span>Đánh giá:</span>
+            <div class="pill-rating-stars" th:id="|ratingStarsPill|">
+              <i class="ph-bold ph-star" th:each="i : ${#numbers.sequence(1,5)}" th:data-val="${i}" th:onclick="|rateMoviePill(${movie.movieId}, ${i})|"></i>
+            </div>
+          </div>
+        </th:block>
+
+        <!-- Báo lỗi Pill -->
+        <th:block th:if="${currentUser != null}">
+          <button class="action-btn-pill" onclick="openReportModal()">
+            <i class="ph-bold ph-warning-octagon" style="color: var(--gold);"></i>
+            <span>Báo lỗi</span>
+          </button>
+        </th:block>
+
+        <!-- Đặt câu hỏi (AI Chat) Pill -->
+        <button class="action-btn-pill" id="askAiBtn" onclick="toggleVideoChatSidebar()">
+          <i class="ph-fill ph-sparkle" style="color: #34cfeb;"></i>
+          <span>Đặt câu hỏi</span>
+        </button>
+      </div>
     </div>
     
-    <div th:unless="${server1 != null}"
-         class="empty-comments-state" style="padding:100px 20px;height:100%;display:flex;flex-direction:column;justify-content:center">
-      <i class="ph ph-warning-circle" style="font-size:3rem;margin-bottom:16px;opacity:0.5"></i>
-      <p>This movie is currently unavailable for streaming (IMDb/TMDB ID missing).</p>
+    <!-- AI Video Chat Sidebar -->
+    <div class="player-column-sidebar" id="videoChatSidebar">
+      <div class="chat-sidebar-header">
+        <h3><i class="ph-fill ph-sparkle"></i> Hỏi về video này</h3>
+        <button class="close-btn" onclick="toggleVideoChatSidebar()">✕</button>
+      </div>
+      
+      <div class="chat-sidebar-messages" id="chatSidebarMessages">
+        <div class="chat-msg chat-msg-ai">
+          <p>Xin chào! Bạn có thắc mắc về nội dung đang xem? Tôi sẵn sàng giúp bạn.</p>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Bạn chưa biết nên hỏi gì? Hãy thử hỏi về:</p>
+        </div>
+      </div>
+      
+      <div class="chat-sidebar-suggestions">
+        <button class="chat-suggestion-pill" onclick="sendSuggestion('Tóm tắt video này')">Tóm tắt video này</button>
+        <button class="chat-suggestion-pill" onclick="sendSuggestion('Đề xuất nội dung có liên quan')">Đề xuất nội dung có liên quan</button>
+      </div>
+      
+      <div class="chat-sidebar-input-row">
+        <input type="text" id="chatSidebarInput" placeholder="Đặt câu hỏi..." onkeydown="handleChatInputKey(event)"/>
+        <button class="send-btn" onclick="sendChatMessage()">
+          <i class="ph-bold ph-paper-plane-right"></i>
+        </button>
+      </div>
+      <div class="chat-disclaimer">AI có thể mắc sai sót, vì vậy, hãy xác minh thông tin.</div>
     </div>
   </div>
 
@@ -351,6 +425,362 @@
       showToast('Failed to post comment', 'error');
     });
   }
+
+  // ============================================================
+  // WATCHLIST & RATING PILLS INTERACTIVE LOGIC
+  // ============================================================
+  function toggleWatchlistPill(movieId, btn) {
+      const headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
+      const csrfMeta = document.querySelector('meta[name="_csrf"]');
+      const csrfHeader = document.querySelector('meta[name="_csrf_header"]');
+      if (csrfMeta && csrfHeader) headers[csrfHeader.content] = csrfMeta.content;
+      
+      btn.disabled = true;
+      fetch(`/api/movies/${movieId}/watchlist`, { method: 'POST', headers })
+      .then(res => res.json())
+      .then(data => {
+          btn.disabled = false;
+          const icon = btn.querySelector('i');
+          const span = btn.querySelector('span');
+          if (data.added) {
+              btn.classList.add('active');
+              icon.className = 'ph-fill ph-heart';
+              span.textContent = 'Đã yêu thích';
+              showToast('Đã thêm vào danh sách yêu thích! ❤️', 'success');
+          } else {
+              btn.classList.remove('active');
+              icon.className = 'ph ph-heart';
+              span.textContent = 'Yêu thích';
+              showToast('Đã xóa khỏi danh sách yêu thích.', 'info');
+          }
+      })
+      .catch(err => {
+          btn.disabled = false;
+          showToast('Có lỗi xảy ra, vui lòng thử lại.', 'error');
+      });
+  }
+
+  function rateMoviePill(movieId, score) {
+      const headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
+      const csrfMeta = document.querySelector('meta[name="_csrf"]');
+      const csrfHeader = document.querySelector('meta[name="_csrf_header"]');
+      if (csrfMeta && csrfHeader) headers[csrfHeader.content] = csrfMeta.content;
+      
+      fetch(`/api/movies/${movieId}/rate?score=${score}`, { method: 'POST', headers })
+      .then(res => res.json())
+      .then(data => {
+          highlightPillStars(score);
+          showToast(`Đã đánh giá ${score} sao! ⭐`, 'success');
+      })
+      .catch(err => {
+          showToast('Đánh giá thất bại, vui lòng thử lại.', 'error');
+      });
+  }
+  
+  function highlightPillStars(rating) {
+      const stars = document.querySelectorAll('#ratingStarsPill i');
+      stars.forEach((star, index) => {
+          if (index < rating) {
+              star.className = 'ph-fill ph-star active';
+          } else {
+              star.className = 'ph-bold ph-star';
+          }
+      });
+  }
+
+  // ============================================================
+  // AI VIDEO CHAT SIDEBAR LOGIC
+  // ============================================================
+  function toggleVideoChatSidebar() {
+      const sidebar = document.getElementById('videoChatSidebar');
+      const btn = document.getElementById('askAiBtn');
+      if (sidebar && btn) {
+          sidebar.classList.toggle('active');
+          btn.classList.toggle('active');
+      }
+  }
+
+  function sendSuggestion(text) {
+      const input = document.getElementById('chatSidebarInput');
+      if (input) {
+          input.value = text;
+          sendChatMessage();
+      }
+  }
+  
+  function handleChatInputKey(event) {
+      if (event.key === 'Enter') {
+          sendChatMessage();
+      }
+  }
+  
+  function sendChatMessage() {
+      const input = document.getElementById('chatSidebarInput');
+      if (!input) return;
+      const message = input.value.trim();
+      if (!message) return;
+      
+      appendChatMessage(message, 'user');
+      input.value = '';
+      
+      const messagesContainer = document.getElementById('chatSidebarMessages');
+      const loadingId = 'ai-loading-' + Date.now();
+      const loadingHtml = `
+          <div class="chat-msg chat-msg-ai" id="${loadingId}">
+              <i class="ph-bold ph-circle-notch ph-spin"></i> Đang phân tích video...
+          </div>
+      `;
+      messagesContainer.insertAdjacentHTML('beforeend', loadingHtml);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      
+      const csrfMeta = document.querySelector('meta[name="_csrf"]');
+      const csrfHeader = document.querySelector('meta[name="_csrf_header"]');
+      const headers = { 'Content-Type': 'application/json' };
+      if (csrfMeta && csrfHeader) headers[csrfHeader.content] = csrfMeta.content;
+      
+      fetch(`/api/movies/${MOVIE_ID}/video-chat`, {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ message: message })
+      })
+      .then(res => res.json())
+      .then(data => {
+          const loadingEl = document.getElementById(loadingId);
+          if (loadingEl) loadingEl.remove();
+          appendChatMessage(data.reply, 'ai');
+      })
+      .catch(err => {
+          const loadingEl = document.getElementById(loadingId);
+          if (loadingEl) loadingEl.remove();
+          appendChatMessage('Đã xảy ra lỗi khi trao đổi với AI. Vui lòng thử lại sau!', 'ai');
+      });
+  }
+  
+  function appendChatMessage(text, sender) {
+      const messagesContainer = document.getElementById('chatSidebarMessages');
+      if (!messagesContainer) return;
+      
+      let formattedText = text;
+      if (sender === 'ai') {
+          formattedText = formatMarkdown(text);
+          formattedText = linkifyTimestamps(formattedText);
+      } else {
+          formattedText = escapeHtml(text);
+      }
+      
+      const msgClass = sender === 'user' ? 'chat-msg-user' : 'chat-msg-ai';
+      const html = `
+          <div class="chat-msg ${msgClass}">
+              ${formattedText}
+          </div>
+      `;
+      messagesContainer.insertAdjacentHTML('beforeend', html);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
+  
+  function escapeHtml(text) {
+      const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+      return text.replace(/[&<>"']/g, m => map[m]);
+  }
+  
+  function formatMarkdown(text) {
+      let html = text;
+      html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      html = html.replace(/### (.*?)\n/g, '<h4>$1</h4>');
+      html = html.replace(/^- (.*?)(?=\n|$)/gm, '<li>$1</li>');
+      html = html.replace(/(<li>.*?<\/li>)/gs, '<ul>$1</ul>');
+      html = html.replace(/<\/ul>\s*<ul>/g, '');
+      return html;
+  }
+  
+  function linkifyTimestamps(text) {
+      return text.replace(/(?:\[)?(\d{2}):(\d{2})(?:\])?/g, (match, mins, secs) => {
+          const totalSeconds = parseInt(mins) * 60 + parseInt(secs);
+          return `<span class="timestamp-link" onclick="seekToSeconds(${totalSeconds})">${mins}:${secs}</span>`;
+      });
+  }
+
+  // ============================================================
+  // YOUTUBE TRAILER PLAYER CONTROLLER API
+  // ============================================================
+  let ytPlayer = null;
+  
+  // Load the YouTube API script
+  const tag = document.createElement('script');
+  tag.src = "https://www.youtube.com/iframe_api";
+  const firstScriptTag = document.getElementsByTagName('script')[0];
+  firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+  
+  function onYouTubeIframeAPIReady() {
+      initYoutubePlayer();
+  }
+  
+  function initYoutubePlayer() {
+      const iframe = document.getElementById('mainPlayer');
+      if (iframe && iframe.src.includes('youtube.com/embed')) {
+          ytPlayer = new YT.Player('mainPlayer', {
+              events: {
+                  'onReady': () => console.log('YouTube trailer player instance ready')
+              }
+          });
+      } else {
+          ytPlayer = null;
+      }
+  }
+  
+  // Intercept original switchServer method to bind YouTube Player
+  const originalSwitchServerFunc = switchServer;
+  switchServer = function(btn) {
+      originalSwitchServerFunc(btn);
+      setTimeout(() => {
+          initYoutubePlayer();
+      }, 500);
+  };
+  
+  function seekToSeconds(seconds) {
+      const trailerPill = document.querySelector('.server-pill[data-server="trailer"]');
+      const activePill = document.querySelector('.server-pill.active');
+      
+      if (trailerPill && activePill !== trailerPill) {
+          switchServer(trailerPill);
+          setTimeout(() => {
+              performSeek(seconds);
+          }, 800);
+      } else {
+          performSeek(seconds);
+      }
+  }
+  
+  function performSeek(seconds) {
+      if (ytPlayer && typeof ytPlayer.seekTo === 'function') {
+          try {
+              ytPlayer.seekTo(seconds, true);
+              ytPlayer.playVideo();
+              showToast(`Đã tua đến ${formatMinutesSeconds(seconds)}! 🎥`, 'success');
+          } catch(e) {
+              fallbackSeek(seconds);
+          }
+      } else {
+          fallbackSeek(seconds);
+      }
+  }
+  
+  function fallbackSeek(seconds) {
+      const player = document.getElementById('mainPlayer');
+      if (player) {
+          let src = player.src;
+          src = src.replace(/[\?&]start=\d+/, '');
+          const connector = src.includes('?') ? '&' : '?';
+          player.src = src + connector + 'start=' + seconds;
+          showToast(`Đã tua đến ${formatMinutesSeconds(seconds)}! 🎥`, 'success');
+      }
+  }
+  
+  function formatMinutesSeconds(seconds) {
+      const m = Math.floor(seconds / 60);
+      const s = seconds % 60;
+      return `${m < 10 ? '0' + m : m}:${s < 10 ? '0' + s : s}`;
+  }
+
+  // ============================================================
+  // REPORT MODAL LOGIC
+  // ============================================================
+  function openReportModal() {
+    document.getElementById('reportModal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeReportModal() {
+    document.getElementById('reportModal').classList.remove('active');
+    document.body.style.overflow = '';
+    document.getElementById('reportForm').reset();
+  }
+  function closeReportOnBg(event) {
+    if (event.target === document.getElementById('reportModal')) closeReportModal();
+  }
+  function onReportTypeChange() {
+    const type = document.getElementById('reportType').value;
+    const msgInput = document.getElementById('reportMessage');
+    if (type === 'OTHER') {
+      msgInput.required = true;
+      msgInput.placeholder = "BẮT BUỘC: Hãy mô tả chi tiết lỗi khác tại đây...";
+    } else {
+      msgInput.required = false;
+      msgInput.placeholder = "Nhập chi tiết lỗi gặp phải tại đây...";
+    }
+  }
+  function submitReportForm(event) {
+    event.preventDefault();
+    const type = document.getElementById('reportType').value;
+    const msg = document.getElementById('reportMessage').value;
+    const btn = document.getElementById('btnSubmitReport');
+
+    const headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
+    const csrfMeta = document.querySelector('meta[name="_csrf"]');
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]');
+    if (csrfMeta) headers[csrfHeader.content] = csrfMeta.content;
+
+    btn.disabled = true; btn.textContent = 'Đang gửi…';
+    fetch(`/api/movies/${MOVIE_ID}/report`, {
+      method: 'POST',
+      headers: headers,
+      body: `reportType=${encodeURIComponent(type)}&message=${encodeURIComponent(msg)}`
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) {
+        showToast(data.error, 'error');
+      } else {
+        showToast(data.message, 'success');
+        closeReportModal();
+      }
+      btn.disabled = false; btn.textContent = 'Gửi báo lỗi';
+    })
+    .catch(() => {
+      btn.disabled = false; btn.textContent = 'Gửi báo lỗi';
+      showToast('Có lỗi xảy ra khi gửi báo lỗi.', 'error');
+    });
+  }
+
+  // Initialize ratings and states on load
+  document.addEventListener('DOMContentLoaded', () => {
+      const starsContainer = document.getElementById('ratingStarsPill');
+      if (starsContainer) {
+          const currentRating = parseInt(starsContainer.getAttribute('data-current') || '0');
+          highlightPillStars(currentRating);
+      }
+  });
 </script>
+
+<!-- Report Modal -->
+<div class="resume-modal" id="reportModal" onclick="closeReportOnBg(event)">
+  <div class="resume-content" style="max-width: 500px; text-align: left;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+      <h3 style="margin:0; font-size:1.25rem;"><i class="ph-fill ph-warning-octagon" style="color:var(--red); margin-right:6px; vertical-align: middle;"></i> Báo lỗi phim</h3>
+      <button onclick="closeReportModal()" style="background:none; border:none; color:var(--text-muted); font-size:1.2rem; cursor:pointer;">✕</button>
+    </div>
+    <form id="reportForm" onsubmit="submitReportForm(event)">
+      <div style="margin-bottom: 16px;">
+        <label for="reportType" style="display:block; font-size:0.85rem; color:var(--text-secondary); margin-bottom: 6px;">Loại lỗi</label>
+        <select id="reportType" class="form-control" style="width:100%; padding:10px; border-radius:8px; background: #1a1a1a; color: #fff;" required onchange="onReportTypeChange()">
+          <option value="WRONG_INFO">Thông tin sai (năm chiếu, diễn viên, tiêu đề)</option>
+          <option value="BROKEN_TRAILER">Trailer hỏng / không xem được</option>
+          <option value="BROKEN_POSTER">Poster / ảnh nền hỏng</option>
+          <option value="DUPLICATE_MOVIE">Trùng lặp phim</option>
+          <option value="WRONG_GENRE">Sai thể loại phim</option>
+          <option value="OTHER">Lỗi khác (Yêu cầu ghi chi tiết bên dưới)</option>
+        </select>
+      </div>
+      <div style="margin-bottom: 20px;">
+        <label for="reportMessage" style="display:block; font-size:0.85rem; color:var(--text-secondary); margin-bottom: 6px;">Mô tả chi tiết</label>
+        <textarea id="reportMessage" class="form-control" rows="4" placeholder="Nhập chi tiết lỗi gặp phải tại đây..." style="width:100%; padding:10px; border-radius:8px; resize:none; background: #1a1a1a; color: #fff; border-color: rgba(255,255,255,0.1);"></textarea>
+      </div>
+      <div style="display:flex; gap:12px; justify-content:flex-end;">
+        <button type="button" class="btn btn-ghost" onclick="closeReportModal()">Hủy</button>
+        <button type="submit" class="btn btn-primary" id="btnSubmitReport">Gửi báo lỗi</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 </body>
 </html>

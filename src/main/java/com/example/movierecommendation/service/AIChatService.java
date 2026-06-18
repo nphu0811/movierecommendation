@@ -331,4 +331,83 @@ public class AIChatService {
             return null;
         }
     }
+
+    public String chatAboutVideo(User user, Movie movie, String userMessage) {
+        String msgLower = userMessage.toLowerCase().trim();
+        boolean isSummaryRequest = msgLower.contains("tóm tắt") || msgLower.contains("tom tat") 
+                || msgLower.contains("summary") || msgLower.contains("timeline");
+
+        if (isEnabled()) {
+            try {
+                String systemPrompt = String.format(
+                    "Bạn là trợ lý AI phân tích phim cho trang web MovieRecommendation.\n" +
+                    "Người dùng đang xem trailer/phim '%s' (Năm: %d, Thể loại: %s, Mô tả: %s).\n" +
+                    "Họ gửi tin nhắn: '%s'\n\n" +
+                    "Yêu cầu:\n" +
+                    "1. Trả lời câu hỏi của người dùng bằng tiếng Việt, thân thiện, chính xác dựa trên thông tin phim.\n" +
+                    "2. Trong câu trả lời, hãy đính kèm các mốc thời gian dưới dạng '[MM:SS]' (ví dụ: '[00:00]', '[01:15]', '[02:30]') tương ứng với các thời điểm thảo luận để người dùng nhấp vào tua video.\n" +
+                    "3. Nếu họ yêu cầu tóm tắt video/phim, hãy trả về danh sách các mốc thời gian chia nhỏ video thành các phần như: Giới thiệu (00:00 - 00:45), Diễn biến (00:45 - 01:30), Cao trào (01:30 - 02:30), Kết thúc (02:30 - hết) với mô tả chi tiết bằng tiếng Việt.\n" +
+                    "4. KHÔNG sử dụng các định dạng markdown phức tạp khác ngoại trừ danh sách và in đậm. Đảm bảo mốc thời gian có dạng [MM:SS] hoặc MM:SS.",
+                    movie.getTitle(),
+                    movie.getReleaseYear() != null ? movie.getReleaseYear() : 2026,
+                    movie.getGenres() != null ? movie.getGenres().stream().map(Genre::getGenreName).collect(Collectors.joining(", ")) : "Chưa rõ",
+                    movie.getDescription() != null ? movie.getDescription() : "Không có mô tả.",
+                    userMessage
+                );
+
+                Map<String, Object> body = new HashMap<>();
+                body.put("model", "gpt-3.5-turbo");
+                body.put("max_tokens", 500);
+                body.put("temperature", 0.7);
+                body.put("messages", List.of(
+                    Map.of("role", "user", "content", systemPrompt)
+                ));
+
+                String response = getWebClient().post()
+                    .uri("/chat/completions")
+                    .bodyValue(body)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .timeout(Duration.ofSeconds(6))
+                    .block();
+
+                if (response != null) {
+                    JsonNode root = mapper.readTree(response);
+                    String content = root.at("/choices/0/message/content").asText("").trim();
+                    if (!content.isEmpty()) {
+                        return content;
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("OpenAI video chat failed, falling back: {}", e.getMessage());
+            }
+        }
+
+        // Fallback or Rule-based response
+        String title = movie.getTitle();
+        String genres = movie.getGenres() != null ? movie.getGenres().stream().map(Genre::getGenreName).collect(Collectors.joining(", ")) : "Chưa rõ";
+        
+        if (isSummaryRequest) {
+            return String.format(
+                "### Bản tóm tắt dòng thời gian video phim **%s**:\n\n" +
+                "- **[00:00]**: Khởi đầu video giới thiệu bối cảnh chính của phim và tông màu chủ đạo.\n" +
+                "- **[00:40]**: Giới thiệu các nhân vật chính và hé lộ một phần cuộc sống thường nhật của họ.\n" +
+                "- **[01:15]**: Điểm nút thắt xung đột đầu tiên diễn ra, đẩy các nhân vật vào tình huống bất ngờ.\n" +
+                "- **[02:00]**: Chuỗi phân cảnh kịch tính, những pha hành động đỉnh cao hoặc cao trào cảm xúc.\n" +
+                "- **[02:45]**: Đoạn kết trailer với logo phim chính thức, nhạc phim bùng nổ và thông điệp gửi gắm của bộ phim.",
+                title
+            );
+        } else {
+            // General movie QA fallback
+            return String.format(
+                "Chào bạn! Bộ phim **%s** là một tác phẩm thuộc thể loại *%s*. \n\n" +
+                "Dựa trên thông tin của phim, đây là một số điểm nổi bật trong video:\n" +
+                "- Từ **[00:00]** đến **[00:50]**: Thích hợp để xem giới thiệu tổng quan nhân vật.\n" +
+                "- Tại **[01:20]**: Bắt đầu giai đoạn kịch tính nhất của trailer phim.\n" +
+                "- Ở **[02:30]**: Cao trào bộ phim mở ra trước khi kết thúc trailer.\n\n" +
+                "Nếu bạn muốn mình tóm tắt chi tiết hơn hoặc có câu hỏi cụ thể nào khác về nội dung phim, hãy cứ hỏi nhé!",
+                title, genres
+            );
+        }
+    }
 }

@@ -126,6 +126,18 @@
       </p>
     </div>
 
+    <!-- AI Summary -->
+    <div class="ai-summary-detail-card" th:id="|aiSummaryCard-${movie.movieId}|">
+      <div class="ai-summary-detail-title">
+        <i class="ph-fill ph-sparkle"></i>
+        <span>Bản tóm tắt phim do AI tạo</span>
+      </div>
+      <div class="ai-summary-detail-text loading" th:id="|aiSummaryDetailText-${movie.movieId}|">
+        <i class="ph-bold ph-circle-notch ph-spin" style="margin-right: 6px;"></i>
+        Đang tải bản tóm tắt từ AI...
+      </div>
+    </div>
+
     <!-- Overview -->
     <div class="detail-card"
          th:if="${movie.description != null and !#strings.isEmpty(movie.description)}">
@@ -272,6 +284,21 @@
   document.addEventListener('DOMContentLoaded', () => {
     const container = document.querySelector('[data-star-rating]');
     if (container) initStarRating(container, container.dataset.movieId, parseInt(container.dataset.current || '0'));
+
+    // Fetch AI summary for details page
+    const detailsSummaryText = document.getElementById(`aiSummaryDetailText-${MOVIE_ID}`);
+    if (detailsSummaryText) {
+      fetch(`/api/movies/${MOVIE_ID}/ai-summary`)
+        .then(res => res.json())
+        .then(data => {
+          detailsSummaryText.classList.remove('loading');
+          detailsSummaryText.innerHTML = data.summary;
+        })
+        .catch(err => {
+          detailsSummaryText.classList.remove('loading');
+          detailsSummaryText.innerHTML = 'Không thể tải bản tóm tắt tại thời điểm này.';
+        });
+    }
   });
 
   function openTrailer(key) {

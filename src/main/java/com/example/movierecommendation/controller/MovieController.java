@@ -42,6 +42,8 @@ public class MovieController {
     private UserService userService;
     @Autowired
     private MovieFacade movieFacade;
+    @Autowired
+    private AIChatService aiChatService;
 
     @GetMapping("/movies")
     public String listMovies(@RequestParam(name = "q", required = false) String q,
@@ -107,6 +109,9 @@ public class MovieController {
         model.addAttribute("comments", dto.getComments());
         if (dto.getCurrentUser() != null) {
             model.addAttribute("currentUser", dto.getCurrentUser());
+            model.addAttribute("userRating", dto.getUserRating());
+            model.addAttribute("inWatchlist", dto.isInWatchlist());
+            model.addAttribute("hasWatched", dto.isHasWatched());
         }
 
         // Add server URLs
@@ -258,5 +263,42 @@ public class MovieController {
         User user = userService.getCurrentUser(userDetails.getUsername());
         interactionService.deleteTag(tagId, user.getUserId());
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/api/movies/{id}/ai-summary")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> getAiSummary(
+            @PathVariable("id") @Min(1) @Max(Integer.MAX_VALUE) Integer id) {
+        String summary = movieService.getMovieAiSummary(id);
+        Map<String, Object> result = new HashMap<>();
+        result.put("summary", summary);
+        return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/api/movies/{id}/video-chat")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> videoChat(
+            @PathVariable("id") @Min(1) @Max(Integer.MAX_VALUE) Integer id,
+            @RequestBody Map<String, String> requestBody,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        String message = requestBody.get("message");
+        if (message == null || message.trim().isEmpty()) {
+            Map<String, Object> err = new HashMap<>();
+            err.put("error", "Message cannot be empty");
+            return ResponseEntity.badRequest().body(err);
+        }
+
+        Movie movie = movieService.findById(id)
+            .orElseThrow(() -> new RuntimeException("Movie not found"));
+
+        User currentUser = null;
+        if (userDetails != null) {
+            currentUser = userService.getCurrentUser(userDetails.getUsername());
+        }
+
+        String reply = aiChatService.chatAboutVideo(currentUser, movie, message.trim());
+        Map<String, Object> result = new HashMap<>();
+        result.put("reply", reply);
+        return ResponseEntity.ok(result);
     }
 }

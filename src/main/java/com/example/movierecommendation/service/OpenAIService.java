@@ -62,6 +62,38 @@ public class OpenAIService {
         return enabled;
     }
 
+    public String generateMovieSummary(String title, String description) {
+        if (!isEnabled()) return null;
+        try {
+            String prompt = String.format("Hãy tóm tắt phim '%s' dựa trên mô tả: '%s'. Tóm tắt bằng tiếng Việt, khoảng 2-3 câu ngắn gọn, lôi cuốn, không có lời mở đầu hay kết luận.", title, description);
+            
+            Map<String, Object> body = new HashMap<>();
+            body.put("model", "gpt-3.5-turbo");
+            body.put("max_tokens", 300);
+            body.put("temperature", 0.7);
+            body.put("messages", List.of(
+                Map.of("role", "user", "content", prompt)
+            ));
+
+            String response = getWebClient().post()
+                .uri("/chat/completions")
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(String.class)
+                .timeout(Duration.ofSeconds(6))
+                .block();
+
+            if (response == null) return null;
+
+            JsonNode root = mapper.readTree(response);
+            String content = root.at("/choices/0/message/content").asText("").trim();
+            return content.isEmpty() ? null : content;
+        } catch (Exception e) {
+            log.warn("OpenAI generateMovieSummary failed for '{}': {}", title, e.getMessage());
+            return null;
+        }
+    }
+
     public List<String> getAIRecommendedTitles(Integer userId, List<Movie> allMovies) {
         if (!isEnabled()) return Collections.emptyList();
 

@@ -1,0 +1,79 @@
+package com.example.movierecommendation.service;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import com.example.movierecommendation.entity.*;
+import com.example.movierecommendation.repository.MovieRepository;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.Collections;
+import java.util.Optional;
+
+@ExtendWith(MockitoExtension.class)
+public class AiSummaryAndChatTest {
+
+    @Mock
+    private MovieRepository movieRepository;
+
+    @Mock
+    private OpenAIService openAIService;
+
+    @InjectMocks
+    private MovieService movieService;
+
+    @Test
+    public void testGetMovieAiSummary_Cached() {
+        Movie movie = new Movie();
+        movie.setMovieId(1);
+        movie.setTitle("Inception");
+        movie.setAiSummary("Cached AI Summary content");
+
+        when(movieRepository.findById(1)).thenReturn(Optional.of(movie));
+
+        String result = movieService.getMovieAiSummary(1);
+        assertEquals("Cached AI Summary content", result);
+        verify(openAIService, never()).generateMovieSummary(anyString(), anyString());
+    }
+
+    @Test
+    public void testGetMovieAiSummary_GenerateFallback() {
+        Movie movie = new Movie();
+        movie.setMovieId(2);
+        movie.setTitle("Interstellar");
+        movie.setDescription("A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival.");
+        movie.setReleaseYear(2014);
+        movie.setAverageRating(4.8);
+        movie.setRatingCount(200);
+
+        when(movieRepository.findById(2)).thenReturn(Optional.of(movie));
+        when(openAIService.generateMovieSummary(anyString(), anyString())).thenReturn(null);
+        when(movieRepository.save(any(Movie.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        String result = movieService.getMovieAiSummary(2);
+        assertNotNull(result);
+        assertTrue(result.contains("Interstellar"));
+        assertTrue(result.contains("2014"));
+        assertTrue(result.contains("đánh giá trung bình 4.8/5"));
+    }
+
+    @Test
+    public void testChatAboutVideo_SummaryRequestFallback() {
+        AIChatService chatService = new AIChatService();
+        
+        Movie movie = new Movie();
+        movie.setTitle("The Matrix");
+        movie.setGenres(Collections.emptyList());
+        
+        String response = chatService.chatAboutVideo(null, movie, "Hãy tóm tắt video này");
+        assertNotNull(response);
+        assertTrue(response.contains("[00:00]"));
+        assertTrue(response.contains("[01:15]"));
+        assertTrue(response.contains("[02:45]"));
+        assertTrue(response.contains("The Matrix"));
+    }
+}

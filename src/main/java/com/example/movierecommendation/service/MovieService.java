@@ -31,6 +31,8 @@ public class MovieService {
     private RatingRepository ratingRepository;
     @Autowired
     private jakarta.persistence.EntityManager entityManager;
+    @Autowired
+    private OpenAIService openAIService;
 
     public Page<Movie> getAllMovies(int page, int size) {
         return movieRepository.findByDeletedAtIsNull(PageRequest.of(page, size, Sort.by("movieId").ascending()));
@@ -330,5 +332,39 @@ public class MovieService {
 
     public List<Movie> findByGenreIdsExcluding(List<Integer> genreIds, List<Integer> excludeIds, int limit) {
         return movieRepository.findByGenreIdsAndNotInIds(genreIds, excludeIds, PageRequest.of(0, limit));
+    }
+
+    @Transactional
+    public String getMovieAiSummary(Integer movieId) {
+        Movie movie = movieRepository.findById(movieId)
+            .orElseThrow(() -> new RuntimeException("Movie not found"));
+            
+        if (movie.getAiSummary() != null && !movie.getAiSummary().trim().isEmpty()) {
+            return movie.getAiSummary();
+        }
+        
+        String summary = null;
+        try {
+            summary = openAIService.generateMovieSummary(movie.getTitle(), movie.getDescription());
+        } catch (Exception e) {
+            // Logged inside OpenAIService
+        }
+        
+        if (summary == null || summary.trim().isEmpty()) {
+            String genres = movie.getGenres() != null ? movie.getGenres().stream().map(Genre::getGenreName).collect(Collectors.joining(", ")) : "N/A";
+            String desc = movie.getDescription();
+            String descSnippet = (desc != null && desc.length() > 150) ? desc.substring(0, 147) + "..." : desc;
+            summary = String.format("Phim '%s' (%d) thuộc thể loại %s. %s Phim có điểm đánh giá trung bình %.1f/5 với %d lượt đánh giá.", 
+                movie.getTitle(), 
+                movie.getReleaseYear() != null ? movie.getReleaseYear() : 2026,
+                genres, 
+                descSnippet != null ? descSnippet : "",
+                movie.getAverageRating(),
+                movie.getRatingCount());
+        }
+        
+        movie.setAiSummary(summary);
+        movieRepository.save(movie);
+        return summary;
     }
 }

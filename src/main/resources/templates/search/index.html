@@ -103,27 +103,62 @@
 
                 <!-- Section 1: Kết quả tìm kiếm -->
                 <div class="search-results-section section">
-                    <div class="section-header">
+                    <div class="section-header" style="margin-bottom: var(--space-5);">
                         <h2 class="section-title">
                             <i class="ph-bold ph-magnifying-glass" style="color:var(--red);margin-right:8px"></i>
-                            Search Results for "<span th:text="${keyword}" style="color:var(--white)">query</span>"
+                            Kết quả tìm kiếm cho "<span th:text="${keyword}" style="color:var(--white)">query</span>"
                         </h2>
                         <span class="view-all" th:text="${#lists.size(movies)} + ' kết quả'">0 kết quả</span>
                     </div>
-                    <div class="row-scroll-wrapper">
-                        <button class="row-arrow row-arrow--left" aria-label="Scroll left">
-                            <i class="ph-bold ph-caret-left"></i>
-                        </button>
-                        <div class="movies-row">
-                            <th:block th:each="movie : ${movies}">
-                                <div class="search-result-card-wrapper" th:data-movie-id="${movie.movieId}" style="display: contents;">
-                                    <div th:replace="~{fragments :: movieCard(${movie})}"></div>
+
+                    <div class="search-results-list">
+                        <th:block th:each="movie : ${movies}">
+                            <div class="search-result-horizontal-card" th:data-movie-id="${movie.movieId}">
+                                <!-- Left Poster -->
+                                <a th:href="@{/movies/{id}(id=${movie.movieId})}">
+                                    <img th:if="${movie.posterUrl}" th:src="${movie.posterUrl}" class="search-result-poster" alt="Poster"/>
+                                    <div th:if="${!movie.posterUrl}" class="search-result-poster movie-poster-placeholder" style="width: 160px; height: 240px; font-size: 2.5rem; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.03);">
+                                        <i class="ph-bold ph-film-strip"></i>
+                                    </div>
+                                </a>
+                                
+                                <!-- Right Info -->
+                                <div class="search-result-info">
+                                    <a th:href="@{/movies/{id}(id=${movie.movieId})}" class="search-result-title" th:text="${movie.title}">Movie Title</a>
+                                    
+                                    <div class="search-result-meta-row">
+                                        <span class="search-result-rating">
+                                            <i class="ph-fill ph-star"></i>
+                                            <span th:text="${movie.averageRating != null ? #numbers.formatDecimal(movie.averageRating, 1, 1) : '0.0'}">0.0</span>
+                                        </span>
+                                        <span th:text="${movie.releaseYear}">2026</span>
+                                        <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                                            <span class="search-result-genre-tag" th:each="g : ${movie.genres}" th:text="${g.genreName}">Genre</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <p class="search-result-desc" th:text="${movie.description != null and movie.description.length() > 200 ? movie.description.substring(0, 197) + '...' : movie.description}">
+                                        Mô tả phim...
+                                    </p>
+                                    
+                                    <!-- AI Summary Accordion -->
+                                    <div class="ai-summary-wrapper">
+                                        <button type="button" class="ai-summary-toggle-btn" th:onclick="|toggleAiSummary(this, ${movie.movieId})|">
+                                            <i class="ph-fill ph-sparkle"></i>
+                                            <span>Tóm tắt</span>
+                                            <i class="ph-bold ph-caret-down"></i>
+                                        </button>
+                                        
+                                        <div class="ai-summary-panel" th:id="|aiSummaryPanel-${movie.movieId}|">
+                                            <div class="ai-summary-box loading">
+                                                <i class="ph-bold ph-circle-notch ph-spin sparkle-icon"></i>
+                                                Đang tải bản tóm tắt từ AI...
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                            </th:block>
-                        </div>
-                        <button class="row-arrow row-arrow--right" aria-label="Scroll right">
-                            <i class="ph-bold ph-caret-right"></i>
-                        </button>
+                            </div>
+                        </th:block>
                     </div>
                 </div>
 
@@ -195,5 +230,32 @@
 
     <script th:src="@{/js/app.js}"></script>
     <script th:src="@{/js/search.js}"></script>
+    <script>
+        function toggleAiSummary(btn, movieId) {
+            const panel = document.getElementById(`aiSummaryPanel-${movieId}`);
+            const isExpanded = panel.classList.contains('expanded');
+            
+            btn.classList.toggle('active');
+            
+            if (isExpanded) {
+                panel.classList.remove('expanded');
+            } else {
+                panel.classList.add('expanded');
+                const box = panel.querySelector('.ai-summary-box');
+                if (box.classList.contains('loading')) {
+                    fetch(`/api/movies/${movieId}/ai-summary`)
+                        .then(res => res.json())
+                        .then(data => {
+                            box.classList.remove('loading');
+                            box.innerHTML = `<i class="ph-fill ph-sparkle sparkle-icon"></i> ${data.summary}`;
+                        })
+                        .catch(err => {
+                            box.classList.remove('loading');
+                            box.innerHTML = `<i class="ph-bold ph-warning-circle sparkle-icon"></i> Không thể tải bản tóm tắt tại thời điểm này.`;
+                        });
+                }
+            }
+        }
+    </script>
 </body>
 </html>
