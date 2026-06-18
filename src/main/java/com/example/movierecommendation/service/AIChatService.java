@@ -63,9 +63,8 @@ public class AIChatService {
     public ChatResponse recommendMovies(User user, String userMessage) {
         ChatIntent intent = intentClassifier.classify(userMessage);
         
-        if (intent != ChatIntent.MOVIE_RECOMMENDATION && intent != ChatIntent.MOVIE_SEARCH) {
-            String reply = chatHelpService.getHelpResponse(intent, userMessage);
-            
+        if (intent == ChatIntent.OUT_OF_SCOPE) {
+            String reply = chatHelpService.getHelpResponse(ChatIntent.OUT_OF_SCOPE, userMessage);
             try {
                 AIChatLog chatLog = new AIChatLog();
                 chatLog.setUser(user);
@@ -76,44 +75,41 @@ public class AIChatService {
             } catch (Exception e) {
                 log.warn("Failed to save AI Chat log for help response: {}", e.getMessage());
             }
-            
             return new ChatResponse("TEXT", reply, Collections.emptyList());
         }
 
         // 1. Find candidate movies in database
         List<Movie> candidates = findCandidates(userMessage);
         
-        // If candidates are empty, get fallback popular movies or return no-results text
-        if (candidates.isEmpty()) {
-            String normalized = removeAccent(userMessage.toLowerCase().trim());
-            boolean isGeneralRecommendation = normalized.contains("goi y") || normalized.contains("de xuat") 
-                    || normalized.contains("recommend") || normalized.contains("phim nao hay") 
-                    || normalized.contains("phim hay") || normalized.contains("phim nao hot")
-                    || normalized.contains("phim hot") || normalized.contains("phim moi")
-                    || normalized.contains("phim bat hu") || normalized.contains("phim pho bien");
-                    
-            if (isGeneralRecommendation) {
-                candidates = movieRepository.findAll().stream()
-                    .filter(m -> m.getDeletedAt() == null)
-                    .sorted((a, b) -> Integer.compare(b.getRatingCount(), a.getRatingCount()))
-                    .limit(25)
-                    .collect(Collectors.toList());
-            } else {
-                String reply = String.format("Rất tiếc, hiện tại hệ thống không tìm thấy bộ phim nào phù hợp với yêu cầu hoặc từ khóa '%s'. Bạn hãy thử tìm kiếm bằng tên phim hoặc thể loại khác nhé!", userMessage);
+        String normalized = removeAccent(userMessage.toLowerCase().trim());
+        boolean isGeneralRecommendation = normalized.contains("goi y") || normalized.contains("de xuat") 
+                || normalized.contains("recommend") || normalized.contains("phim nao hay") 
+                || normalized.contains("phim hay") || normalized.contains("phim nao hot")
+                || normalized.contains("phim hot") || normalized.contains("phim moi")
+                || normalized.contains("phim bat hu") || normalized.contains("phim pho bien");
                 
-                try {
-                    AIChatLog chatLog = new AIChatLog();
-                    chatLog.setUser(user);
-                    chatLog.setMessage(userMessage);
-                    chatLog.setResponseSummary(reply);
-                    chatLog.setCreatedAt(LocalDateTime.now());
-                    aiChatLogRepository.save(chatLog);
-                } catch (Exception e) {
-                    log.warn("Failed to save AI Chat log for empty search: {}", e.getMessage());
-                }
-                
-                return new ChatResponse("TEXT", reply, Collections.emptyList());
+        if (candidates.isEmpty() && isGeneralRecommendation) {
+            candidates = movieRepository.findAll().stream()
+                .filter(m -> m.getDeletedAt() == null)
+                .sorted((a, b) -> Integer.compare(b.getRatingCount(), a.getRatingCount()))
+                .limit(25)
+                .collect(Collectors.toList());
+        }
+
+        // If candidates are empty and OpenAI is NOT enabled, handle standard fallback
+        if (candidates.isEmpty() && !isEnabled()) {
+            String reply = String.format("Rất tiếc, hiện tại hệ thống không tìm thấy bộ phim nào phù hợp với yêu cầu hoặc từ khóa '%s'. Bạn hãy thử tìm kiếm bằng tên phim hoặc thể loại khác nhé!", userMessage);
+            try {
+                AIChatLog chatLog = new AIChatLog();
+                chatLog.setUser(user);
+                chatLog.setMessage(userMessage);
+                chatLog.setResponseSummary(reply);
+                chatLog.setCreatedAt(LocalDateTime.now());
+                aiChatLogRepository.save(chatLog);
+            } catch (Exception e) {
+                log.warn("Failed to save AI Chat log for empty search: {}", e.getMessage());
             }
+            return new ChatResponse("TEXT", reply, Collections.emptyList());
         }
 
         // 2. Build user preference context if user is logged in
@@ -172,31 +168,50 @@ public class AIChatService {
 
         // 3. Build Prompt
         String prompt = String.format(
-            "Bạn là AI gợi ý phim cho hệ thống MovieRecommendation.\n\n" +
-            "Yêu cầu của người dùng:\n" +
-            "\"%s\"\n\n" +
+            "Bạn là Trợ lý AI Movie Assistant thân thiện và thông minh cho website MovieRecommendation (MovieRec).\n" +
+            "Nhiệm vụ của bạn là hỗ trợ người dùng bằng tiếng Việt về:\n" +
+            "1. Gợi ý phim & Tìm kiếm phim (kết hợp sở thích người dùng và danh sách phim có sẵn trong database).\n" +
+            "2. Giải đáp thắc mắc và hướng dẫn sử dụng các tính năng của website MovieRec (như Tài khoản/Profile, Watchlist/Yêu thích, Đánh giá/Review, Lịch sử xem, Điều hướng website).\n" +
+            "3. Trò chuyện tự nhiên, chào hỏi thân thiện.\n\n" +
+            "THÔNG TIN HƯỚNG DẪN TÍNH NĂNG WEBSITE MOVIEREC:\n" +
+            "- Đăng ký: Nhấn 'Đăng ký' (Register) ở thanh điều hướng hoặc 'Create Free Account' ở trang chủ. Điền tên đăng nhập, email, mật khẩu và nhập OTP nhận qua email để hoàn tất kích hoạt.\n" +
+            "- Đăng nhập: Nhấn 'Đăng nhập' (Login) ở góc trên bên phải, nhập Email/Username và mật khẩu.\n" +
+            "- Quên mật khẩu: Tại trang Đăng nhập, bấm 'Quên mật khẩu?', nhập email để nhận mã OTP khôi phục và đổi mật khẩu mới.\n" +
+            "- Đổi mật khẩu: Đăng nhập -> Vào trang 'Profile/Tài khoản' trên thanh điều hướng -> Chọn mục 'Đổi mật khẩu'.\n" +
+            "- Sửa thông tin tài khoản: Đăng nhập -> Vào trang 'Profile/Tài khoản' trên thanh điều hướng để sửa đổi thông tin cá nhân.\n" +
+            "- Watchlist (Danh sách yêu thích): Thêm phim bằng cách truy cập trang chi tiết phim rồi bấm '+ Watchlist' hoặc 'Yêu thích'. Xóa phim bằng cách bấm lại nút đó ở trang chi tiết phim hoặc vào trang 'Watchlist' từ thanh điều hướng để loại bỏ.\n" +
+            "- Đánh giá phim (Rating/Review): Vào trang chi tiết phim, cuộn xuống phần 'Đánh giá & Bình luận' (Ratings & Reviews), chọn số sao mong muốn từ 1 đến 5 và gửi.\n" +
+            "- Lịch sử xem: Vào trang 'Profile/Tài khoản' từ thanh điều hướng -> chọn mục 'Lịch sử xem' để theo dõi chi tiết.\n" +
+            "- Điều hướng chính: Trang chủ (phim mới, hot), Thanh tìm kiếm (tra cứu phim), Watchlist (phim đã lưu), Profile (xem lịch sử và sửa tài khoản).\n\n" +
             "Thông tin sở thích người dùng nếu có:\n" +
             "- Phim đã đánh giá cao: %s\n" +
             "- Phim đã xem gần đây: %s\n" +
             "- Thể loại thường xem: %s\n\n" +
             "Danh sách phim candidate trong database:\n" +
             "%s\n" +
-            "Nhiệm vụ:\n" +
-            "- Chỉ chọn tối đa 5 phim nằm trong danh sách candidate ở trên.\n" +
-            "- Không được bịa phim hoặc chọn phim ngoài danh sách candidate.\n" +
-            "- Trả về duy nhất định dạng JSON hợp lệ theo cấu trúc bên dưới, không ghi thêm lời thoại ngoài JSON.\n" +
-            "- Mỗi phim được chọn cần có một lý do gợi ý (reason) ngắn gọn bằng tiếng Việt giải thích vì sao phù hợp với yêu cầu của người dùng và sở thích của họ.\n\n" +
-            "Format:\n" +
+            "Yêu cầu của người dùng:\n" +
+            "\"%s\"\n\n" +
+            "QUY TẮC PHẢN HỒI (BẮT BUỘC TRẢ VỀ JSON HỢP LỆ, KHÔNG CHỨA KÝ TỰ THỪA NGOÀI CÚ PHÁP JSON):\n" +
             "{\n" +
-            "  \"reply\": \"Đoạn chào và tóm tắt ngắn lý do gợi ý phim...\",\n" +
+            "  \"type\": \"TEXT\" hoặc \"MOVIE_CARDS\",\n" +
+            "  \"reply\": \"Lời phản hồi trò chuyện hoặc hướng dẫn chi tiết bằng tiếng Việt...\",\n" +
             "  \"movies\": [\n" +
-            "    {\n" +
-            "      \"movieId\": 1,\n" +
-            "      \"reason\": \"Lý do gợi ý bằng tiếng Việt...\"\n" +
-            "    }\n" +
+            "     {\n" +
+            "       \"movieId\": 123,\n" +
+            "       \"reason\": \"Lý do ngắn gọn vì sao gợi ý phim này\"\n" +
+            "     }\n" +
             "  ]\n" +
-            "}",
-            userMessage, likedMovies, watchHistoryText, favoriteGenres, candidatesBuilder.toString()
+            "}\n\n" +
+            "HƯỚNG DẪN CHỌN TYPE VÀ MOVIES:\n" +
+            "- Nếu người dùng chào hỏi, hỏi thông tin tài khoản, hỏi hướng dẫn sử dụng web, trò chuyện thông thường, hoặc tìm kiếm một bộ phim cụ thể nhưng phim đó KHÔNG CÓ trong danh sách database candidates ở trên (ví dụ tìm Doraemon nhưng candidates trống):\n" +
+            "  1. Đặt type là \"TEXT\".\n" +
+            "  2. Đặt movies là mảng rỗng [].\n" +
+            "  3. Trong \"reply\", hãy trò chuyện hoặc hướng dẫn tự nhiên bằng tiếng Việt. Nếu người dùng tìm phim không có trong database (như Doraemon, Dragon Ball,...), hãy thoải mái trò chuyện về phim đó (ví dụ: 'Mình biết Doraemon là chú mèo máy...'), nhưng lịch sự thông báo là hệ thống MovieRec hiện chưa có bộ phim này trong cơ sở dữ liệu và khuyên họ tìm phim khác.\n" +
+            "- Nếu người dùng tìm kiếm phim hoặc yêu cầu gợi ý phim mà có các bộ phim phù hợp trong danh sách database candidates ở trên:\n" +
+            "  1. Đặt type là \"MOVIE_CARDS\".\n" +
+            "  2. Chọn tối đa 5 phim phù hợp nhất từ danh sách candidates ở trên đưa vào danh sách \"movies\". KHÔNG ĐƯỢC TỰ Ý BỊA PHIM HOẶC CHỌN PHIM NGOÀI DANH SÁCH CANDIDATES.\n" +
+            "  3. Đặt \"reply\" là lời chào và tóm tắt lý do gợi ý hoặc kết quả tìm kiếm phim của bạn.",
+            likedMovies, watchHistoryText, favoriteGenres, candidatesBuilder.toString(), userMessage
         );
 
         // 4. Call OpenAI API or fallback
@@ -206,7 +221,8 @@ public class AIChatService {
         }
 
         List<MovieCardDto> recommendedMovies = new ArrayList<>();
-        String reply = "Hiện hệ thống chưa có phim phù hợp với yêu cầu này.";
+        String reply = null;
+        String responseType = "TEXT";
 
         if (responseContent != null && !responseContent.trim().isEmpty()) {
             try {
@@ -218,11 +234,14 @@ public class AIChatService {
                 }
                 
                 JsonNode root = mapper.readTree(responseContent);
+                if (root.has("type")) {
+                    responseType = root.get("type").asText("TEXT");
+                }
                 if (root.has("reply")) {
                     reply = root.get("reply").asText();
                 }
                 
-                if (root.has("movies") && root.get("movies").isArray()) {
+                if ("MOVIE_CARDS".equals(responseType) && root.has("movies") && root.get("movies").isArray()) {
                     for (JsonNode mNode : root.get("movies")) {
                         if (mNode.has("movieId")) {
                             int movieId = mNode.get("movieId").asInt();
@@ -248,30 +267,44 @@ public class AIChatService {
                         }
                     }
                 }
+                if ("MOVIE_CARDS".equals(responseType) && recommendedMovies.isEmpty()) {
+                    responseType = "TEXT";
+                }
             } catch (Exception e) {
                 log.error("Failed to parse OpenAI response: {}", e.getMessage());
                 responseContent = null; // trigger fallback
             }
         }
 
-        // Fallback in case OpenAI fails / returns empty / parses wrong
-        if (responseContent == null || recommendedMovies.isEmpty()) {
+        // Fallback in case OpenAI fails / returns empty / parses wrong / is disabled
+        if (responseContent == null || reply == null) {
             log.info("Using fallback recommendation for AI Chat");
-            reply = "Dựa trên yêu cầu của bạn, mình đã tìm thấy một số phim phổ biến phù hợp từ hệ thống:";
-            for (Movie movie : candidates.stream().limit(5).collect(Collectors.toList())) {
-                List<String> genreNames = movie.getGenres() != null ? 
-                    movie.getGenres().stream().map(Genre::getGenreName).collect(Collectors.toList()) : 
-                    Collections.emptyList();
-                MovieCardDto mDto = new MovieCardDto(
-                    movie.getMovieId(),
-                    movie.getTitle(),
-                    movie.getPosterUrl(),
-                    movie.getReleaseYear(),
-                    genreNames,
-                    movie.getAverageRating(),
-                    "Phim phổ biến trong hệ thống phù hợp với từ khóa của bạn."
-                );
-                recommendedMovies.add(mDto);
+            if (intent == ChatIntent.MOVIE_RECOMMENDATION || intent == ChatIntent.MOVIE_SEARCH) {
+                if (!candidates.isEmpty()) {
+                    responseType = "MOVIE_CARDS";
+                    reply = "Dựa trên yêu cầu của bạn, mình đã tìm thấy một số phim phù hợp từ hệ thống:";
+                    for (Movie movie : candidates.stream().limit(5).collect(Collectors.toList())) {
+                        List<String> genreNames = movie.getGenres() != null ? 
+                            movie.getGenres().stream().map(Genre::getGenreName).collect(Collectors.toList()) : 
+                            Collections.emptyList();
+                        MovieCardDto mDto = new MovieCardDto(
+                            movie.getMovieId(),
+                            movie.getTitle(),
+                            movie.getPosterUrl(),
+                            movie.getReleaseYear(),
+                            genreNames,
+                            movie.getAverageRating(),
+                            "Phim phổ biến trong hệ thống phù hợp với từ khóa của bạn."
+                        );
+                        recommendedMovies.add(mDto);
+                    }
+                } else {
+                    responseType = "TEXT";
+                    reply = String.format("Rất tiếc, hiện tại hệ thống không tìm thấy bộ phim nào phù hợp với yêu cầu hoặc từ khóa '%s'. Bạn hãy thử tìm kiếm bằng tên phim hoặc thể loại khác nhé!", userMessage);
+                }
+            } else {
+                responseType = "TEXT";
+                reply = chatHelpService.getHelpResponse(intent, userMessage);
             }
         }
 
@@ -302,7 +335,7 @@ public class AIChatService {
             log.warn("Failed to save AI Chat log: {}", e.getMessage());
         }
 
-        return new ChatResponse("MOVIE_CARDS", reply, recommendedMovies);
+        return new ChatResponse(responseType, reply, recommendedMovies);
     }
 
     private List<Movie> findCandidates(String message) {
@@ -386,11 +419,8 @@ public class AIChatService {
     public String chatAboutVideo(User user, Movie movie, String userMessage) {
         if (intentClassifier != null && chatHelpService != null) {
             ChatIntent intent = intentClassifier.classify(userMessage);
-            if (intent == ChatIntent.OUT_OF_SCOPE || intent == ChatIntent.GREETING
-                    || intent == ChatIntent.ACCOUNT_HELP || intent == ChatIntent.WATCHLIST_HELP
-                    || intent == ChatIntent.RATING_HELP || intent == ChatIntent.HISTORY_HELP
-                    || intent == ChatIntent.SITE_NAVIGATION) {
-                return chatHelpService.getHelpResponse(intent, userMessage);
+            if (intent == ChatIntent.OUT_OF_SCOPE) {
+                return chatHelpService.getHelpResponse(ChatIntent.OUT_OF_SCOPE, userMessage);
             }
         }
 
@@ -401,13 +431,16 @@ public class AIChatService {
         if (isEnabled()) {
             try {
                 String systemPrompt = String.format(
-                    "Bạn là trợ lý AI phân tích phim cho trang web MovieRecommendation.\n" +
-                    "Người dùng đang xem trailer/phim '%s' (Năm: %d, Thể loại: %s, Mô tả: %s).\n" +
-                    "Họ gửi tin nhắn: '%s'\n\n" +
-                    "Yêu cầu:\n" +
-                    "1. Trả lời câu hỏi của người dùng bằng tiếng Việt, thân thiện, chính xác dựa trên thông tin phim.\n" +
-                    "2. Trong câu trả lời, hãy đính kèm các mốc thời gian dưới dạng '[MM:SS]' (ví dụ: '[00:00]', '[01:15]', '[02:30]') tương ứng với các thời điểm thảo luận để người dùng nhấp vào tua video.\n" +
-                    "3. Nếu họ yêu cầu tóm tắt video/phim, hãy trả về danh sách các mốc thời gian chia nhỏ video thành các phần như: Giới thiệu (00:00 - 00:45), Diễn biến (00:45 - 01:30), Cao trào (01:30 - 02:30), Kết thúc (02:30 - hết) với mô tả chi tiết bằng tiếng Việt.\n" +
+                    "Bạn là trợ lý AI thân thiện cho trang web MovieRecommendation.\n" +
+                    "Bạn đang cùng người dùng xem trailer/phim '%s' (Năm: %d, Thể loại: %s, Mô tả: %s).\n" +
+                    "Người dùng gửi tin nhắn: '%s'\n\n" +
+                    "YÊU CẦU:\n" +
+                    "1. Trả lời câu hỏi của người dùng bằng tiếng Việt, thân thiện, tự nhiên.\n" +
+                    "2. Nếu câu hỏi liên quan đến nội dung, thông tin, phân tích phim:\n" +
+                    "   - Hãy trả lời chính xác dựa trên thông tin phim.\n" +
+                    "   - Khi thảo luận các phân cảnh/khoảnh khắc của phim/video, hãy đính kèm các mốc thời gian dưới dạng [MM:SS] (ví dụ: [00:00], [01:15], [02:30]) để người dùng có thể click vào tua video.\n" +
+                    "   - Nếu họ yêu cầu tóm tắt video/phim, hãy trả về danh sách các mốc thời gian chia nhỏ video thành các phần như: Giới thiệu (00:00 - 00:45), Diễn biến (00:45 - 01:30), Cao trào (01:30 - 02:30), Kết thúc (02:30 - hết) với mô tả chi tiết bằng tiếng Việt.\n" +
+                    "3. Nếu họ chào hỏi hoặc hỏi về tính năng website, hãy trả lời và hướng dẫn họ một cách thân thiện (ví dụ cách đăng ký/đăng nhập, cách đổi mật khẩu, cách đánh giá phim, cách quản lý Watchlist...).\n" +
                     "4. KHÔNG sử dụng các định dạng markdown phức tạp khác ngoại trừ danh sách và in đậm. Đảm bảo mốc thời gian có dạng [MM:SS] hoặc MM:SS.",
                     movie.getTitle(),
                     movie.getReleaseYear() != null ? movie.getReleaseYear() : 2026,
@@ -457,6 +490,14 @@ public class AIChatService {
                 title
             );
         } else {
+            if (intentClassifier != null && chatHelpService != null) {
+                ChatIntent intent = intentClassifier.classify(userMessage);
+                if (intent == ChatIntent.GREETING || intent == ChatIntent.ACCOUNT_HELP 
+                        || intent == ChatIntent.WATCHLIST_HELP || intent == ChatIntent.RATING_HELP 
+                        || intent == ChatIntent.HISTORY_HELP || intent == ChatIntent.SITE_NAVIGATION) {
+                    return chatHelpService.getHelpResponse(intent, userMessage);
+                }
+            }
             return getSmartFallbackResponse(movie, userMessage);
         }
     }

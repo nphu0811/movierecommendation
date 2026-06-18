@@ -5,6 +5,7 @@ import static org.mockito.Mockito.*;
 
 import com.example.movierecommendation.entity.*;
 import com.example.movierecommendation.repository.MovieRepository;
+import com.example.movierecommendation.dto.ChatResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -94,5 +95,27 @@ public class AiSummaryAndChatTest {
 
         String greetResponse = chatService.chatAboutVideo(null, movie, "hello");
         assertTrue(greetResponse.toLowerCase().contains("xin chào") || greetResponse.toLowerCase().contains("xin chao"));
+    }
+
+    @Test
+    public void testRecommendMovies_EmptyCandidatesNoResults() {
+        AIChatService chatService = new AIChatService();
+        ChatIntentClassifier classifier = new ChatIntentClassifier();
+        ChatHelpService helpService = new ChatHelpService();
+        
+        org.springframework.test.util.ReflectionTestUtils.setField(chatService, "intentClassifier", classifier);
+        org.springframework.test.util.ReflectionTestUtils.setField(chatService, "chatHelpService", helpService);
+        
+        MovieRepository movieRepository = mock(MovieRepository.class);
+        when(movieRepository.searchByTitleOrGenre(anyString())).thenReturn(Collections.emptyList());
+        when(movieRepository.findAll()).thenReturn(Collections.emptyList());
+        org.springframework.test.util.ReflectionTestUtils.setField(chatService, "movieRepository", movieRepository);
+
+        ChatResponse response = chatService.recommendMovies(null, "tìm phim doraemon cho tôi");
+        assertNotNull(response);
+        assertEquals("TEXT", response.getType());
+        assertTrue(response.getMessage().contains("Rất tiếc"));
+        assertTrue(response.getMessage().contains("doraemon"));
+        assertTrue(response.getMovies().isEmpty());
     }
 }
