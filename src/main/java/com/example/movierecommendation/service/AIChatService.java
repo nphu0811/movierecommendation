@@ -417,16 +417,24 @@ public class AIChatService {
     }
 
     public String chatAboutVideo(User user, Movie movie, String userMessage) {
-        if (intentClassifier != null && chatHelpService != null) {
+        if (userMessage == null) userMessage = "";
+        String msgLower = removeAccent(userMessage.toLowerCase().trim());
+        boolean isVideoQuery = msgLower.contains("tom tat") || msgLower.contains("summary") 
+                || msgLower.contains("timeline") || msgLower.contains("video") 
+                || msgLower.contains("clip") || msgLower.contains("trailer")
+                || msgLower.contains("combat") || msgLower.contains("danh nhau")
+                || msgLower.contains("chien dau") || msgLower.contains("fight");
+
+        if (!isVideoQuery && intentClassifier != null && chatHelpService != null) {
             ChatIntent intent = intentClassifier.classify(userMessage);
             if (intent == ChatIntent.OUT_OF_SCOPE) {
                 return chatHelpService.getHelpResponse(ChatIntent.OUT_OF_SCOPE, userMessage);
             }
         }
 
-        String msgLower = userMessage.toLowerCase().trim();
-        boolean isSummaryRequest = msgLower.contains("tóm tắt") || msgLower.contains("tom tat") 
-                || msgLower.contains("summary") || msgLower.contains("timeline");
+        String msgLowerRaw = userMessage.toLowerCase().trim();
+        boolean isSummaryRequest = msgLowerRaw.contains("tóm tắt") || msgLowerRaw.contains("tom tat") 
+                || msgLowerRaw.contains("summary") || msgLowerRaw.contains("timeline");
 
         if (isEnabled()) {
             try {

@@ -5,6 +5,7 @@ import static org.mockito.Mockito.*;
 
 import com.example.movierecommendation.entity.*;
 import com.example.movierecommendation.repository.MovieRepository;
+import com.example.movierecommendation.repository.GenreRepository;
 import com.example.movierecommendation.dto.ChatResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -108,8 +109,11 @@ public class AiSummaryAndChatTest {
         
         MovieRepository movieRepository = mock(MovieRepository.class);
         when(movieRepository.searchByTitleOrGenre(anyString())).thenReturn(Collections.emptyList());
-        when(movieRepository.findAll()).thenReturn(Collections.emptyList());
         org.springframework.test.util.ReflectionTestUtils.setField(chatService, "movieRepository", movieRepository);
+
+        GenreRepository genreRepository = mock(GenreRepository.class);
+        when(genreRepository.findAll()).thenReturn(Collections.emptyList());
+        org.springframework.test.util.ReflectionTestUtils.setField(chatService, "genreRepository", genreRepository);
 
         ChatResponse response = chatService.recommendMovies(null, "tìm phim doraemon cho tôi");
         assertNotNull(response);
