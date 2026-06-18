@@ -49,4 +49,8 @@ public interface WatchHistoryRepository extends JpaRepository<WatchHistory, Inte
 
     @Query("SELECT COUNT(DISTINCT wh.user.userId) FROM WatchHistory wh WHERE wh.deletedAt IS NULL")
     Long countActiveUsers();
+
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query("UPDATE WatchHistory wh SET wh.deletedAt = CURRENT_TIMESTAMP WHERE wh.user.userId = :userId AND wh.deletedAt IS NULL")
+    void softDeleteAllByUserUserId(@Param("userId") Integer userId);
 }

@@ -50,6 +50,15 @@ public class Movie {
     @Column(name = "rating_count")
     private Integer ratingCount = 0;
 
+    @Column(name = "actors_text", columnDefinition = "TEXT")
+    private String actorsText;
+
+    @Column(name = "directors_text", columnDefinition = "TEXT")
+    private String directorsText;
+
+    @Transient
+    private String recommendationReason;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "movie_genres",
@@ -143,4 +152,13 @@ public class Movie {
     public void setRatingCount(Integer ratingCount) { this.ratingCount = ratingCount; }
     public Integer getTotalRatings() { return getRatingCount(); }
     public void setTotalRatings(Integer totalRatings) { this.ratingCount = totalRatings; }
+
+    public String getRecommendationReason() { return recommendationReason; }
+    public void setRecommendationReason(String recommendationReason) { this.recommendationReason = recommendationReason; }
+
+    public String getActorsText() { return actorsText; }
+    public void setActorsText(String actorsText) { this.actorsText = actorsText; }
+
+    public String getDirectorsText() { return directorsText; }
+    public void setDirectorsText(String directorsText) { this.directorsText = directorsText; }
 }

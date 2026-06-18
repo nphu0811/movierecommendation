@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Quản lý báo lỗi phim – Admin</title>
+  <link rel="icon" type="image/svg+xml" sizes="any" th:href="@{/favicon.svg(v=2)}"/>
+  <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body>
+<div class="admin-layout">
+  <div th:replace="~{fragments :: adminSidebar('reports')}"></div>
+
+  <main class="admin-main">
+    <div class="admin-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; margin-bottom:20px;">
+      <div>
+        <h1>Danh sách báo lỗi phim</h1>
+        <p style="color:#6c757d;font-size:.875rem" th:text="|Có tất cả ${reportPage.totalElements} báo lỗi phim|">0 báo lỗi</p>
+      </div>
+      
+      <!-- Filter by status -->
+      <div>
+        <form method="get" action="/admin/reports" style="margin:0; display:flex; gap:10px; align-items:center;">
+          <label for="statusFilter" style="font-size:0.875rem; color:var(--text-secondary);">Trạng thái:</label>
+          <select id="statusFilter" name="status" class="form-control" onchange="this.form.submit()" style="padding:6px 12px; border-radius:8px;">
+            <option value="">Tất cả trạng thái</option>
+            <option th:each="st : ${statuses}" 
+                    th:value="${st.name()}" 
+                    th:text="${st.name()}"
+                    th:selected="${selectedStatus == st.name()}">NEW</option>
+          </select>
+        </form>
+      </div>
+    </div>
+
+    <div class="alert alert-success" th:if="${success}" th:text="${success}"></div>
+    <div class="alert alert-danger" th:if="${error}" th:text="${error}"></div>
+
+    <div style="background:var(--bg-elevated);border-radius:12px;overflow:hidden">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Phim</th>
+            <th>Người báo</th>
+            <th>Loại lỗi</th>
+            <th>Nội dung chi tiết</th>
+            <th>Trạng thái</th>
+            <th>Thời gian</th>
+            <th>Ghi chú Admin</th>
+            <th>Hành động</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="report : ${reportPage.content}">
+            <td style="color:#6c757d" th:text="${report.reportId}">1</td>
+            <td>
+              <a th:href="@{/movies/{id}(id=${report.movie.movieId})}" 
+                 th:text="${report.movie.title}" 
+                 target="_blank" 
+                 style="color:var(--red); font-weight:600; text-decoration:none;">Movie Title</a>
+            </td>
+            <td th:text="${report.user.username}">Username</td>
+            <td>
+              <span class="badge" th:classappend="${report.reportType.name() == 'OTHER'} ? 'badge-info' : 'badge-warn'"
+                    th:text="${report.reportType}">BROKEN_TRAILER</span>
+            </td>
+            <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" 
+                th:text="${report.message}" th:title="${report.message}">Nội dung báo lỗi...</td>
+            <td>
+              <span class="badge" 
+                    th:classappend="${report.status.name() == 'NEW'} ? 'badge-danger' : 
+                                    (${report.status.name() == 'IN_PROGRESS'} ? 'badge-info' : 
+                                    (${report.status.name() == 'RESOLVED'} ? 'badge-success' : 'badge-dark'))"
+                    th:text="${report.status}">NEW</span>
+            </td>
+            <td style="color:#6c757d;font-size:.8rem"
+                th:text="${report.createdAt != null} ? ${#temporals.format(report.createdAt, 'dd/MM/yyyy HH:mm')} : '-'">Date</td>
+            <td style="max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
+                th:text="${report.adminNote != null ? report.adminNote : '-'}" th:title="${report.adminNote}">-</td>
+            <td>
+              <button class="btn btn-sm btn-outline" th:onclick="|openProcessModal(${report.reportId}, '${report.status}', '${report.adminNote != null ? #strings.escapeJavaScript(report.adminNote) : ''}')|">
+                Xử lý
+              </button>
+            </td>
+          </tr>
+          <tr th:if="${reportPage.isEmpty()}">
+            <td colspan="9" style="text-align:center; padding: 30px; color: var(--text-muted);">Không có báo cáo lỗi nào.</td>
+          </tr>
+        </tbody>
+      </table>
+      
+      <div th:if="${reportPage.totalPages > 1}" id="pagination-container"
+           th:attr="data-current=${reportPage.number}, data-total=${reportPage.totalPages}">
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Process Report Modal -->
+<div class="resume-modal" id="processModal" onclick="closeProcessOnBg(event)">
+  <div class="resume-content" style="max-width: 500px; text-align: left;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+      <h3 style="margin:0; font-size:1.25rem;"><i class="ph-fill ph-gear" style="color:var(--red); margin-right:6px; vertical-align: middle;"></i> Xử lý báo lỗi</h3>
+      <button onclick="closeProcessModal()" style="background:none; border:none; color:var(--text-muted); font-size:1.2rem; cursor:pointer;">✕</button>
+    </div>
+    <form id="processForm" method="post" action="">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+      
+      <div style="margin-bottom: 16px;">
+        <label for="processStatus" style="display:block; font-size:0.85rem; color:var(--text-secondary); margin-bottom: 6px;">Cập nhật trạng thái</label>
+        <select id="processStatus" name="status" class="form-control" style="width:100%; padding:10px; border-radius:8px;" required>
+          <option value="NEW">NEW</option>
+          <option value="IN_PROGRESS">IN_PROGRESS</option>
+          <option value="RESOLVED">RESOLVED</option>
+          <option value="REJECTED">REJECTED</option>
+        </select>
+      </div>
+      
+      <div style="margin-bottom: 20px;">
+        <label for="adminNote" style="display:block; font-size:0.85rem; color:var(--text-secondary); margin-bottom: 6px;">Ghi chú của Admin</label>
+        <textarea id="adminNote" name="adminNote" class="form-control" rows="4" placeholder="Nhập ghi chú hoặc phản hồi lỗi tại đây..." style="width:100%; padding:10px; border-radius:8px; resize:none;"></textarea>
+      </div>
+      
+      <div style="display:flex; gap:12px; justify-content:flex-end;">
+        <button type="button" class="btn btn-ghost" onclick="closeProcessModal()">Hủy</button>
+        <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script th:src="@{/js/app.js}"></script>
+<script th:src="@{/js/pagination.js}"></script>
+<script>
+  const statusParam = [[${selectedStatus != null ? selectedStatus : ''}]];
+  initPagination('pagination-container', '/admin/reports' + (statusParam ? '?status=' + statusParam : ''));
+
+  function openProcessModal(reportId, currentStatus, currentNote) {
+    const form = document.getElementById('processForm');
+    form.action = '/admin/reports/' + reportId + '/resolve';
+    
+    document.getElementById('processStatus').value = currentStatus;
+    document.getElementById('adminNote').value = currentNote;
+    
+    document.getElementById('processModal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+  
+  function closeProcessModal() {
+    document.getElementById('processModal').classList.remove('active');
+    document.body.style.overflow = '';
+  }
+  
+  function closeProcessOnBg(event) {
+    if (event.target === document.getElementById('processModal')) closeProcessModal();
+  }
+</script>
+</body>
+</html>

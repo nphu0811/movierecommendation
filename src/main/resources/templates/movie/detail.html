@@ -85,6 +85,9 @@
               <i class="ph ph-heart" style="margin-right:6px"></i> Add to Watchlist
             </th:block>
           </button>
+          <button class="btn btn-outline" onclick="openReportModal()">
+            <i class="ph-bold ph-warning-octagon" style="margin-right:6px; vertical-align: middle;"></i> Báo lỗi phim
+          </button>
         </th:block>
         <th:block th:if="${currentUser == null}">
           <a href="/auth/login" class="btn btn-primary">Login to interact</a>
@@ -128,6 +131,19 @@
          th:if="${movie.description != null and !#strings.isEmpty(movie.description)}">
       <h3><i class="ph-bold ph-book-open" style="margin-right:6px;vertical-align:-3px;color:var(--text-secondary)"></i> Overview</h3>
       <p class="text-secondary-md" th:text="${movie.description}">Description</p>
+    </div>
+
+    <!-- Cast & Crew -->
+    <div class="detail-card" th:if="${(movie.actorsText != null and !#strings.isEmpty(movie.actorsText)) or (movie.directorsText != null and !#strings.isEmpty(movie.directorsText))}">
+      <h3><i class="ph-bold ph-users" style="margin-right:6px;vertical-align:-3px;color:var(--text-secondary)"></i> Diễn viên &amp; Đạo diễn</h3>
+      <div style="margin-bottom: 12px;" th:if="${movie.directorsText != null and !#strings.isEmpty(movie.directorsText)}">
+        <strong style="color: var(--white); font-size: 0.95rem;">Đạo diễn:</strong>
+        <span style="color: var(--text-secondary); font-size: 0.95rem; margin-left: 6px;" th:text="${movie.directorsText}">Director Name</span>
+      </div>
+      <div th:if="${movie.actorsText != null and !#strings.isEmpty(movie.actorsText)}">
+        <strong style="color: var(--white); font-size: 0.95rem;">Diễn viên chính:</strong>
+        <span style="color: var(--text-secondary); font-size: 0.95rem; margin-left: 6px;" th:text="${movie.actorsText}">Actor Names</span>
+      </div>
     </div>
 
     <div class="detail-card" th:if="${currentUser != null}">
@@ -336,6 +352,94 @@
       })
       .catch(() => showToast('Lỗi thêm tag', 'error'));
   }
+
+  function openReportModal() {
+    document.getElementById('reportModal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeReportModal() {
+    document.getElementById('reportModal').classList.remove('active');
+    document.body.style.overflow = '';
+    document.getElementById('reportForm').reset();
+  }
+  function closeReportOnBg(event) {
+    if (event.target === document.getElementById('reportModal')) closeReportModal();
+  }
+  function onReportTypeChange() {
+    const type = document.getElementById('reportType').value;
+    const msgInput = document.getElementById('reportMessage');
+    if (type === 'OTHER') {
+      msgInput.required = true;
+      msgInput.placeholder = "BẮT BUỘC: Hãy mô tả chi tiết lỗi khác tại đây...";
+    } else {
+      msgInput.required = false;
+      msgInput.placeholder = "Nhập chi tiết lỗi gặp phải tại đây...";
+    }
+  }
+  function submitReportForm(event) {
+    event.preventDefault();
+    const type = document.getElementById('reportType').value;
+    const msg = document.getElementById('reportMessage').value;
+    const btn = document.getElementById('btnSubmitReport');
+
+    const headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
+    const csrfMeta = document.querySelector('meta[name="_csrf"]');
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]');
+    if (csrfMeta) headers[csrfHeader.content] = csrfMeta.content;
+
+    btn.disabled = true; btn.textContent = 'Đang gửi…';
+    fetch(`/api/movies/${MOVIE_ID}/report`, {
+      method: 'POST',
+      headers: headers,
+      body: `reportType=${encodeURIComponent(type)}&message=${encodeURIComponent(msg)}`
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) {
+        showToast(data.error, 'error');
+      } else {
+        showToast(data.message, 'success');
+        closeReportModal();
+      }
+      btn.disabled = false; btn.textContent = 'Gửi báo lỗi';
+    })
+    .catch(() => {
+      btn.disabled = false; btn.textContent = 'Gửi báo lỗi';
+      showToast('Có lỗi xảy ra khi gửi báo lỗi.', 'error');
+    });
+  }
 </script>
+
+<!-- Report Modal -->
+<div class="resume-modal" id="reportModal" onclick="closeReportOnBg(event)">
+  <div class="resume-content" style="max-width: 500px; text-align: left;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+      <h3 style="margin:0; font-size:1.25rem;"><i class="ph-fill ph-warning-octagon" style="color:var(--red); margin-right:6px; vertical-align: middle;"></i> Báo lỗi phim</h3>
+      <button onclick="closeReportModal()" style="background:none; border:none; color:var(--text-muted); font-size:1.2rem; cursor:pointer;">✕</button>
+    </div>
+    <form id="reportForm" onsubmit="submitReportForm(event)">
+      <div style="margin-bottom: 16px;">
+        <label for="reportType" style="display:block; font-size:0.85rem; color:var(--text-secondary); margin-bottom: 6px;">Loại lỗi</label>
+        <select id="reportType" class="form-control" style="width:100%; padding:10px; border-radius:8px;" required onchange="onReportTypeChange()">
+          <option value="WRONG_INFO">Thông tin sai (năm chiếu, diễn viên, tiêu đề)</option>
+          <option value="BROKEN_TRAILER">Trailer hỏng / không xem được</option>
+          <option value="BROKEN_POSTER">Poster / ảnh nền hỏng</option>
+          <option value="DUPLICATE_MOVIE">Trùng lặp phim</option>
+          <option value="WRONG_GENRE">Sai thể loại phim</option>
+          <option value="OTHER">Lỗi khác (Yêu cầu ghi chi tiết bên dưới)</option>
+        </select>
+      </div>
+      <div style="margin-bottom: 20px;">
+        <label for="reportMessage" style="display:block; font-size:0.85rem; color:var(--text-secondary); margin-bottom: 6px;">Mô tả chi tiết</label>
+        <textarea id="reportMessage" class="form-control" rows="4" placeholder="Nhập chi tiết lỗi gặp phải tại đây..." style="width:100%; padding:10px; border-radius:8px; resize:none;"></textarea>
+      </div>
+      <div style="display:flex; gap:12px; justify-content:flex-end;">
+        <button type="button" class="btn btn-ghost" onclick="closeReportModal()">Hủy</button>
+        <button type="submit" class="btn btn-primary" id="btnSubmitReport">Gửi báo lỗi</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 </body>
 </html>

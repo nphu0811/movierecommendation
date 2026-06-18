@@ -4,6 +4,9 @@ import com.example.movierecommendation.entity.*;
 import com.example.movierecommendation.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
@@ -109,7 +112,6 @@ public class InteractionService {
     }
 
     public List<WatchHistory> getRecentWatchHistory(Integer userId, int limit) {
-        // We might want to sort by Descending to get most recent first
         return watchHistoryRepository.findByUserUserIdOrderByWatchedAtDesc(userId)
             .stream().limit(limit).toList();
     }
@@ -120,6 +122,25 @@ public class InteractionService {
 
     public boolean hasWatched(Integer userId, Integer movieId) {
         return watchHistoryRepository.existsByUserUserIdAndMovieMovieId(userId, movieId);
+    }
+
+    @Transactional
+    @CacheEvict(value = "recommendations", key = "#userId")
+    public void deleteWatchHistoryEntry(Integer userId, Integer historyId) {
+        watchHistoryRepository.findById(historyId).ifPresent(wh -> {
+            if (wh.getUser().getUserId().equals(userId)) {
+                wh.setDeletedAt(java.time.LocalDateTime.now());
+                watchHistoryRepository.save(wh);
+            } else {
+                throw new RuntimeException("Access denied: You do not own this watch history item");
+            }
+        });
+    }
+
+    @Transactional
+    @CacheEvict(value = "recommendations", key = "#userId")
+    public void clearWatchHistory(Integer userId) {
+        watchHistoryRepository.softDeleteAllByUserUserId(userId);
     }
 
     // ──────────────────── WATCHLIST ────────────────────
@@ -179,6 +200,26 @@ public class InteractionService {
     @Transactional
     public void deleteComment(Integer commentId) {
         commentRepository.deleteById(commentId);
+    }
+
+    @Transactional
+    public void softDeleteComment(Integer commentId) {
+        commentRepository.findById(commentId).ifPresent(c -> {
+            c.setDeletedAt(java.time.LocalDateTime.now());
+            commentRepository.save(c);
+        });
+    }
+
+    @Transactional
+    public void restoreComment(Integer commentId) {
+        commentRepository.findById(commentId).ifPresent(c -> {
+            c.setDeletedAt(null);
+            commentRepository.save(c);
+        });
+    }
+
+    public Page<Comment> getAllCommentsPaged(int page, int size) {
+        return commentRepository.findAll(PageRequest.of(page, size, Sort.by("createdAt").descending()));
     }
 
     public long countAllComments() {

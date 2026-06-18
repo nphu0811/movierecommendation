@@ -10,8 +10,10 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class SeedDataService {
@@ -23,6 +25,10 @@ public class SeedDataService {
     @Autowired private UserRepository userRepository;
     @Autowired private RatingRepository ratingRepository;
     @Autowired private CommentRepository commentRepository;
+    @Autowired private WatchHistoryRepository watchHistoryRepository;
+    @Autowired private GenreRepository genreRepository;
+    @Autowired private ApiSyncLogRepository apiSyncLogRepository;
+    @Autowired private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     @Value("${tmdb.api.key:}") private String apiKey;
 
@@ -235,5 +241,230 @@ public class SeedDataService {
                 return fallback.get(new Random().nextInt(fallback.size()));
             }
         });
+    }
+
+    @jakarta.annotation.PostConstruct
+    public void init() {
+        try {
+            seedDemoUsersAndInteractions();
+        } catch (Exception e) {
+            log.error("Failed to auto-seed demo users at startup: {}", e.getMessage());
+        }
+    }
+
+    @Transactional
+    public void seedDemoUsersAndInteractions() {
+        log.info("Starting demo data seeding and metadata populating...");
+        LocalDateTime startedAt = LocalDateTime.now();
+        ApiSyncLog syncLog = new ApiSyncLog();
+        syncLog.setProvider("SYSTEM");
+        syncLog.setAction("SEED_DEMO_DATA");
+        syncLog.setStatus("RUNNING");
+        syncLog.setStartedAt(startedAt);
+        syncLog = apiSyncLogRepository.save(syncLog);
+
+        try {
+            // 1. Seed the 3 demo users
+            String encodedPassword = passwordEncoder.encode("123456");
+            int successCount = 0;
+
+            User actionUser = userRepository.findByEmail("action.demo@example.com").orElse(null);
+            if (actionUser == null) {
+                actionUser = new User();
+                actionUser.setEmail("action.demo@example.com");
+                actionUser.setUsername("ActionDemo");
+                actionUser.setPasswordHash(encodedPassword);
+                actionUser.setRole("USER");
+                actionUser.setIsActive(true);
+                actionUser.setIsEmailVerified(true);
+                actionUser = userRepository.save(actionUser);
+                successCount++;
+            }
+
+            User comedyUser = userRepository.findByEmail("comedy.demo@example.com").orElse(null);
+            if (comedyUser == null) {
+                comedyUser = new User();
+                comedyUser.setEmail("comedy.demo@example.com");
+                comedyUser.setUsername("ComedyDemo");
+                comedyUser.setPasswordHash(encodedPassword);
+                comedyUser.setRole("USER");
+                comedyUser.setIsActive(true);
+                comedyUser.setIsEmailVerified(true);
+                comedyUser = userRepository.save(comedyUser);
+                successCount++;
+            }
+
+            User newUser = userRepository.findByEmail("new.demo@example.com").orElse(null);
+            if (newUser == null) {
+                newUser = new User();
+                newUser.setEmail("new.demo@example.com");
+                newUser.setUsername("NewDemo");
+                newUser.setPasswordHash(encodedPassword);
+                newUser.setRole("USER");
+                newUser.setIsActive(true);
+                newUser.setIsEmailVerified(true);
+                newUser = userRepository.save(newUser);
+                successCount++;
+            }
+
+            // 2. Fetch movies to seed ratings
+            List<Movie> allMovies = movieRepository.findAll();
+            
+            // 3. Mock metadata for movies if not present
+            String[] mockActors = {
+                "Leonardo DiCaprio, Brad Pitt, Margot Robbie",
+                "Christian Bale, Heath Ledger, Gary Oldman",
+                "Matthew McConaughey, Anne Hathaway, Jessica Chastain",
+                "Robert Downey Jr., Chris Evans, Scarlett Johansson",
+                "Tom Hanks, Robin Wright, Gary Sinise",
+                "Keanu Reeves, Laurence Fishburne, Carrie-Anne Moss",
+                "Johnny Depp, Orlando Bloom, Keira Knightley",
+                "Liam Neeson, Ben Kingsley, Ralph Fiennes",
+                "Marlon Brando, Al Pacino, James Caan",
+                "John Travolta, Uma Thurman, Samuel L. Jackson"
+            };
+            String[] mockDirectors = {
+                "Christopher Nolan",
+                "Quentin Tarantino",
+                "Steven Spielberg",
+                "Martin Scorsese",
+                "James Cameron",
+                "Francis Ford Coppola",
+                "Ridley Scott",
+                "David Fincher",
+                "Peter Jackson",
+                "Stanley Kubrick"
+            };
+
+            Random rand = new Random();
+            int metadataUpdated = 0;
+            for (Movie m : allMovies) {
+                boolean updated = false;
+                if (m.getActorsText() == null || m.getActorsText().trim().isEmpty()) {
+                    String title = m.getTitle().toLowerCase();
+                    if (title.contains("inception")) {
+                        m.setActorsText("Leonardo DiCaprio, Joseph Gordon-Levitt, Elliot Page");
+                    } else if (title.contains("interstellar")) {
+                        m.setActorsText("Matthew McConaughey, Anne Hathaway, Jessica Chastain");
+                    } else if (title.contains("dark knight") || title.contains("batman")) {
+                        m.setActorsText("Christian Bale, Heath Ledger, Aaron Eckhart");
+                    } else if (title.contains("matrix")) {
+                        m.setActorsText("Keanu Reeves, Laurence Fishburne, Carrie-Anne Moss");
+                    } else if (title.contains("avatar")) {
+                        m.setActorsText("Sam Worthington, Zoe Saldana, Sigourney Weaver");
+                    } else if (title.contains("godfather")) {
+                        m.setActorsText("Marlon Brando, Al Pacino, James Caan");
+                    } else {
+                        m.setActorsText(mockActors[rand.nextInt(mockActors.length)]);
+                    }
+                    updated = true;
+                }
+                if (m.getDirectorsText() == null || m.getDirectorsText().trim().isEmpty()) {
+                    String title = m.getTitle().toLowerCase();
+                    if (title.contains("inception") || title.contains("interstellar") || title.contains("dark knight") || title.contains("batman")) {
+                        m.setDirectorsText("Christopher Nolan");
+                    } else if (title.contains("matrix")) {
+                        m.setDirectorsText("Lana Wachowski, Lilly Wachowski");
+                    } else if (title.contains("avatar") || title.contains("titanic")) {
+                        m.setDirectorsText("James Cameron");
+                    } else if (title.contains("godfather")) {
+                        m.setDirectorsText("Francis Ford Coppola");
+                    } else if (title.contains("pulp fiction")) {
+                        m.setDirectorsText("Quentin Tarantino");
+                    } else {
+                        m.setDirectorsText(mockDirectors[rand.nextInt(mockDirectors.length)]);
+                    }
+                    updated = true;
+                }
+                if (updated) {
+                    movieRepository.save(m);
+                    metadataUpdated++;
+                }
+            }
+
+            if (!allMovies.isEmpty()) {
+                // Setup Action user taste: 5 stars for Action/Adventure movies, 1-2 stars for Romance
+                List<Movie> actionMovies = allMovies.stream()
+                    .filter(m -> m.getGenres() != null && m.getGenres().stream()
+                        .anyMatch(g -> g.getGenreName().equalsIgnoreCase("Action") || g.getGenreName().equalsIgnoreCase("Adventure")))
+                    .limit(5)
+                    .collect(Collectors.toList());
+                    
+                List<Movie> romanceMovies = allMovies.stream()
+                    .filter(m -> m.getGenres() != null && m.getGenres().stream()
+                        .anyMatch(g -> g.getGenreName().equalsIgnoreCase("Romance")))
+                    .limit(3)
+                    .collect(Collectors.toList());
+
+                for (Movie m : actionMovies) {
+                    if (ratingRepository.findByUserUserIdAndMovieMovieId(actionUser.getUserId(), m.getMovieId()).isEmpty()) {
+                        Rating r = new Rating();
+                        r.setUser(actionUser);
+                        r.setMovie(m);
+                        r.setRating(5.0);
+                        ratingRepository.save(r);
+                    }
+                    if (watchHistoryRepository.findByUserUserIdAndMovieMovieId(actionUser.getUserId(), m.getMovieId()).isEmpty()) {
+                        WatchHistory wh = new WatchHistory();
+                        wh.setUser(actionUser);
+                        wh.setMovie(m);
+                        wh.setProgress(90.0);
+                        wh.setWatchDuration(5400);
+                        wh.setWatchedAt(LocalDateTime.now().minusDays(2));
+                        watchHistoryRepository.save(wh);
+                    }
+                }
+
+                for (Movie m : romanceMovies) {
+                    if (ratingRepository.findByUserUserIdAndMovieMovieId(actionUser.getUserId(), m.getMovieId()).isEmpty()) {
+                        Rating r = new Rating();
+                        r.setUser(actionUser);
+                        r.setMovie(m);
+                        r.setRating(2.0);
+                        ratingRepository.save(r);
+                    }
+                }
+
+                // Setup Comedy/Romance user taste: 5 stars for Comedy/Romance, watches them
+                List<Movie> comedyMovies = allMovies.stream()
+                    .filter(m -> m.getGenres() != null && m.getGenres().stream()
+                        .anyMatch(g -> g.getGenreName().equalsIgnoreCase("Comedy") || g.getGenreName().equalsIgnoreCase("Romance")))
+                    .limit(6)
+                    .collect(Collectors.toList());
+
+                for (Movie m : comedyMovies) {
+                    if (ratingRepository.findByUserUserIdAndMovieMovieId(comedyUser.getUserId(), m.getMovieId()).isEmpty()) {
+                        Rating r = new Rating();
+                        r.setUser(comedyUser);
+                        r.setMovie(m);
+                        r.setRating(5.0);
+                        ratingRepository.save(r);
+                    }
+                    if (watchHistoryRepository.findByUserUserIdAndMovieMovieId(comedyUser.getUserId(), m.getMovieId()).isEmpty()) {
+                        WatchHistory wh = new WatchHistory();
+                        wh.setUser(comedyUser);
+                        wh.setMovie(m);
+                        wh.setProgress(85.0);
+                        wh.setWatchDuration(4800);
+                        wh.setWatchedAt(LocalDateTime.now().minusDays(1));
+                        watchHistoryRepository.save(wh);
+                    }
+                }
+            }
+
+            syncLog.setStatus("SUCCESS");
+            syncLog.setTotalItems(3 + metadataUpdated);
+            syncLog.setSuccessCount(3 + metadataUpdated);
+            syncLog.setFinishedAt(LocalDateTime.now());
+            apiSyncLogRepository.save(syncLog);
+            log.info("✅ Demo data seeding finished successfully!");
+
+        } catch (Exception e) {
+            log.error("❌ Seeding demo data failed: {}", e.getMessage(), e);
+            syncLog.setStatus("FAILED");
+            syncLog.setErrorMessage(e.getMessage());
+            syncLog.setFinishedAt(LocalDateTime.now());
+            apiSyncLogRepository.save(syncLog);
+        }
     }
 }

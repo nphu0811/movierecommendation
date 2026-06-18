@@ -14,14 +14,19 @@
 <div th:replace="~{fragments :: mobileNav(${activeMenu})}"></div>
 <div th:replace="~{search-overlay :: searchOverlay}"></div>
 <div class="section">
-  <div class="section-header">
+  <div class="section-header" style="display:flex; justify-content:space-between; align-items:center;">
     <h1 class="section-title"><i class="ph-fill ph-clock-counter-clockwise" style="margin-right:8px;vertical-align:-3px;color:var(--text-secondary)"></i> Watch <span>History</span></h1>
-    <span style="color:#6c757d;font-size:.875rem"
-          th:text="|${#lists.size(watchHistory)} movie(s) watched|">0 movies</span>
+    <div style="display:flex; align-items:center; gap:15px;">
+      <span style="color:#6c757d;font-size:.875rem"
+            th:text="|${#lists.size(watchHistory)} movie(s) watched|">0 movies</span>
+      <button th:if="${!#lists.isEmpty(watchHistory)}" type="button" class="btn btn-secondary btn-sm" onclick="clearWatchHistory()" style="color: var(--red); border-color: rgba(229, 9, 20, 0.2)">
+        <i class="ph-bold ph-trash"></i> Xóa tất cả
+      </button>
+    </div>
   </div>
 
   <div th:if="${!#lists.isEmpty(watchHistory)}">
-    <div th:each="wh : ${watchHistory}"
+    <div th:each="wh : ${watchHistory}" th:id="'history-row-' + ${wh.historyId}"
          style="display:flex;align-items:center;gap:1rem;padding:1rem;
                 background:#1f1f1f;border-radius:10px;margin-bottom:.75rem;
                 transition:background .2s"
@@ -53,7 +58,12 @@
           <span class="genre-tag" th:each="g : ${wh.movie.genres}" th:text="${g.genreName}">Genre</span>
         </div>
       </div>
-      <a th:href="@{/movies/{id}(id=${wh.movie.movieId})}" class="btn btn-outline btn-sm">View →</a>
+      <div style="display:flex; align-items:center; gap:8px">
+        <a th:href="@{/movies/{id}(id=${wh.movie.movieId})}" class="btn btn-outline btn-sm">View →</a>
+        <button type="button" class="btn btn-secondary btn-sm" th:onclick="'deleteWatchHistory(' + ${wh.historyId} + ')'" style="padding: 8px; color: var(--red); border-color: rgba(229, 9, 20, 0.2)">
+          <i class="ph-bold ph-trash"></i>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -65,5 +75,54 @@
   </div>
 </div>
 <script th:src="@{/js/app.js}"></script>
+<script th:inline="javascript">
+/*<![CDATA[*/
+async function deleteWatchHistory(id) {
+  if (!confirm('Bạn có chắc chắn muốn xóa bộ phim này khỏi lịch sử xem?')) return;
+  try {
+    const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+    const res = await fetch(`/user/api/watch-history/${id}`, {
+      method: 'DELETE',
+      headers: {
+        [csrfHeader]: csrfToken
+      }
+    });
+    if (res.ok) {
+      const el = document.getElementById(`history-row-${id}`);
+      if (el) el.remove();
+      showToast('Xóa thành công!', 'success');
+      window.location.reload();
+    } else {
+      showToast('Không thể xóa lịch sử xem', 'error');
+    }
+  } catch (e) {
+    showToast('Lỗi kết nối server', 'error');
+  }
+}
+
+async function clearWatchHistory() {
+  if (!confirm('Bạn có chắc chắn muốn xóa TOÀN BỘ lịch sử xem phim?')) return;
+  try {
+    const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+    const res = await fetch('/user/api/watch-history/clear', {
+      method: 'DELETE',
+      headers: {
+        [csrfHeader]: csrfToken
+      }
+    });
+    if (res.ok) {
+      showToast('Đã xóa toàn bộ lịch sử xem!', 'success');
+      window.location.reload();
+    } else {
+      showToast('Lỗi khi xóa lịch sử', 'error');
+    }
+  } catch (e) {
+    showToast('Lỗi kết nối server', 'error');
+  }
+}
+/*]]>*/
+</script>
 </body>
 </html>

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Kiểm duyệt bình luận – Admin</title>
+  <link rel="icon" type="image/svg+xml" sizes="any" th:href="@{/favicon.svg(v=2)}"/>
+  <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body>
+<div class="admin-layout">
+  <div th:replace="~{fragments :: adminSidebar('comments')}"></div>
+
+  <main class="admin-main">
+    <div class="admin-header" style="margin-bottom:20px;">
+      <h1>Kiểm duyệt bình luận</h1>
+      <p style="color:#6c757d;font-size:.875rem" th:text="|Có tất cả ${commentPage.totalElements} bình luận|">0 bình luận</p>
+    </div>
+
+    <div class="alert alert-success" th:if="${success}" th:text="${success}"></div>
+    <div class="alert alert-danger" th:if="${error}" th:text="${error}"></div>
+
+    <div style="background:var(--bg-elevated);border-radius:12px;overflow:hidden">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Người dùng</th>
+            <th>Phim</th>
+            <th>Nội dung bình luận</th>
+            <th>Thời gian</th>
+            <th>Trạng thái</th>
+            <th>Hành động</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="comment : ${commentPage.content}">
+            <td style="color:#6c757d" th:text="${comment.commentId}">1</td>
+            <td th:text="${comment.user.username}">Username</td>
+            <td>
+              <a th:href="@{/movies/{id}(id=${comment.movie.movieId})}" 
+                 th:text="${comment.movie.title}" 
+                 target="_blank" 
+                 style="color:var(--red); font-weight:600; text-decoration:none;">Movie Title</a>
+            </td>
+            <td style="max-width:300px; word-wrap: break-word;" th:text="${comment.commentText}">Nội dung bình luận</td>
+            <td style="color:#6c757d;font-size:.8rem;"
+                th:text="${comment.createdAt != null} ? ${#temporals.format(comment.createdAt, 'dd/MM/yyyy HH:mm')} : '-'">Date</td>
+            <td>
+              <span class="badge" th:classappend="${comment.deletedAt == null} ? 'badge-success' : 'badge-danger'"
+                    th:text="${comment.deletedAt == null} ? 'Hiển thị' : 'Đã ẩn'">Hiển thị</span>
+            </td>
+            <td>
+              <div style="display:flex;gap:.5rem">
+                <!-- Hide Comment Form -->
+                <form th:if="${comment.deletedAt == null}" th:action="@{/admin/comments/{id}/hide(id=${comment.commentId})}"
+                      method="post" style="margin:0">
+                  <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                  <button type="submit" class="btn btn-sm btn-outline btn-danger-hover">
+                    <i class="ph ph-eye-slash" style="margin-right:4px;vertical-align:-2px;"></i> Ẩn đi
+                  </button>
+                </form>
+                
+                <!-- Restore Comment Form -->
+                <form th:if="${comment.deletedAt != null}" th:action="@{/admin/comments/{id}/restore(id=${comment.commentId})}"
+                      method="post" style="margin:0">
+                  <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                  <button type="submit" class="btn btn-sm btn-success">
+                    <i class="ph ph-eye" style="margin-right:4px;vertical-align:-2px;"></i> Hiện lại
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          <tr th:if="${commentPage.isEmpty()}">
+            <td colspan="7" style="text-align:center; padding: 30px; color: var(--text-muted);">Không có bình luận nào.</td>
+          </tr>
+        </tbody>
+      </table>
+      
+      <div th:if="${commentPage.totalPages > 1}" id="pagination-container"
+           th:attr="data-current=${commentPage.number}, data-total=${commentPage.totalPages}">
+      </div>
+    </div>
+  </main>
+</div>
+
+<script th:src="@{/js/app.js}"></script>
+<script th:src="@{/js/pagination.js}"></script>
+<script>
+  initPagination('pagination-container', '/admin/comments');
+</script>
+</body>
+</html>

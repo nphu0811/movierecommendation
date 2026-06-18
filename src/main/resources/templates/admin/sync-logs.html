@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Lịch sử Đồng bộ (Sync Logs) – Admin</title>
+  <link rel="icon" type="image/svg+xml" sizes="any" th:href="@{/favicon.svg(v=2)}"/>
+  <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body>
+<div class="admin-layout">
+  <div th:replace="~{fragments :: adminSidebar('synclogs')}"></div>
+
+  <main class="admin-main">
+    <div class="admin-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; margin-bottom:20px;">
+      <div>
+        <h1>Lịch sử Đồng bộ &amp; Seed dữ liệu</h1>
+        <p style="color:#6c757d;font-size:.875rem" th:text="|Có tất cả ${syncLogsPage.totalElements} bản ghi log|">0 bản ghi</p>
+      </div>
+    </div>
+
+    <div style="background:var(--bg-elevated);border-radius:12px;overflow:hidden">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nguồn (Provider)</th>
+            <th>Hành động (Action)</th>
+            <th>Trạng thái</th>
+            <th>Tổng items</th>
+            <th>Thành công</th>
+            <th>Thất bại</th>
+            <th>Thông báo lỗi</th>
+            <th>Bắt đầu</th>
+            <th>Kết thúc</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="log : ${syncLogsPage.content}">
+            <td style="color:#6c757d" th:text="${log.syncId}">1</td>
+            <td th:text="${log.provider}" style="font-weight:600">TMDB</td>
+            <td th:text="${log.action}">SEED_DEMO_DATA</td>
+            <td>
+              <span class="badge" 
+                    th:classappend="${log.status == 'SUCCESS'} ? 'badge-success' : 
+                                    (${log.status == 'RUNNING'} ? 'badge-info' : 
+                                    (${log.status == 'FAILED'} ? 'badge-danger' : 'badge-warn'))"
+                    th:text="${log.status}">SUCCESS</span>
+            </td>
+            <td th:text="${log.totalItems != null ? log.totalItems : 0}">0</td>
+            <td th:text="${log.successCount != null ? log.successCount : 0}" style="color:var(--primary); font-weight:600">0</td>
+            <td th:text="${log.failedCount != null ? log.failedCount : 0}" th:style="${log.failedCount != null and log.failedCount > 0} ? 'color:var(--red); font-weight:600' : ''">0</td>
+            <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" 
+                th:text="${log.errorMessage != null ? log.errorMessage : '-'}" th:title="${log.errorMessage}">-</td>
+            <td style="color:#6c757d;font-size:.8rem"
+                th:text="${log.startedAt != null} ? ${#temporals.format(log.startedAt, 'dd/MM/yyyy HH:mm:ss')} : '-'">Date</td>
+            <td style="color:#6c757d;font-size:.8rem"
+                th:text="${log.finishedAt != null} ? ${#temporals.format(log.finishedAt, 'dd/MM/yyyy HH:mm:ss')} : '-'">Date</td>
+          </tr>
+          <tr th:if="${syncLogsPage.isEmpty()}">
+            <td colspan="10" style="text-align:center; padding: 30px; color: var(--text-muted);">Không có bản ghi đồng bộ nào.</td>
+          </tr>
+        </tbody>
+      </table>
+      
+      <div th:if="${syncLogsPage.totalPages > 1}" id="pagination-container"
+           th:attr="data-current=${syncLogsPage.number}, data-total=${syncLogsPage.totalPages}">
+      </div>
+    </div>
+  </main>
+</div>
+
+<script th:src="@{/js/app.js}"></script>
+<script th:src="@{/js/pagination.js}"></script>
+<script>
+  initPagination('pagination-container', '/admin/sync-logs');
+</script>
+</body>
+</html>

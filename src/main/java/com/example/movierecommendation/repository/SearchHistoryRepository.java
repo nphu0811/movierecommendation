@@ -39,4 +39,23 @@ public interface SearchHistoryRepository extends JpaRepository<SearchHistory, Lo
                    "ORDER BY total DESC",
            nativeQuery = true)
     List<Object[]> findSuggestionsByPrefix(@Param("prefix") String prefix, Pageable pageable);
+
+    @Query("SELECT sh.clickedMovie.title, COUNT(sh) as c FROM SearchHistory sh WHERE sh.clickedMovie IS NOT NULL GROUP BY sh.clickedMovie.title ORDER BY c DESC")
+    List<Object[]> findTopClickedMovies(Pageable pageable);
+
+    @Query("SELECT sh.searchQuery, COUNT(sh) as c FROM SearchHistory sh WHERE sh.resultCount = 0 GROUP BY sh.searchQuery ORDER BY c DESC")
+    List<Object[]> findZeroResultQueries(Pageable pageable);
+
+    @Query("SELECT AVG(sh.latencyMs) FROM SearchHistory sh WHERE sh.latencyMs IS NOT NULL")
+    Double findAverageLatency();
+
+    List<SearchHistory> findByUserUserIdOrderByCreatedAtDesc(Integer userId);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query("DELETE FROM SearchHistory sh WHERE sh.searchId = :searchId AND sh.user.userId = :userId")
+    void deleteBySearchIdAndUserUserId(@Param("searchId") Long searchId, @Param("userId") Integer userId);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query("DELETE FROM SearchHistory sh WHERE sh.user.userId = :userId")
+    void deleteByUserUserId(@Param("userId") Integer userId);
 }

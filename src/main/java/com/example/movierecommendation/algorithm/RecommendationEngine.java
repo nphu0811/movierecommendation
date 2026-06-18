@@ -20,6 +20,8 @@ public class RecommendationEngine {
     @Autowired private WatchHistoryRepository watchHistoryRepository;
     @Autowired private MovieRepository movieRepository;
     @Autowired private SimilarMovieRepository similarMovieRepository;
+    @Autowired private UserPreferenceRepository userPreferenceRepository;
+    @Autowired private GenreRepository genreRepository;
 
     @org.springframework.beans.factory.annotation.Value("${recommendation.alpha:0.40}")
     private double alpha;
@@ -138,7 +140,7 @@ public class RecommendationEngine {
             }
             List<Movie> similar = new ArrayList<>(movieRepository.findSimilarByGenresExcludingUser(
                 targetGenreIds, targetMovie.getMovieId(), currentUserId, PageRequest.of(0, candidateLimit)));
-            similar.sort((a, b) -> Double.compare(genreOverlap(b, targetGenreIds), genreOverlap(a, targetGenreIds)));
+            similar.sort((a, b) -> Double.compare(calculateSimilarityScore(b, targetMovie), calculateSimilarityScore(a, targetMovie)));
             List<Movie> result = new ArrayList<>();
             for (int i = 0; i < Math.min(similarMoviesLimit, similar.size()); i++) result.add(similar.get(i));
             return result;
@@ -151,7 +153,7 @@ public class RecommendationEngine {
         }
 
         List<Movie> similar = new ArrayList<>(movieRepository.findByGenreIdsAndNotInIds(targetGenreIds, excludeIds, PageRequest.of(0, candidateLimit)));
-        similar.sort((a, b) -> Double.compare(genreOverlap(b, targetGenreIds), genreOverlap(a, targetGenreIds)));
+        similar.sort((a, b) -> Double.compare(calculateSimilarityScore(b, targetMovie), calculateSimilarityScore(a, targetMovie)));
 
         List<Movie> result = new ArrayList<>();
         for (int i = 0; i < Math.min(similarMoviesLimit, similar.size()); i++) result.add(similar.get(i));
@@ -219,47 +221,37 @@ public class RecommendationEngine {
                 genreProfile.merge(g.getGenreId(), r.getRating(), Double::sum);
             }
         }
-        List<WatchHistory> history = watchHistoryRepository.findByUserUserIdOrderByWatchedAtAsc(userId);
-        for (WatchHistory wh : history) {
-            Movie movie = wh.getMovie();
-            if (movie == null || movie.getGenres() == null) continue;
-            
-            // Base weight for having watched the movie
-            double weight = 1.0;
-            
-            // Increase weight based on time watched
-            if (wh.getWatchDuration() != null) {
-                if (wh.getWatchDuration() > 600) weight += 1.0;  // > 10 minutes
-                if (wh.getWatchDuration() > 3600) weight += 1.0; // > 1 hour
-            }
-            
-            // Significant weight for finishing or nearly finishing the movie
-            if (wh.getProgress() != null && wh.getProgress() > 80) {
-                weight += 2.0;
-            }
-            
-            for (Genre g : movie.getGenres()) {
-                genreProfile.merge(g.getGenreId(), weight, Double::sum);
+        if (genreProfile.isEmpty() && userId != null) {
+            Optional<UserPreference> prefOpt = userPreferenceRepository.findByUserUserId(userId);
+            if (prefOpt.isPresent()) {
+                UserPreference pref = prefOpt.get();
+                if (pref.getPreferredGenres() != null && !pref.getPreferredGenres().trim().isEmpty()) {
+                    String[] genres = pref.getPreferredGenres().split(",");
+                    for (String gStr : genres) {
+                        gStr = gStr.trim();
+                        if (!gStr.isEmpty()) {
+                            try {
+                                Integer gid = Integer.parseInt(gStr);
+                                genreProfile.put(gid, 5.0);
+                            } catch (NumberFormatException e) {
+                                Optional<Genre> dbGenre = genreRepository.findByGenreName(gStr);
+                                dbGenre.ifPresent(genre -> genreProfile.put(genre.getGenreId(), 5.0));
+                            }
+                        }
+                    }
+                }
             }
         }
         return genreProfile;
     }
 
-    // ── COLLABORATIVE ─────────────────────────────────────────────
-    // FIX: Không dùng findAll() — chỉ lấy ratings của neighbor users
-
-    private Map<Integer, Double> computeCollaborativeScores(Integer userId,
-                                                             List<Rating> userRatings) {
+    private Map<Integer, Double> computeCollaborativeScores(Integer userId, List<Rating> userRatings) {
         Map<Integer, Double> scores = new HashMap<>();
         if (userRatings.isEmpty()) return scores;
 
         Map<Integer, Double> targetVector = toRatingVector(userRatings);
-        Set<Integer> targetMovieIds = targetVector.keySet();
-
-        // Chỉ lấy users đã rate ít nhất 1 phim giống user hiện tại
-        // thay vì findAll() load toàn bộ DB
-        List<Integer> candidateUserIds = ratingRepository
-            .findUserIdsWithCommonMovies(new ArrayList<>(targetMovieIds), userId);
+        List<Integer> movieIds = new ArrayList<>(targetVector.keySet());
+        List<Integer> candidateUserIds = ratingRepository.findUserIdsWithCommonMovies(movieIds, userId);
 
         if (candidateUserIds.isEmpty()) return scores;
 
@@ -370,5 +362,84 @@ public class RecommendationEngine {
 
     private double getOrDefault(Map<Integer, Double> map, Integer key) {
         return map.getOrDefault(key, 0.0);
+    }
+
+    public double calculateSimilarityScore(Movie a, Movie b) {
+        // genre overlap
+        double genreOverlapVal = 0.0;
+        if (a.getGenres() != null && b.getGenres() != null && !a.getGenres().isEmpty() && !b.getGenres().isEmpty()) {
+            Set<Integer> setA = new HashSet<>();
+            for (Genre g : a.getGenres()) setA.add(g.getGenreId());
+            Set<Integer> setB = new HashSet<>();
+            for (Genre g : b.getGenres()) setB.add(g.getGenreId());
+            long intersect = setA.stream().filter(setB::contains).count();
+            Set<Integer> union = new HashSet<>(setA);
+            union.addAll(setB);
+            genreOverlapVal = (double) intersect / union.size();
+        }
+
+        // tag overlap
+        double tagOverlapVal = 0.0;
+        if (a.getTags() != null && b.getTags() != null && !a.getTags().isEmpty() && !b.getTags().isEmpty()) {
+            Set<String> setA = new HashSet<>();
+            for (Tag t : a.getTags()) if (t.getTag() != null) setA.add(t.getTag().toLowerCase().trim());
+            Set<String> setB = new HashSet<>();
+            for (Tag t : b.getTags()) if (t.getTag() != null) setB.add(t.getTag().toLowerCase().trim());
+            long intersect = setA.stream().filter(setB::contains).count();
+            Set<String> union = new HashSet<>(setA);
+            union.addAll(setB);
+            tagOverlapVal = union.isEmpty() ? 0.0 : (double) intersect / union.size();
+        }
+
+        // description keyword overlap
+        double keywordOverlapVal = 0.0;
+        if (a.getDescription() != null && b.getDescription() != null) {
+            Set<String> setA = extractKeywords(a.getDescription());
+            Set<String> setB = extractKeywords(b.getDescription());
+            long intersect = setA.stream().filter(setB::contains).count();
+            Set<String> union = new HashSet<>(setA);
+            union.addAll(setB);
+            keywordOverlapVal = union.isEmpty() ? 0.0 : (double) intersect / union.size();
+        }
+
+        // actor director overlap
+        double actorDirectorOverlapVal = 0.0;
+        Set<String> crewA = new HashSet<>();
+        if (a.getActorsText() != null) {
+            for (String act : a.getActorsText().split(",")) crewA.add(act.trim().toLowerCase());
+        }
+        if (a.getDirectorsText() != null) {
+            for (String dir : a.getDirectorsText().split(",")) crewA.add(dir.trim().toLowerCase());
+        }
+        Set<String> crewB = new HashSet<>();
+        if (b.getActorsText() != null) {
+            for (String act : b.getActorsText().split(",")) crewB.add(act.trim().toLowerCase());
+        }
+        if (b.getDirectorsText() != null) {
+            for (String dir : b.getDirectorsText().split(",")) crewB.add(dir.trim().toLowerCase());
+        }
+        if (!crewA.isEmpty() && !crewB.isEmpty()) {
+            long intersect = crewA.stream().filter(crewB::contains).count();
+            Set<String> union = new HashSet<>(crewA);
+            union.addAll(crewB);
+            actorDirectorOverlapVal = union.isEmpty() ? 0.0 : (double) intersect / union.size();
+        }
+
+        return genreOverlapVal * 0.5
+             + tagOverlapVal * 0.2
+             + keywordOverlapVal * 0.2
+             + actorDirectorOverlapVal * 0.1;
+    }
+
+    private Set<String> extractKeywords(String text) {
+        Set<String> words = new HashSet<>();
+        if (text == null) return words;
+        String[] split = text.toLowerCase().replaceAll("[^a-zA-Z0-9\\s]", "").split("\\s+");
+        for (String w : split) {
+            if (w.length() > 3) {
+                words.add(w);
+            }
+        }
+        return words;
     }
 }

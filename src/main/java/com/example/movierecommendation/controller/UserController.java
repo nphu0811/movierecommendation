@@ -1,8 +1,6 @@
 package com.example.movierecommendation.controller;
 
-import com.example.movierecommendation.entity.User;
-import com.example.movierecommendation.entity.WatchHistory;
-import com.example.movierecommendation.entity.Watchlist;
+import com.example.movierecommendation.entity.*;
 import com.example.movierecommendation.service.*;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,9 +27,20 @@ public class UserController {
     private InteractionService interactionService;
     @Autowired
     private RecommendationService recommendationService;
+    @Autowired
+    private com.example.movierecommendation.repository.UserPreferenceRepository userPreferenceRepository;
+    @Autowired
+    private com.example.movierecommendation.repository.SearchHistoryRepository searchHistoryRepository;
+    @Autowired
+    private com.example.movierecommendation.service.SearchHistoryService searchHistoryService;
+
+    @Autowired
+    private MovieService movieService;
 
     @GetMapping("/profile")
-    public String profile(@AuthenticationPrincipal UserDetails userDetails, Model model) {
+    public String profile(@AuthenticationPrincipal UserDetails userDetails,
+                          @RequestParam(name = "tab", required = false, defaultValue = "edit-profile") String activeTab,
+                          Model model) {
         User user = userService.getCurrentUser(userDetails.getUsername());
         model.addAttribute("currentUser", user);
         
@@ -48,6 +57,22 @@ public class UserController {
                 .ifPresent(wh -> progressMap.put(wl.getMovie().getMovieId(), wh.getProgress()));
         }
         model.addAttribute("progressMap", progressMap);
+
+        // Retrieve User Preferences
+        UserPreference pref = userPreferenceRepository.findByUserUserId(user.getUserId())
+            .orElseGet(() -> {
+                UserPreference p = new UserPreference();
+                p.setUser(user);
+                return p;
+            });
+        model.addAttribute("preferences", pref);
+        model.addAttribute("allGenres", movieService.getAllGenres());
+        
+        // Retrieve Search History
+        List<SearchHistory> searchHist = searchHistoryRepository.findByUserUserIdOrderByCreatedAtDesc(user.getUserId());
+        model.addAttribute("searchHistory", searchHist);
+        
+        model.addAttribute("activeTab", activeTab);
         
         return "user/profile";
     }
@@ -180,5 +205,102 @@ public class UserController {
 
         model.addAttribute("trending", recommendationService.getTrendingMoviesForUser(user.getUserId()));
         return "user/recommendations";
+    }
+
+    @GetMapping("/profile/preferences")
+    public String profilePreferencesRedirect() {
+        return "redirect:/user/profile?tab=preferences";
+    }
+
+    @PostMapping("/profile/preferences/update")
+    public String updatePreferences(@AuthenticationPrincipal UserDetails userDetails,
+                                    @RequestParam(name = "preferredGenres", required = false) List<String> preferredGenres,
+                                    @RequestParam(name = "dislikedGenres", required = false) List<String> dislikedGenres,
+                                    @RequestParam(name = "minRating", required = false) Double minRating,
+                                    @RequestParam(name = "preferNewReleases", defaultValue = "false") Boolean preferNewReleases,
+                                    @RequestParam(name = "preferTopRated", defaultValue = "false") Boolean preferTopRated,
+                                    RedirectAttributes redirect) {
+        User user = userService.getCurrentUser(userDetails.getUsername());
+        try {
+            UserPreference pref = userPreferenceRepository.findByUserUserId(user.getUserId())
+                .orElseGet(() -> {
+                    UserPreference p = new UserPreference();
+                    p.setUser(user);
+                    return p;
+                });
+            pref.setPreferredGenres(preferredGenres != null ? String.join(",", preferredGenres) : "");
+            pref.setDislikedGenres(dislikedGenres != null ? String.join(",", dislikedGenres) : "");
+            pref.setMinRating(minRating);
+            pref.setPreferNewReleases(preferNewReleases);
+            pref.setPreferTopRated(preferTopRated);
+            userPreferenceRepository.save(pref);
+
+            recommendationService.evictRecommendationsCache(user.getUserId());
+
+            redirect.addFlashAttribute("success", "Cập nhật sở thích cá nhân thành công!");
+        } catch (Exception e) {
+            redirect.addFlashAttribute("error", "Lỗi cập nhật sở thích: " + e.getMessage());
+        }
+        return "redirect:/user/profile?tab=preferences";
+    }
+
+    @DeleteMapping("/api/watch-history/{historyId}")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> deleteWatchHistory(
+            @PathVariable("historyId") Integer historyId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) return ResponseEntity.status(401).build();
+        User user = userService.getCurrentUser(userDetails.getUsername());
+        
+        interactionService.deleteWatchHistoryEntry(user.getUserId(), historyId);
+        
+        Map<String, Object> res = new HashMap<>();
+        res.put("success", true);
+        return ResponseEntity.ok(res);
+    }
+
+    @DeleteMapping("/api/watch-history/clear")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> clearWatchHistory(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) return ResponseEntity.status(401).build();
+        User user = userService.getCurrentUser(userDetails.getUsername());
+        
+        interactionService.clearWatchHistory(user.getUserId());
+        
+        Map<String, Object> res = new HashMap<>();
+        res.put("success", true);
+        return ResponseEntity.ok(res);
+    }
+
+    @DeleteMapping("/api/search-history/{searchId}")
+    @ResponseBody
+    @org.springframework.transaction.annotation.Transactional
+    public ResponseEntity<Map<String, Object>> deleteSearchHistory(
+            @PathVariable("searchId") Long searchId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) return ResponseEntity.status(401).build();
+        User user = userService.getCurrentUser(userDetails.getUsername());
+        
+        searchHistoryRepository.deleteBySearchIdAndUserUserId(searchId, user.getUserId());
+        
+        Map<String, Object> res = new HashMap<>();
+        res.put("success", true);
+        return ResponseEntity.ok(res);
+    }
+
+    @DeleteMapping("/api/search-history/clear")
+    @ResponseBody
+    @org.springframework.transaction.annotation.Transactional
+    public ResponseEntity<Map<String, Object>> clearSearchHistory(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) return ResponseEntity.status(401).build();
+        User user = userService.getCurrentUser(userDetails.getUsername());
+        
+        searchHistoryRepository.deleteByUserUserId(user.getUserId());
+        
+        Map<String, Object> res = new HashMap<>();
+        res.put("success", true);
+        return ResponseEntity.ok(res);
     }
 }

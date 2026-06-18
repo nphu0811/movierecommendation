@@ -136,12 +136,31 @@ java -jar build/libs/movierecommendation-*.jar
 
 Truy cập tại: **http://localhost:8080**
 
-### 👤 Tài Khoản Admin Test
+### 👤 Tài Khoản Test hệ thống
 
+#### Tài Khoản Admin
 ```
 Email:    admin@movierec.com
 Password: (liên hệ team lead)
 ```
+
+#### Tài Khoản Demo Người dùng (Phase 2 Seeded)
+Dưới đây là 3 tài khoản demo được tự động seed khi khởi động hệ thống để kiểm thử sự khác biệt trong thuật toán gợi ý phim:
+
+1. **User thích Hành động / Phiêu lưu (Action/Adventure)**
+   - Email: `action.demo@example.com`
+   - Mật khẩu: `123456`
+   - Trải nghiệm: Gợi ý các phim thiên về Hành động và lý do hiển thị theo gu Hành động.
+
+2. **User thích Hài hước / Lãng mạn (Comedy/Romance)**
+   - Email: `comedy.demo@example.com`
+   - Mật khẩu: `123456`
+   - Trải nghiệm: Gợi ý các phim thiên về Hài hước, Lãng mạn.
+
+3. **User mới tinh (New user - Cold Start)**
+   - Email: `new.demo@example.com`
+   - Mật khẩu: `123456`
+   - Trải nghiệm: Nhận gợi ý phổ biến (trending) hoặc theo thiết lập sở thích Preferences.
 
 ---
 
@@ -288,25 +307,47 @@ git push origin main
 
 ---
 
-## 🏗️ Architecture
+## 🏗️ Architecture & Recommendation Flow
 
-### Hybrid Recommendation Algorithm
+Hệ thống sử dụng cơ chế gợi ý lai (Hybrid Recommendation) kết hợp giữa các thuật toán lọc cộng tác (Collaborative Filtering), lọc dựa trên nội dung nâng cao (Content-Based Filtering) và độ phổ biến hệ thống (Popularity Score). 
+
+### Luồng xử lý thuật toán (Recommendation Flow)
 
 ```
-User Input
-    ↓
-├─→ Content-Based Filter (30%)
-│   └─→ Movie similarity (genre, actors, directors)
-├─→ Collaborative Filtering (50%)
-│   └─→ User behavior & preferences
-└─→ Popularity Score (20%)
-    └─→ Ratings, views, trending
-    ↓
-AI Enhancement (GPT-3.5)
-    └─→ Context-aware reasoning
-    ↓
-Final Ranked Recommendations
+[Rating + Lịch sử xem + Thể loại ưu thích + Độ phổ biến]
+                       ↓
+         ┌─────────────┼─────────────┐
+         ↓             ↓             ↓
+  [Content-based] [Collaborative] [Popularity]
+    Score (40%)     Score (40%)   Score (20%)
+         └─────────────┼─────────────┘
+                       ↓
+                [Hybrid Score]
+                       ↓
+           [Optional AI Chat Rerank]
+                       ↓
+          [Personalized Explanations]
 ```
+
+1. **Thu thập dữ liệu đầu vào**: Lịch sử đánh giá phim (ratings), lịch sử xem phim (watch history) và các tùy chọn sở thích (User Preferences) của người dùng.
+2. **Lọc dựa trên nội dung (Content-Based Score)**: 
+   - Xây dựng hồ sơ thể loại (Genre Profile) dựa trên các phim được đánh giá cao. Nếu lịch sử trống, hệ thống sẽ sử dụng thể loại yêu thích được khai báo trong `User Preferences` (để giải quyết bài toán khởi động lạnh - cold start).
+   - Lọc bỏ các thể loại nằm trong danh sách không thích (disliked genres).
+   - Tính toán độ tương tự tương đồng (Cosine/Jaccard Similarity) của phim dựa trên 4 yếu tố trọng số:
+     - Thể loại trùng lặp (Genre Overlap): 50%
+     - Tags trùng lặp (Tag Overlap): 20%
+     - Từ khóa nội dung (Description keyword overlap): 20%
+     - Đạo diễn & Diễn viên trùng lặp (Actor/Director overlap): 10%
+3. **Lọc cộng tác (Collaborative Filtering)**:
+   - Tìm kiếm các người dùng láng giềng tương đồng (k-Nearest Neighbors) có chung danh sách phim đã đánh giá.
+   - Tính Cosine Similarity giữa các vector rating của người dùng mục tiêu với các láng giềng.
+   - Dự đoán điểm đánh giá cho các phim chưa xem dựa trên điểm số của láng giềng có trọng số similarity.
+4. **Điểm phổ biến (Popularity Score)**:
+   - Tính toán điểm phổ biến dựa trên tổng lượt xem (rating count) của phim trên toàn hệ thống.
+5. **Điểm lai Hybrid (Hybrid Score)**:
+   - Điểm số cuối cùng = `alpha * ContentScore` + `beta * CollabScore` + `gamma * PopularityScore` (mặc định: 40% Content + 40% Collab + 20% Popularity).
+6. **AI Reranking (Tùy chọn)**:
+   - Khi sử dụng AI Chatbot, danh sách các phim phù hợp nhất sẽ được chuyển làm candidate gửi tới OpenAI GPT kèm theo ngữ cảnh sở thích của người dùng để chọn lọc, sắp xếp lại và đưa ra lý giải bằng ngôn ngữ tự nhiên.
 
 ### Security Flow
 

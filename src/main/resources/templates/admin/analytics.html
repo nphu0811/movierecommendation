@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Thống kê & Phân tích – Admin</title>
+  <link rel="icon" type="image/svg+xml" sizes="any" th:href="@{/favicon.svg(v=2)}"/>
+  <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body>
+<div class="admin-layout">
+  <div th:replace="~{fragments :: adminSidebar('analytics')}"></div>
+
+  <main class="admin-main">
+    <div class="admin-header" style="margin-bottom: 24px;">
+      <h1>Thống kê & Phân tích hệ thống</h1>
+      <p style="color:#6c757d;font-size:.875rem">Dữ liệu về lịch sử tìm kiếm, hành vi người dùng và nhật ký thuật toán gợi ý.</p>
+    </div>
+
+    <!-- Overview Stats Cards -->
+    <section class="stats-grid admin-stats-grid" style="margin-bottom: 30px;">
+      <article class="stat-card">
+        <div class="stat-icon"><i class="ph-fill ph-magnifying-glass" aria-hidden="true"></i></div>
+        <div>
+          <div class="stat-value" th:text="${totalSearches}">0</div>
+          <div class="stat-label">Tổng lượt tìm kiếm</div>
+        </div>
+      </article>
+      <article class="stat-card">
+        <div class="stat-icon"><i class="ph-fill ph-clock" aria-hidden="true"></i></div>
+        <div>
+          <div class="stat-value" th:text="${#numbers.formatDecimal(avgSearchLatency, 1, 1)} + ' ms'">0 ms</div>
+          <div class="stat-label">Độ trễ tìm kiếm TB</div>
+        </div>
+      </article>
+    </section>
+
+    <!-- Detailed Analytics Grid -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 24px; margin-bottom: 30px;">
+      
+      <!-- Top Search Keywords -->
+      <article class="admin-list-panel" style="margin: 0; padding: 20px;">
+        <div class="admin-panel-header" style="margin-bottom: 16px;">
+          <div>
+            <p class="admin-eyebrow">Search Behavior</p>
+            <h2>Từ khóa tìm kiếm phổ biến (30 ngày)</h2>
+          </div>
+          <i class="ph-fill ph-magnifying-glass" aria-hidden="true" style="font-size: 1.5rem; color: var(--red);"></i>
+        </div>
+        <div class="admin-ranked-list" th:if="${topSearches != null and !#lists.isEmpty(topSearches)}">
+          <div class="admin-ranked-item" th:each="trend, iter : ${topSearches}" style="display:flex; align-items:center; justify-content:space-between; padding:12px; border-bottom:1px solid rgba(255,255,255,0.05);">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <span class="admin-rank" th:text="${iter.index + 1}" style="width:24px; text-align:center; font-weight:bold; color:var(--red);">1</span>
+              <span th:text="${trend.query}" style="font-weight: 500;">keyword</span>
+            </div>
+            <span class="admin-score" th:text="${trend.count} + ' lượt'" style="background:rgba(255,255,255,0.05); padding:4px 8px; border-radius:12px; font-size:0.8rem; color:var(--text-secondary);">10</span>
+          </div>
+        </div>
+        <div class="admin-empty-line" th:if="${topSearches == null or #lists.isEmpty(topSearches)}" style="text-align:center; padding: 20px; color:var(--text-muted);">Không có dữ liệu tìm kiếm.</div>
+      </article>
+
+      <!-- Search zero results queries -->
+      <article class="admin-list-panel" style="margin: 0; padding: 20px;">
+        <div class="admin-panel-header" style="margin-bottom: 16px;">
+          <div>
+            <p class="admin-eyebrow">Search Failures</p>
+            <h2>Tìm kiếm không có kết quả</h2>
+          </div>
+          <i class="ph-fill ph-warning" aria-hidden="true" style="font-size: 1.5rem; color: var(--gold);"></i>
+        </div>
+        <div class="admin-ranked-list" th:if="${zeroResultQueries != null and !#lists.isEmpty(zeroResultQueries)}">
+          <div class="admin-ranked-item" th:each="row, iter : ${zeroResultQueries}" style="display:flex; align-items:center; justify-content:space-between; padding:12px; border-bottom:1px solid rgba(255,255,255,0.05);">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <span class="admin-rank" th:text="${iter.index + 1}" style="width:24px; text-align:center; font-weight:bold; color:var(--gold);">1</span>
+              <span th:text="${row[0]}" style="font-weight: 500;">query</span>
+            </div>
+            <span class="admin-score" th:text="${row[1]} + ' lần'" style="background:rgba(255,255,255,0.05); padding:4px 8px; border-radius:12px; font-size:0.8rem; color:var(--text-secondary);">10</span>
+          </div>
+        </div>
+        <div class="admin-empty-line" th:if="${zeroResultQueries == null or #lists.isEmpty(zeroResultQueries)}" style="text-align:center; padding: 20px; color:var(--text-muted);">Không có dữ liệu.</div>
+      </article>
+
+      <!-- Top Clicked Movies from search -->
+      <article class="admin-list-panel" style="margin: 0; padding: 20px;">
+        <div class="admin-panel-header" style="margin-bottom: 16px;">
+          <div>
+            <p class="admin-eyebrow">Click Tracking</p>
+            <h2>Phim được click nhiều từ Tìm kiếm</h2>
+          </div>
+          <i class="ph-fill ph-cursor-click" aria-hidden="true" style="font-size: 1.5rem; color: #22c55e;"></i>
+        </div>
+        <div class="admin-ranked-list" th:if="${topClickedMovies != null and !#lists.isEmpty(topClickedMovies)}">
+          <div class="admin-ranked-item" th:each="row, iter : ${topClickedMovies}" style="display:flex; align-items:center; justify-content:space-between; padding:12px; border-bottom:1px solid rgba(255,255,255,0.05);">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <span class="admin-rank" th:text="${iter.index + 1}" style="width:24px; text-align:center; font-weight:bold; color:#22c55e;">1</span>
+              <span th:text="${row[0]}" style="font-weight: 500;">movie title</span>
+            </div>
+            <span class="admin-score" th:text="${row[1]} + ' click'" style="background:rgba(255,255,255,0.05); padding:4px 8px; border-radius:12px; font-size:0.8rem; color:var(--text-secondary);">10</span>
+          </div>
+        </div>
+        <div class="admin-empty-line" th:if="${topClickedMovies == null or #lists.isEmpty(topClickedMovies)}" style="text-align:center; padding: 20px; color:var(--text-muted);">Không có dữ liệu.</div>
+      </article>
+
+      <!-- Algorithm Distribution -->
+      <article class="admin-list-panel" style="margin: 0; padding: 20px;">
+        <div class="admin-panel-header" style="margin-bottom: 16px;">
+          <div>
+            <p class="admin-eyebrow">Recommendation Metrics</p>
+            <h2>Phân bố thuật toán sử dụng</h2>
+          </div>
+          <i class="ph-fill ph-chart-pie-slice" aria-hidden="true" style="font-size: 1.5rem; color: #38bdf8;"></i>
+        </div>
+        <div class="admin-ranked-list" th:if="${algorithmDistribution != null and !#lists.isEmpty(algorithmDistribution)}">
+          <div class="admin-ranked-item" th:each="row, iter : ${algorithmDistribution}" style="display:flex; align-items:center; justify-content:space-between; padding:12px; border-bottom:1px solid rgba(255,255,255,0.05);">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <span class="admin-rank" th:text="${iter.index + 1}" style="width:24px; text-align:center; font-weight:bold; color:#38bdf8;">1</span>
+              <span th:text="${row[0]}" style="font-weight: 500;">Algorithm</span>
+            </div>
+            <span class="admin-score" th:text="${row[1]} + ' gợi ý'" style="background:rgba(255,255,255,0.05); padding:4px 8px; border-radius:12px; font-size:0.8rem; color:var(--text-secondary);">10</span>
+          </div>
+        </div>
+        <div class="admin-empty-line" th:if="${algorithmDistribution == null or #lists.isEmpty(algorithmDistribution)}" style="text-align:center; padding: 20px; color:var(--text-muted);">Không có dữ liệu thuật toán gợi ý.</div>
+      </article>
+
+      <!-- Top Recommended Movies -->
+      <article class="admin-list-panel" style="margin: 0; padding: 20px; grid-column: span 2;">
+        <div class="admin-panel-header" style="margin-bottom: 16px;">
+          <div>
+            <p class="admin-eyebrow">Recommendation Exposure</p>
+            <h2>Phim được gợi ý nhiều nhất hệ thống</h2>
+          </div>
+          <i class="ph-fill ph-sparkles" aria-hidden="true" style="font-size: 1.5rem; color: #ec4899;"></i>
+        </div>
+        <div class="admin-ranked-list" th:if="${topRecommended != null and !#lists.isEmpty(topRecommended)}">
+          <div class="admin-ranked-item" th:each="row, iter : ${topRecommended}" style="display:flex; align-items:center; justify-content:space-between; padding:12px; border-bottom:1px solid rgba(255,255,255,0.05);">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <span class="admin-rank" th:text="${iter.index + 1}" style="width:24px; text-align:center; font-weight:bold; color:#ec4899;">1</span>
+              <span th:text="${row[0]}" style="font-weight: 500;">Movie Title</span>
+            </div>
+            <span class="admin-score" th:text="${row[1]} + ' lượt xuất hiện'" style="background:rgba(255,255,255,0.05); padding:4px 8px; border-radius:12px; font-size:0.8rem; color:var(--text-secondary);">10</span>
+          </div>
+        </div>
+        <div class="admin-empty-line" th:if="${topRecommended == null or #lists.isEmpty(topRecommended)}" style="text-align:center; padding: 20px; color:var(--text-muted);">Không có dữ liệu gợi ý.</div>
+      </article>
+
+    </div>
+
+    <!-- Recommendation logs history -->
+    <article class="admin-list-panel" style="margin-bottom: 30px; padding: 20px;">
+      <div class="admin-panel-header" style="margin-bottom: 16px;">
+        <div>
+          <p class="admin-eyebrow">System Logs</p>
+          <h2>Nhật ký chạy thuật toán gợi ý gần đây</h2>
+        </div>
+        <i class="ph-fill ph-scroll" aria-hidden="true" style="font-size: 1.5rem; color: var(--text-secondary);"></i>
+      </div>
+      
+      <div style="overflow-x:auto;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Thời gian chạy</th>
+              <th>Thuật toán</th>
+              <th>Số phim gợi ý</th>
+              <th>Số user (Page)</th>
+              <th>Thời gian xử lý</th>
+              <th>Ghi chú</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="log : ${latestLogs}">
+              <td th:text="${log.logId}" style="color:#6c757d">1</td>
+              <td th:text="${log.generatedAt != null ? #temporals.format(log.generatedAt, 'dd/MM/yyyy HH:mm:ss') : '-'}" style="color:#b3b3b3">Date</td>
+              <td>
+                <span class="badge" th:classappend="${log.algorithmName == 'HYBRID_AI'} ? 'badge-success' : 'badge-info'"
+                      th:text="${log.algorithmName}">HYBRID</span>
+              </td>
+              <td th:text="${log.totalMovies}">10</td>
+              <td th:text="${log.totalUsers}">1</td>
+              <td th:text="${log.executionTimeMs} + ' ms'" style="font-weight: 600;">100 ms</td>
+              <td th:text="${log.notes}" style="color:#808080; font-size:0.85rem;">Notes</td>
+            </tr>
+            <tr th:if="${latestLogs.isEmpty()}">
+              <td colspan="7" style="text-align:center; padding: 20px; color:var(--text-muted);">Không có log chạy thuật toán.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+  </main>
+</div>
+
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>

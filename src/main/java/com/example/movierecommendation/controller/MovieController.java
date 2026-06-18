@@ -39,20 +39,31 @@ public class MovieController {
     @Autowired
     private InteractionService interactionService;
     @Autowired
-    private RecommendationService recommendationService;
-    @Autowired
     private UserService userService;
     @Autowired
     private MovieFacade movieFacade;
 
     @GetMapping("/movies")
-    public String listMovies(@RequestParam(name = "page", defaultValue = "0") int page,
+    public String listMovies(@RequestParam(name = "q", required = false) String q,
+                             @RequestParam(name = "genreId", required = false) Integer genreId,
+                             @RequestParam(name = "year", required = false) Integer year,
+                             @RequestParam(name = "minRating", required = false) Double minRating,
+                             @RequestParam(name = "sortBy", defaultValue = "newest") String sortBy,
+                             @RequestParam(name = "page", defaultValue = "0") int page,
                              @RequestParam(name = "size", defaultValue = "12") int size,
                              @AuthenticationPrincipal UserDetails userDetails,
                              Model model) {
-        Page<Movie> moviePage = movieService.getAllMovies(page, size);
+        Page<Movie> moviePage = movieService.getFilteredMovies(q, genreId, year, minRating, sortBy, page, size);
         model.addAttribute("moviePage", moviePage);
         model.addAttribute("allGenres", movieService.getAllGenres());
+        
+        // Pass filter values back to view
+        model.addAttribute("q", q);
+        model.addAttribute("genreId", genreId);
+        model.addAttribute("year", year);
+        model.addAttribute("minRating", minRating);
+        model.addAttribute("sortBy", sortBy);
+
         if (userDetails != null) {
             model.addAttribute("currentUser", userService.getCurrentUser(userDetails.getUsername()));
         }
@@ -71,7 +82,7 @@ public class MovieController {
         model.addAttribute("comments", dto.getComments());
         model.addAttribute("movieLink", dto.getMovieLink());
         model.addAttribute("topTags", dto.getTopTags() != null ? dto.getTopTags() : java.util.Collections.emptyList());
-        
+
         if (dto.getCurrentUser() != null) {
             model.addAttribute("currentUser", dto.getCurrentUser());
             model.addAttribute("userRating", dto.getUserRating());

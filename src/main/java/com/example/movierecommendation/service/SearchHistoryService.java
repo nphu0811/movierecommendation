@@ -197,4 +197,31 @@ public class SearchHistoryService {
             return Collections.emptyList();
         }
     }
+
+    public long countAllSearches() {
+        return searchHistoryRepository.count();
+    }
+
+    public Double getAverageSearchLatency() {
+        Double avg = searchHistoryRepository.findAverageLatency();
+        return avg != null ? avg : 0.0;
+    }
+
+    public List<Object[]> getTopClickedMovies(int limit) {
+        try {
+            return searchHistoryRepository.findTopClickedMovies(PageRequest.of(0, limit));
+        } catch (Exception e) {
+            logger.error("Failed to fetch top clicked movies", e);
+            return Collections.emptyList();
+        }
+    }
+
+    public List<Object[]> getZeroResultQueries(int limit) {
+        try {
+            return searchHistoryRepository.findZeroResultQueries(PageRequest.of(0, limit));
+        } catch (Exception e) {
+            logger.error("Failed to fetch zero result queries", e);
+            return Collections.emptyList();
+        }
+    }
 }

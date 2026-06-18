@@ -29,10 +29,83 @@ public class MovieService {
     private GenreRepository genreRepository;
     @Autowired
     private RatingRepository ratingRepository;
-
+    @Autowired
+    private jakarta.persistence.EntityManager entityManager;
 
     public Page<Movie> getAllMovies(int page, int size) {
         return movieRepository.findByDeletedAtIsNull(PageRequest.of(page, size, Sort.by("movieId").ascending()));
+    }
+
+    public Page<Movie> getFilteredMovies(String keyword, Integer genreId, Integer year, Double minRating, String sortBy, int page, int size) {
+        StringBuilder countJpql = new StringBuilder("SELECT COUNT(DISTINCT m) FROM Movie m LEFT JOIN m.genres g WHERE m.deletedAt IS NULL");
+        StringBuilder selectJpql = new StringBuilder("SELECT DISTINCT m FROM Movie m LEFT JOIN m.genres g WHERE m.deletedAt IS NULL");
+        
+        Map<String, Object> params = new HashMap<>();
+        StringBuilder filterConditions = new StringBuilder();
+
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            filterConditions.append(" AND (LOWER(m.title) LIKE LOWER(:keyword) ")
+                            .append("OR LOWER(g.genreName) LIKE LOWER(:keyword) ")
+                            .append("OR LOWER(m.description) LIKE LOWER(:keyword) ")
+                            .append("OR LOWER(m.actorsText) LIKE LOWER(:keyword) ")
+                            .append("OR LOWER(m.directorsText) LIKE LOWER(:keyword))");
+            params.put("keyword", "%" + keyword.trim().toLowerCase() + "%");
+        }
+
+        if (genreId != null) {
+            filterConditions.append(" AND g.genreId = :genreId");
+            params.put("genreId", genreId);
+        }
+
+        if (year != null) {
+            filterConditions.append(" AND m.releaseYear = :year");
+            params.put("year", year);
+        }
+
+        if (minRating != null) {
+            filterConditions.append(" AND m.averageRating >= :minRating");
+            params.put("minRating", minRating);
+        }
+
+        countJpql.append(filterConditions);
+        selectJpql.append(filterConditions);
+
+        // Sorting
+        String orderClause = " ORDER BY m.movieId ASC"; // default
+        if (sortBy != null) {
+            switch (sortBy) {
+                case "newest":
+                    orderClause = " ORDER BY m.createdAt DESC, m.movieId ASC";
+                    break;
+                case "top_rated":
+                    orderClause = " ORDER BY m.averageRating DESC, m.movieId ASC";
+                    break;
+                case "most_watched":
+                    orderClause = " ORDER BY m.ratingCount DESC, m.movieId ASC";
+                    break;
+                case "title_az":
+                    orderClause = " ORDER BY m.title ASC, m.movieId ASC";
+                    break;
+                case "release_year":
+                    orderClause = " ORDER BY m.releaseYear DESC, m.movieId ASC";
+                    break;
+            }
+        }
+        selectJpql.append(orderClause);
+
+        // Execute count query
+        jakarta.persistence.TypedQuery<Long> countQuery = entityManager.createQuery(countJpql.toString(), Long.class);
+        params.forEach(countQuery::setParameter);
+        long totalElements = countQuery.getSingleResult();
+
+        // Execute select query with pagination
+        jakarta.persistence.TypedQuery<Movie> selectQuery = entityManager.createQuery(selectJpql.toString(), Movie.class);
+        params.forEach(selectQuery::setParameter);
+        selectQuery.setFirstResult(page * size);
+        selectQuery.setMaxResults(size);
+        List<Movie> content = selectQuery.getResultList();
+
+        return new org.springframework.data.domain.PageImpl<>(content, PageRequest.of(page, size), totalElements);
     }
 
     private void enrichWithRatings(List<Movie> movies) {

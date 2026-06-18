@@ -5,10 +5,10 @@ import com.example.movierecommendation.entity.RecommendationLog;
 import com.example.movierecommendation.entity.Movie;
 import com.example.movierecommendation.entity.User;
 import com.example.movierecommendation.entity.UserRecommendation;
-import com.example.movierecommendation.repository.MovieRepository;
-import com.example.movierecommendation.repository.RecommendationLogRepository;
-import com.example.movierecommendation.repository.UserRecommendationRepository;
-import com.example.movierecommendation.repository.UserRepository;
+import com.example.movierecommendation.entity.Rating;
+import com.example.movierecommendation.entity.WatchHistory;
+import com.example.movierecommendation.entity.Genre;
+import com.example.movierecommendation.repository.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +30,8 @@ public class RecommendationService {
     @Autowired private UserRepository userRepository;
     @Autowired private UserRecommendationRepository userRecommendationRepository;
     @Autowired private RecommendationLogRepository recommendationLogRepository;
+    @Autowired private RatingRepository ratingRepository;
+    @Autowired private WatchHistoryRepository watchHistoryRepository;
 
     private List<Movie> removeExcludedMovies(Integer userId, List<Movie> movies) {
         if (movies == null || movies.isEmpty()) return movies == null ? Collections.emptyList() : movies;
@@ -54,6 +56,7 @@ public class RecommendationService {
         List<Movie> result = hybrid;
 
         if (!openAIService.isEnabled()) {
+            populateExplanations(userId, result, Collections.emptySet());
             persistRecommendations(userId, "HYBRID", result, started, "OpenAI disabled");
             return result;
         }
@@ -64,6 +67,7 @@ public class RecommendationService {
             List<String> aiTitles = openAIService.getAIRecommendedTitles(userId, candidates);
 
             if (aiTitles == null || aiTitles.isEmpty()) {
+                populateExplanations(userId, result, Collections.emptySet());
                 persistRecommendations(userId, "HYBRID", result, started, "OpenAI returned no titles");
                 return result;
             }
@@ -98,13 +102,81 @@ public class RecommendationService {
             }
 
             result = limitSize(removeExcludedMovies(userId, merged), 20);
+            populateExplanations(userId, result, new HashSet<>(aiTitles));
             persistRecommendations(userId, "HYBRID_AI", result, started, "Generated with OpenAI reranking");
             return result;
 
         } catch (Exception e) {
             log.warn("AI recommendation fallback for user {}: {}", userId, e.getMessage());
+            populateExplanations(userId, result, Collections.emptySet());
             persistRecommendations(userId, "HYBRID", result, started, "AI fallback: " + e.getMessage());
             return result;
+        }
+    }
+
+    public void populateExplanations(Integer userId, List<Movie> movies, Set<String> aiTitles) {
+        if (movies == null || movies.isEmpty()) return;
+
+        // Get user ratings and watch history
+        List<Rating> ratings = ratingRepository.findByUserUserId(userId);
+        List<WatchHistory> history = watchHistoryRepository.findByUserUserIdOrderByWatchedAtAsc(userId);
+        
+        // If user is new (no history)
+        boolean hasHistory = !ratings.isEmpty() || !history.isEmpty();
+
+        // Top genres the user likes
+        Map<Integer, Double> genreProfile = new HashMap<>();
+        for (Rating r : ratings) {
+            Movie movie = r.getMovie();
+            if (movie == null || movie.getGenres() == null) continue;
+            for (Genre g : movie.getGenres()) {
+                genreProfile.merge(g.getGenreId(), r.getRating(), Double::sum);
+            }
+        }
+        for (WatchHistory wh : history) {
+            Movie movie = wh.getMovie();
+            if (movie == null || movie.getGenres() == null) continue;
+            double weight = 1.0;
+            if (wh.getProgress() != null && wh.getProgress() > 80) weight += 2.0;
+            for (Genre g : movie.getGenres()) {
+                genreProfile.merge(g.getGenreId(), weight, Double::sum);
+            }
+        }
+
+        // Sort genres by weight to find favorite genres
+        List<Map.Entry<Integer, Double>> favoriteGenres = new ArrayList<>(genreProfile.entrySet());
+        favoriteGenres.sort((a, b) -> Double.compare(b.getValue(), a.getValue()));
+        Set<Integer> topGenreIds = new HashSet<>();
+        for (int i = 0; i < Math.min(3, favoriteGenres.size()); i++) {
+            topGenreIds.add(favoriteGenres.get(i).getKey());
+        }
+
+        for (Movie m : movies) {
+            if (aiTitles != null && aiTitles.stream().anyMatch(t -> t.equalsIgnoreCase(m.getTitle()) || m.getTitle().toLowerCase().contains(t.toLowerCase()))) {
+                m.setRecommendationReason("Vì AI chọn phim này phù hợp với sở thích của bạn.");
+                continue;
+            }
+
+            if (!hasHistory) {
+                m.setRecommendationReason("Vì phim này đang phổ biến và được đánh giá cao trên hệ thống.");
+                continue;
+            }
+
+            // Check genre overlap
+            List<String> matchingGenres = new ArrayList<>();
+            if (m.getGenres() != null) {
+                for (Genre g : m.getGenres()) {
+                    if (topGenreIds.contains(g.getGenreId())) {
+                        matchingGenres.add(g.getGenreName());
+                    }
+                }
+            }
+
+            if (!matchingGenres.isEmpty()) {
+                m.setRecommendationReason("Vì bạn đã xem/đánh giá cao nhiều phim thuộc thể loại " + String.join(", ", matchingGenres) + ".");
+            } else {
+                m.setRecommendationReason("Vì những người dùng có gu giống bạn cũng đánh giá cao phim này.");
+            }
         }
     }
 
@@ -170,5 +242,37 @@ public class RecommendationService {
     public List<Movie> getNewReleases() {
         return movieRepository.findNewMoviesNotWatched(
             Collections.singletonList(-1), PageRequest.of(0, 10));
+    }
+
+    public List<RecommendationLog> getLatestRecommendationLogs(int limit) {
+        try {
+            return recommendationLogRepository.findAll(PageRequest.of(0, limit, org.springframework.data.domain.Sort.by("generatedAt").descending())).getContent();
+        } catch (Exception e) {
+            log.error("Failed to fetch latest recommendation logs", e);
+            return Collections.emptyList();
+        }
+    }
+
+    public List<Object[]> getTopRecommendedMovies(int limit) {
+        try {
+            return userRecommendationRepository.findTopRecommendedMovies(PageRequest.of(0, limit));
+        } catch (Exception e) {
+            log.error("Failed to fetch top recommended movies", e);
+            return Collections.emptyList();
+        }
+    }
+
+    public List<Object[]> getAlgorithmDistribution() {
+        try {
+            return userRecommendationRepository.findAlgorithmDistribution();
+        } catch (Exception e) {
+            log.error("Failed to fetch algorithm distribution", e);
+            return Collections.emptyList();
+        }
+    }
+
+    @org.springframework.cache.annotation.CacheEvict(value = "recommendations", key = "#userId")
+    public void evictRecommendationsCache(Integer userId) {
+        log.info("Evicted recommendations cache for user {}", userId);
     }
 }

@@ -8,6 +8,103 @@
   <title>My Profile - MovieRec</title>
   <link rel="icon" type="image/svg+xml" sizes="any" th:href="@{/favicon.svg(v=2)}"/>
   <link rel="stylesheet" th:href="@{/css/style.css}"/>
+  <style>
+    .genre-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 10px;
+      margin-top: 8px;
+      margin-bottom: var(--space-4);
+    }
+    .genre-checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--black);
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all var(--t-fast) var(--ease);
+      user-select: none;
+    }
+    .genre-checkbox-label:hover {
+      border-color: var(--border-hover);
+      background: rgba(255,255,255,0.02);
+    }
+    .genre-checkbox-label input {
+      accent-color: var(--red);
+      cursor: pointer;
+    }
+    .history-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: var(--space-4);
+    }
+    .history-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--black);
+      border: 1px solid var(--border);
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      transition: all var(--t-fast) var(--ease);
+    }
+    .history-item:hover {
+      border-color: var(--border-hover);
+    }
+    .history-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .history-keyword {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--white);
+    }
+    .history-date {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+    .delete-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 8px;
+      transition: color var(--t-fast) var(--ease);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .delete-btn:hover {
+      color: var(--red);
+    }
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: var(--space-3);
+    }
+    .checkbox-group label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      color: var(--text-secondary);
+    }
+    .checkbox-group input {
+      accent-color: var(--red);
+      width: 16px;
+      height: 16px;
+    }
+  </style>
 </head>
 <body>
 <div th:replace="~{fragments :: navbar}"></div>
@@ -54,8 +151,19 @@
         <i class="ph-bold ph-lock-key" aria-hidden="true"></i>
         Password
       </button>
+      <button type="button" class="tab-btn" role="tab" aria-selected="false"
+              onclick="switchTab('user-preferences', this)">
+        <i class="ph-bold ph-sliders" aria-hidden="true"></i>
+        Preferences
+      </button>
+      <button type="button" class="tab-btn" role="tab" aria-selected="false"
+              onclick="switchTab('search-history', this)">
+        <i class="ph-bold ph-magnifying-glass" aria-hidden="true"></i>
+        Search History
+      </button>
     </div>
 
+    <!-- Panel: Edit Profile -->
     <section id="edit-profile" class="tab-content profile-panel">
       <div class="profile-panel-card">
         <div class="profile-panel-header">
@@ -106,6 +214,7 @@
       </div>
     </section>
 
+    <!-- Panel: Password -->
     <section id="change-password" class="tab-content profile-panel" style="display:none">
       <div class="profile-panel-card">
         <div class="profile-panel-header">
@@ -144,6 +253,98 @@
           </div>
           <button type="submit" class="btn btn-primary">Update Password</button>
         </form>
+      </div>
+    </section>
+
+    <!-- Panel: User Preferences -->
+    <section id="user-preferences" class="tab-content profile-panel" style="display:none">
+      <div class="profile-panel-card">
+        <div class="profile-panel-header">
+          <div>
+            <p class="profile-kicker">Cá nhân hóa</p>
+            <h2>Sở thích của tôi</h2>
+          </div>
+          <i class="ph-fill ph-sliders-horizontal" aria-hidden="true"></i>
+        </div>
+
+        <form th:action="@{/user/profile/preferences/update}" method="post" class="profile-form">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+          
+          <div class="form-group">
+            <label class="form-label">Thể loại yêu thích</label>
+            <div class="genre-grid">
+              <label th:each="genre : ${allGenres}" class="genre-checkbox-label">
+                <input type="checkbox" name="preferredGenres" th:value="${genre.genreName}"
+                       th:checked="${preferences.preferredGenres != null and #strings.contains(preferences.preferredGenres, genre.genreName)}"/>
+                <span th:text="${genre.genreName}">Action</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Thể loại không thích</label>
+            <div class="genre-grid">
+              <label th:each="genre : ${allGenres}" class="genre-checkbox-label">
+                <input type="checkbox" name="dislikedGenres" th:value="${genre.genreName}"
+                       th:checked="${preferences.dislikedGenres != null and #strings.contains(preferences.dislikedGenres, genre.genreName)}"/>
+                <span th:text="${genre.genreName}">Romance</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Điểm đánh giá tối thiểu thường xem (1-5)</label>
+            <input type="number" step="0.1" name="minRating" class="form-control" th:value="${preferences.minRating}" placeholder="Ví dụ: 4.0" min="1" max="5"/>
+          </div>
+
+          <div class="checkbox-group">
+            <label>
+              <input type="checkbox" name="preferNewReleases" value="true" th:checked="${preferences.preferNewReleases}"/>
+              Ưu tiên phim mới phát hành
+            </label>
+          </div>
+
+          <div class="checkbox-group">
+            <label>
+              <input type="checkbox" name="preferTopRated" value="true" th:checked="${preferences.preferTopRated}"/>
+              Ưu tiên phim được đánh giá cao
+            </label>
+          </div>
+
+          <button type="submit" class="btn btn-primary">Lưu sở thích</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- Panel: Search History -->
+    <section id="search-history" class="tab-content profile-panel" style="display:none">
+      <div class="profile-panel-card">
+        <div class="profile-panel-header">
+          <div>
+            <p class="profile-kicker">Quyền riêng tư</p>
+            <h2>Lịch sử tìm kiếm</h2>
+          </div>
+          <button type="button" class="btn btn-secondary" onclick="clearSearchHistory()">
+            <i class="ph-bold ph-trash" style="margin-right:4px"></i> Xóa tất cả
+          </button>
+        </div>
+        <p class="form-note">Dưới đây là danh sách các từ khóa bạn đã tìm kiếm gần đây. Bạn có thể xóa từng mục hoặc xóa toàn bộ lịch sử.</p>
+
+        <div th:if="${searchHistory == null or searchHistory.isEmpty()}" class="empty-state">
+          <p>Lịch sử tìm kiếm trống.</p>
+        </div>
+
+        <ul class="history-list" th:if="${searchHistory != null and !searchHistory.isEmpty()}">
+          <li th:each="sh : ${searchHistory}" th:id="'search-item-' + ${sh.searchId}" class="history-item">
+            <div class="history-info">
+              <span class="history-keyword" th:text="${sh.searchQuery}">Keyword</span>
+              <span class="history-date" th:text="${#temporals.format(sh.createdAt, 'dd/MM/yyyy HH:mm')}">Date</span>
+            </div>
+            <button class="delete-btn" th:onclick="'deleteSearchHistory(' + ${sh.searchId} + ')'" aria-label="Xóa">
+              <i class="ph-bold ph-trash"></i>
+            </button>
+          </li>
+        </ul>
       </div>
     </section>
   </th:block>
@@ -261,9 +462,65 @@ async function handleSendCode(btnId, url) {
   }
 }
 
+async function deleteSearchHistory(id) {
+  if (!confirm('Bạn có chắc chắn muốn xóa lịch sử tìm kiếm này?')) return;
+  try {
+    const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+    const res = await fetch(`/user/api/search-history/${id}`, {
+      method: 'DELETE',
+      headers: {
+        [csrfHeader]: csrfToken
+      }
+    });
+    if (res.ok) {
+      const el = document.getElementById(`search-item-${id}`);
+      if (el) el.remove();
+      showToast('Xóa thành công!', 'success');
+    } else {
+      showToast('Không thể xóa mục này', 'error');
+    }
+  } catch (e) {
+    showToast('Lỗi kết nối server', 'error');
+  }
+}
+
+async function clearSearchHistory() {
+  if (!confirm('Bạn có chắc chắn muốn xóa toàn bộ lịch sử tìm kiếm?')) return;
+  try {
+    const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+    const res = await fetch('/user/api/search-history/clear', {
+      method: 'DELETE',
+      headers: {
+        [csrfHeader]: csrfToken
+      }
+    });
+    if (res.ok) {
+      const items = document.querySelectorAll('.history-item');
+      items.forEach(el => el.remove());
+      showToast('Đã xóa toàn bộ lịch sử tìm kiếm!', 'success');
+      window.location.reload();
+    } else {
+      showToast('Lỗi khi xóa lịch sử', 'error');
+    }
+  } catch (e) {
+    showToast('Lỗi kết nối server', 'error');
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   manageCountdown('sendEmailBtn');
   manageCountdown('sendPassBtn');
+
+  // Handle active tab switching from Thymeleaf
+  var initialTab = /*[[${activeTab}]]*/ 'edit-profile';
+  if (initialTab && initialTab !== 'edit-profile') {
+    var tabBtn = document.querySelector(`.tab-btn[onclick*="${initialTab}"]`);
+    if (tabBtn) {
+      switchTab(initialTab, tabBtn);
+    }
+  }
 });
 /*]]>*/
 </script>

@@ -43,9 +43,10 @@ public class OpenAIService {
 
     private WebClient getWebClient() {
         if (webClient == null) {
+            String cleanKey = apiKey != null ? apiKey.replace("\"", "").trim() : "";
             webClient = WebClient.builder()
                 .baseUrl("https://api.openai.com/v1")
-                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
+                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + cleanKey)
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .build();
         }
@@ -53,9 +54,10 @@ public class OpenAIService {
     }
 
     public boolean isEnabled() {
-        boolean enabled = apiKey != null && !apiKey.trim().isEmpty();
+        String cleanKey = apiKey != null ? apiKey.replace("\"", "").trim() : "";
+        boolean enabled = !cleanKey.isEmpty();
         if (enabled && log.isDebugEnabled()) {
-             log.debug("OpenAI API is enabled. Key: {}***", apiKey.substring(0, Math.min(4, apiKey.length())));
+             log.debug("OpenAI API is enabled. Key: {}***", cleanKey.substring(0, Math.min(4, cleanKey.length())));
         }
         return enabled;
     }

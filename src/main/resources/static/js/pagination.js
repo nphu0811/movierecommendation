@@ -6,7 +6,9 @@ function initPagination(containerId, baseUrl) {
   var total   = parseInt(container.getAttribute('data-total'));
 
   function buildUrl(p) {
-    return baseUrl + '?page=' + p; // ✅ dynamic URL
+    var urlObj = new URL(window.location.href);
+    urlObj.searchParams.set('page', p);
+    return urlObj.pathname + urlObj.search;
   }
 
   function btn(page, label, cls) {
@@ -69,7 +71,6 @@ function initPagination(containerId, baseUrl) {
     'display:flex;align-items:center;justify-content:center;gap:.35rem;margin-top:2.5rem;flex-wrap:wrap';
 }
 
-// ✅ FIX jumpTo để reusable
 function jumpTo(containerId, baseUrl) {
   var container = document.getElementById(containerId);
   var input = document.getElementById(containerId + '-jump');
@@ -78,6 +79,8 @@ function jumpTo(containerId, baseUrl) {
   var total = parseInt(container.getAttribute('data-total'));
 
   if (val >= 1 && val <= total) {
-    window.location.href = baseUrl + '?page=' + (val - 1);
+    var urlObj = new URL(window.location.href);
+    urlObj.searchParams.set('page', val - 1);
+    window.location.href = urlObj.pathname + urlObj.search;
   }
 }

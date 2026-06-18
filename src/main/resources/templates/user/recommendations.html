@@ -59,9 +59,15 @@
             th:text="${#lists.size(recommendations)} + ' picks'"></span>
     </div>
     <div class="movies-grid">
-      <div th:each="movie, iter : ${recommendations}" style="position:relative">
+      <div th:each="movie, iter : ${recommendations}" class="movie-card-wrapper" style="position:relative; display: flex; flex-direction: column;">
         <div class="rec-badge" th:text="'#' + ${iter.index + 1}">#1</div>
         <div th:replace="~{fragments :: movieCard(${movie})}"></div>
+        <div class="rec-explanation" th:if="${movie.recommendationReason != null}" style="margin-top: 8px; text-align: center;">
+          <span class="explanation-trigger">
+            <i class="ph-bold ph-info" style="vertical-align: middle;"></i> Vì sao gợi ý?
+          </span>
+          <div class="explanation-tooltip" th:text="${movie.recommendationReason}">Lý do gợi ý</div>
+        </div>
       </div>
     </div>
   </div>
