@@ -92,6 +92,9 @@ public interface MovieRepository extends JpaRepository<Movie, Integer> {
 
     Page<Movie> findByDeletedAtIsNull(Pageable pageable);
 
+    @Query("SELECT m FROM Movie m WHERE m.deletedAt IS NULL ORDER BY m.ratingCount DESC")
+    List<Movie> findTopMoviesByRatingCount(Pageable pageable);
+
     @Query("SELECT m FROM Movie m WHERE m.deletedAt IS NULL AND m.movieId NOT IN :watchedIds ORDER BY m.createdAt DESC")
     List<Movie> findNewMoviesNotWatched(@Param("watchedIds") List<Integer> watchedIds, Pageable pageable);
 

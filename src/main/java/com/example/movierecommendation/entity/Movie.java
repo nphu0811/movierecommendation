@@ -62,6 +62,9 @@ public class Movie {
     @Transient
     private String recommendationReason;
 
+    @Transient
+    private Double hybridScore = 0.0;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "movie_genres",
@@ -158,6 +161,9 @@ public class Movie {
 
     public String getRecommendationReason() { return recommendationReason; }
     public void setRecommendationReason(String recommendationReason) { this.recommendationReason = recommendationReason; }
+
+    public Double getHybridScore() { return hybridScore != null ? hybridScore : 0.0; }
+    public void setHybridScore(Double hybridScore) { this.hybridScore = hybridScore; }
 
     public String getActorsText() { return actorsText; }
     public void setActorsText(String actorsText) { this.actorsText = actorsText; }

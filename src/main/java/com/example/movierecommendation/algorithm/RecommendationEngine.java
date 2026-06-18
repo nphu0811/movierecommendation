@@ -110,6 +110,9 @@ public class RecommendationEngine {
 
         List<Movie> movies = new ArrayList<>(movieRepository.findAllByIdWithGenres(topIds));
         final Map<Integer, Double> finalScoreMap = scoreMap;
+        for (Movie m : movies) {
+            m.setHybridScore(getOrDefault(finalScoreMap, m.getMovieId()));
+        }
         movies.sort((a, b) -> Double.compare(
             getOrDefault(finalScoreMap, b.getMovieId()),
             getOrDefault(finalScoreMap, a.getMovieId())

@@ -70,13 +70,13 @@ public class AiSummaryAndChatTest {
         Movie movie = new Movie();
         movie.setTitle("The Matrix");
         movie.setGenres(Collections.emptyList());
+        movie.setDescription("Neo learns the truth about reality.");
         
         String response = chatService.chatAboutVideo(null, movie, "Hãy tóm tắt video này");
         assertNotNull(response);
-        assertTrue(response.contains("[00:00]"));
-        assertTrue(response.contains("[01:15]"));
-        assertTrue(response.contains("[02:45]"));
+        assertTrue(response.contains("chưa có dữ liệu transcript"));
         assertTrue(response.contains("The Matrix"));
+        assertTrue(response.contains("Neo learns the truth"));
     }
 
     @Test

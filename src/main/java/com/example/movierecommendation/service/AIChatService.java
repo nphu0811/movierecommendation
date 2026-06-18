@@ -39,6 +39,7 @@ public class AIChatService {
     @Autowired private UserPreferenceRepository userPreferenceRepository;
     @Autowired private ChatIntentClassifier intentClassifier;
     @Autowired private ChatHelpService chatHelpService;
+    @Autowired @org.springframework.context.annotation.Lazy private AIChatService self;
 
     private WebClient webClient;
 
@@ -59,22 +60,13 @@ public class AIChatService {
         return !cleanKey.isEmpty();
     }
 
-    @Transactional
     public ChatResponse recommendMovies(User user, String userMessage) {
         ChatIntent intent = intentClassifier.classify(userMessage);
         
         if (intent == ChatIntent.OUT_OF_SCOPE) {
             String reply = chatHelpService.getHelpResponse(ChatIntent.OUT_OF_SCOPE, userMessage);
-            try {
-                AIChatLog chatLog = new AIChatLog();
-                chatLog.setUser(user);
-                chatLog.setMessage(userMessage);
-                chatLog.setResponseSummary(reply);
-                chatLog.setCreatedAt(LocalDateTime.now());
-                aiChatLogRepository.save(chatLog);
-            } catch (Exception e) {
-                log.warn("Failed to save AI Chat log for help response: {}", e.getMessage());
-            }
+            if (self != null) self.saveChatLogOnly(user, userMessage, reply);
+            else saveChatLogOnly(user, userMessage, reply);
             return new ChatResponse("TEXT", reply, Collections.emptyList());
         }
 
@@ -89,26 +81,14 @@ public class AIChatService {
                 || normalized.contains("phim bat hu") || normalized.contains("phim pho bien");
                 
         if (candidates.isEmpty() && isGeneralRecommendation) {
-            candidates = movieRepository.findAll().stream()
-                .filter(m -> m.getDeletedAt() == null)
-                .sorted((a, b) -> Integer.compare(b.getRatingCount(), a.getRatingCount()))
-                .limit(25)
-                .collect(Collectors.toList());
+            candidates = movieRepository.findTopMoviesByRatingCount(PageRequest.of(0, 25));
         }
 
         // If candidates are empty and OpenAI is NOT enabled, handle standard fallback
         if (candidates.isEmpty() && !isEnabled()) {
             String reply = String.format("Rất tiếc, hiện tại hệ thống không tìm thấy bộ phim nào phù hợp với yêu cầu hoặc từ khóa '%s'. Bạn hãy thử tìm kiếm bằng tên phim hoặc thể loại khác nhé!", userMessage);
-            try {
-                AIChatLog chatLog = new AIChatLog();
-                chatLog.setUser(user);
-                chatLog.setMessage(userMessage);
-                chatLog.setResponseSummary(reply);
-                chatLog.setCreatedAt(LocalDateTime.now());
-                aiChatLogRepository.save(chatLog);
-            } catch (Exception e) {
-                log.warn("Failed to save AI Chat log for empty search: {}", e.getMessage());
-            }
+            if (self != null) self.saveChatLogOnly(user, userMessage, reply);
+            else saveChatLogOnly(user, userMessage, reply);
             return new ChatResponse("TEXT", reply, Collections.emptyList());
         }
 
@@ -226,13 +206,6 @@ public class AIChatService {
 
         if (responseContent != null && !responseContent.trim().isEmpty()) {
             try {
-                // Find JSON part in case AI output text around it
-                int start = responseContent.indexOf('{');
-                int end = responseContent.lastIndexOf('}');
-                if (start >= 0 && end > start) {
-                    responseContent = responseContent.substring(start, end + 1);
-                }
-                
                 JsonNode root = mapper.readTree(responseContent);
                 if (root.has("type")) {
                     responseType = root.get("type").asText("TEXT");
@@ -309,30 +282,10 @@ public class AIChatService {
         }
 
         // 5. Save logs to Database
-        try {
-            AIChatLog chatLog = new AIChatLog();
-            chatLog.setUser(user);
-            chatLog.setMessage(userMessage);
-            chatLog.setResponseSummary(reply);
-            chatLog.setCreatedAt(LocalDateTime.now());
-            AIChatLog savedLog = aiChatLogRepository.save(chatLog);
-
-            List<AIChatRecommendationItem> items = new ArrayList<>();
-            for (int i = 0; i < recommendedMovies.size(); i++) {
-                MovieCardDto mDto = recommendedMovies.get(i);
-                Movie movie = candidateMap.get(mDto.getMovieId());
-                if (movie != null) {
-                    AIChatRecommendationItem item = new AIChatRecommendationItem();
-                    item.setChatLog(savedLog);
-                    item.setMovie(movie);
-                    item.setReason(mDto.getReason());
-                    item.setRankOrder(i + 1);
-                    items.add(item);
-                }
-            }
-            aiChatRecommendationItemRepository.saveAll(items);
-        } catch (Exception e) {
-            log.warn("Failed to save AI Chat log: {}", e.getMessage());
+        if (self != null) {
+            self.saveChatLogAndRecommendations(user, userMessage, reply, recommendedMovies, candidateMap);
+        } else {
+            saveChatLogAndRecommendations(user, userMessage, reply, recommendedMovies, candidateMap);
         }
 
         return new ChatResponse(responseType, reply, recommendedMovies);
@@ -391,12 +344,58 @@ public class AIChatService {
     private String callOpenAI(String prompt) {
         try {
             Map<String, Object> body = new HashMap<>();
-            body.put("model", "gpt-3.5-turbo");
+            body.put("model", "gpt-4o-mini");
             body.put("max_tokens", 800);
             body.put("temperature", 0.7);
             body.put("messages", List.of(
                 Map.of("role", "user", "content", prompt)
             ));
+
+            // Structured Outputs JSON Schema
+            Map<String, Object> responseFormat = new HashMap<>();
+            responseFormat.put("type", "json_schema");
+            
+            Map<String, Object> jsonSchema = new HashMap<>();
+            jsonSchema.put("name", "chat_response");
+            jsonSchema.put("strict", true);
+            
+            Map<String, Object> schema = new HashMap<>();
+            schema.put("type", "object");
+            
+            Map<String, Object> properties = new HashMap<>();
+            
+            Map<String, Object> typeProp = new HashMap<>();
+            typeProp.put("type", "string");
+            typeProp.put("enum", List.of("TEXT", "MOVIE_CARDS"));
+            properties.put("type", typeProp);
+            
+            Map<String, Object> replyProp = new HashMap<>();
+            replyProp.put("type", "string");
+            properties.put("reply", replyProp);
+            
+            Map<String, Object> moviesProp = new HashMap<>();
+            moviesProp.put("type", "array");
+            
+            Map<String, Object> movieItem = new HashMap<>();
+            movieItem.put("type", "object");
+            
+            Map<String, Object> itemProps = new HashMap<>();
+            itemProps.put("movieId", Map.of("type", "integer"));
+            itemProps.put("reason", Map.of("type", "string"));
+            movieItem.put("properties", itemProps);
+            movieItem.put("required", List.of("movieId", "reason"));
+            movieItem.put("additionalProperties", false);
+            
+            moviesProp.put("items", movieItem);
+            properties.put("movies", moviesProp);
+            
+            schema.put("properties", properties);
+            schema.put("required", List.of("type", "reply", "movies"));
+            schema.put("additionalProperties", false);
+            
+            jsonSchema.put("schema", schema);
+            responseFormat.put("json_schema", jsonSchema);
+            body.put("response_format", responseFormat);
 
             String response = getWebClient().post()
                 .uri("/chat/completions")
@@ -446,8 +445,8 @@ public class AIChatService {
                     "1. Trả lời câu hỏi của người dùng bằng tiếng Việt, thân thiện, tự nhiên.\n" +
                     "2. Nếu câu hỏi liên quan đến nội dung, thông tin, phân tích phim:\n" +
                     "   - Hãy trả lời chính xác dựa trên thông tin phim.\n" +
-                    "   - Khi thảo luận các phân cảnh/khoảnh khắc của phim/video, hãy đính kèm các mốc thời gian dưới dạng [MM:SS] (ví dụ: [00:00], [01:15], [02:30]) để người dùng có thể click vào tua video.\n" +
-                    "   - Nếu họ yêu cầu tóm tắt video/phim, hãy trả về danh sách các mốc thời gian chia nhỏ video thành các phần như: Giới thiệu (00:00 - 00:45), Diễn biến (00:45 - 01:30), Cao trào (01:30 - 02:30), Kết thúc (02:30 - hết) với mô tả chi tiết bằng tiếng Việt.\n" +
+                    "   - LƯU Ý QUAN TRỌNG: Hiện tại hệ thống không có dữ liệu transcript hoặc mốc thời gian (timeline) thực tế của video/trailer này. Do đó, nếu người dùng hỏi về các phân cảnh cụ thể tại mốc thời gian nào, hoặc yêu cầu tóm tắt video theo dòng thời gian (timeline/timestamp), bạn phải lịch sự thông báo là hệ thống chưa hỗ trợ dữ liệu timeline/transcript cho video này và không được tự tiện bịa đặt các mốc thời gian ảo (hallucinate timestamps).\n" +
+                    "   - Thay vào đó, hãy tóm tắt nội dung và cốt truyện của bộ phim dựa trên phần mô tả phim được cung cấp.\n" +
                     "3. Nếu họ chào hỏi hoặc hỏi về tính năng website, hãy trả lời và hướng dẫn họ một cách thân thiện (ví dụ cách đăng ký/đăng nhập, cách đổi mật khẩu, cách đánh giá phim, cách quản lý Watchlist...).\n" +
                     "4. KHÔNG sử dụng các định dạng markdown phức tạp khác ngoại trừ danh sách và in đậm. Đảm bảo mốc thời gian có dạng [MM:SS] hoặc MM:SS.",
                     movie.getTitle(),
@@ -458,7 +457,7 @@ public class AIChatService {
                 );
 
                 Map<String, Object> body = new HashMap<>();
-                body.put("model", "gpt-3.5-turbo");
+                body.put("model", "gpt-4o-mini");
                 body.put("max_tokens", 500);
                 body.put("temperature", 0.7);
                 body.put("messages", List.of(
@@ -489,13 +488,10 @@ public class AIChatService {
         if (isSummaryRequest) {
             String title = movie.getTitle();
             return String.format(
-                "### Bản tóm tắt dòng thời gian video phim **%s**:\n\n" +
-                "- **[00:00]**: Khởi đầu video giới thiệu bối cảnh chính của phim và tông màu chủ đạo.\n" +
-                "- **[00:40]**: Giới thiệu các nhân vật chính và hé lộ một phần cuộc sống thường nhật của họ.\n" +
-                "- **[01:15]**: Điểm nút thắt xung đột đầu tiên diễn ra, đẩy các nhân vật vào tình huống bất ngờ.\n" +
-                "- **[02:00]**: Chuỗi phân cảnh kịch tính, những pha hành động đỉnh cao hoặc cao trào cảm xúc.\n" +
-                "- **[02:45]**: Đoạn kết trailer với logo phim chính thức, nhạc phim bùng nổ và thông điệp gửi gắm của bộ phim.",
-                title
+                "Hiện tại hệ thống chưa có dữ liệu transcript hoặc dòng thời gian chính xác cho video của bộ phim **%s**.\n\n" +
+                "Tuy nhiên, dựa trên mô tả, bộ phim xoay quanh: %s",
+                title,
+                movie.getDescription() != null ? movie.getDescription() : "Nội dung phim chưa được cập nhật chi tiết."
             );
         } else {
             if (intentClassifier != null && chatHelpService != null) {
@@ -606,5 +602,50 @@ public class AIChatService {
         java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
         String result = pattern.matcher(temp).replaceAll("");
         return result.replaceAll("[đĐ]", "d");
+    }
+
+    @Transactional
+    public void saveChatLogOnly(User user, String userMessage, String reply) {
+        try {
+            AIChatLog chatLog = new AIChatLog();
+            chatLog.setUser(user);
+            chatLog.setMessage(userMessage);
+            chatLog.setResponseSummary(reply);
+            chatLog.setCreatedAt(LocalDateTime.now());
+            aiChatLogRepository.save(chatLog);
+        } catch (Exception e) {
+            log.warn("Failed to save AI Chat log: {}", e.getMessage());
+        }
+    }
+
+    @Transactional
+    public void saveChatLogAndRecommendations(User user, String userMessage, String reply, 
+                                             List<MovieCardDto> recommendedMovies, 
+                                             Map<Integer, Movie> candidateMap) {
+        try {
+            AIChatLog chatLog = new AIChatLog();
+            chatLog.setUser(user);
+            chatLog.setMessage(userMessage);
+            chatLog.setResponseSummary(reply);
+            chatLog.setCreatedAt(LocalDateTime.now());
+            AIChatLog savedLog = aiChatLogRepository.save(chatLog);
+
+            List<AIChatRecommendationItem> items = new ArrayList<>();
+            for (int i = 0; i < recommendedMovies.size(); i++) {
+                MovieCardDto mDto = recommendedMovies.get(i);
+                Movie movie = candidateMap.get(mDto.getMovieId());
+                if (movie != null) {
+                    AIChatRecommendationItem item = new AIChatRecommendationItem();
+                    item.setChatLog(savedLog);
+                    item.setMovie(movie);
+                    item.setReason(mDto.getReason());
+                    item.setRankOrder(i + 1);
+                    items.add(item);
+                }
+            }
+            aiChatRecommendationItemRepository.saveAll(items);
+        } catch (Exception e) {
+            log.warn("Failed to save AI Chat log: {}", e.getMessage());
+        }
     }
 }

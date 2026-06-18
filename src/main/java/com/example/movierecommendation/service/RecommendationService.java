@@ -32,6 +32,7 @@ public class RecommendationService {
     @Autowired private RecommendationLogRepository recommendationLogRepository;
     @Autowired private RatingRepository ratingRepository;
     @Autowired private WatchHistoryRepository watchHistoryRepository;
+    @Autowired @org.springframework.context.annotation.Lazy private RecommendationService self;
 
     private List<Movie> removeExcludedMovies(Integer userId, List<Movie> movies) {
         if (movies == null || movies.isEmpty()) return movies == null ? Collections.emptyList() : movies;
@@ -49,7 +50,6 @@ public class RecommendationService {
         return new ArrayList<>(list.subList(0, max));
     }
 
-    @Transactional
     public List<Movie> getPersonalizedRecommendations(Integer userId) {
         long started = System.currentTimeMillis();
         List<Movie> hybrid = removeExcludedMovies(userId, engine.getRecommendations(userId));
@@ -57,40 +57,30 @@ public class RecommendationService {
 
         if (!openAIService.isEnabled()) {
             populateExplanations(userId, result, Collections.emptySet());
-            persistRecommendations(userId, "HYBRID", result, started, "OpenAI disabled");
+            self.persistRecommendations(userId, "HYBRID", result, started, "OpenAI disabled");
             return result;
         }
 
         try {
-            List<Movie> candidates = movieRepository.findMostWatchedMoviesExcludingUserInteractions(
-                userId, PageRequest.of(0, 20));
-            List<String> aiTitles = openAIService.getAIRecommendedTitles(userId, candidates);
+            List<Integer> aiMovieIds = openAIService.getAIRecommendedMovieIds(userId, hybrid);
 
-            if (aiTitles == null || aiTitles.isEmpty()) {
+            if (aiMovieIds == null || aiMovieIds.isEmpty()) {
                 populateExplanations(userId, result, Collections.emptySet());
-                persistRecommendations(userId, "HYBRID", result, started, "OpenAI returned no titles");
+                self.persistRecommendations(userId, "HYBRID", result, started, "OpenAI returned no movie IDs");
                 return result;
             }
 
             // Use structured lookup Map
-            Map<String, Movie> titleIndex = new HashMap<>();
-            for (Movie m : candidates) {
-                titleIndex.put(m.getTitle().toLowerCase(), m);
+            Map<Integer, Movie> movieMap = new HashMap<>();
+            for (Movie m : hybrid) {
+                movieMap.put(m.getMovieId(), m);
             }
 
             List<Movie> aiMovies = new ArrayList<>();
             Set<Integer> seen = new HashSet<>();
 
-            for (String title : aiTitles) {
-                String key = title.toLowerCase();
-                Movie match = titleIndex.get(key);
-                if (match == null) {
-                    match = titleIndex.entrySet().stream()
-                        .filter(e -> e.getKey().contains(key) || key.contains(e.getKey()))
-                        .map(Map.Entry::getValue)
-                        .findFirst()
-                        .orElse(null);
-                }
+            for (Integer movieId : aiMovieIds) {
+                Movie match = movieMap.get(movieId);
                 if (match != null && seen.add(match.getMovieId())) {
                     aiMovies.add(match);
                 }
@@ -102,19 +92,19 @@ public class RecommendationService {
             }
 
             result = limitSize(removeExcludedMovies(userId, merged), 20);
-            populateExplanations(userId, result, new HashSet<>(aiTitles));
-            persistRecommendations(userId, "HYBRID_AI", result, started, "Generated with OpenAI reranking");
+            populateExplanations(userId, result, new HashSet<>(aiMovieIds));
+            self.persistRecommendations(userId, "HYBRID_AI", result, started, "Generated with OpenAI reranking");
             return result;
 
         } catch (Exception e) {
             log.warn("AI recommendation fallback for user {}: {}", userId, e.getMessage());
             populateExplanations(userId, result, Collections.emptySet());
-            persistRecommendations(userId, "HYBRID", result, started, "AI fallback: " + e.getMessage());
+            self.persistRecommendations(userId, "HYBRID", result, started, "AI fallback: " + e.getMessage());
             return result;
         }
     }
 
-    public void populateExplanations(Integer userId, List<Movie> movies, Set<String> aiTitles) {
+    public void populateExplanations(Integer userId, List<Movie> movies, Set<Integer> aiMovieIds) {
         if (movies == null || movies.isEmpty()) return;
 
         // Get user ratings and watch history
@@ -152,7 +142,7 @@ public class RecommendationService {
         }
 
         for (Movie m : movies) {
-            if (aiTitles != null && aiTitles.stream().anyMatch(t -> t.equalsIgnoreCase(m.getTitle()) || m.getTitle().toLowerCase().contains(t.toLowerCase()))) {
+            if (aiMovieIds != null && aiMovieIds.contains(m.getMovieId())) {
                 m.setRecommendationReason("Vì AI chọn phim này phù hợp với sở thích của bạn.");
                 continue;
             }
@@ -180,7 +170,8 @@ public class RecommendationService {
         }
     }
 
-    private void persistRecommendations(Integer userId, String algorithmType, List<Movie> movies, long started, String notes) {
+    @Transactional
+    public void persistRecommendations(Integer userId, String algorithmType, List<Movie> movies, long started, String notes) {
         try {
             User user = userRepository.findById(userId).orElse(null);
             if (user != null) {

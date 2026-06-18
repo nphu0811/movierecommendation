@@ -1,8 +1,6 @@
 package com.example.movierecommendation.service;
 
-import com.example.movierecommendation.entity.Movie;
-import com.example.movierecommendation.entity.Rating;
-import com.example.movierecommendation.entity.WatchHistory;
+import com.example.movierecommendation.entity.*;
 import com.example.movierecommendation.repository.RatingRepository;
 import com.example.movierecommendation.repository.WatchHistoryRepository;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -68,7 +66,7 @@ public class OpenAIService {
             String prompt = String.format("Hãy tóm tắt phim '%s' dựa trên mô tả: '%s'. Tóm tắt bằng tiếng Việt, khoảng 2-3 câu ngắn gọn, lôi cuốn, không có lời mở đầu hay kết luận.", title, description);
             
             Map<String, Object> body = new HashMap<>();
-            body.put("model", "gpt-3.5-turbo");
+            body.put("model", "gpt-4o-mini");
             body.put("max_tokens", 300);
             body.put("temperature", 0.7);
             body.put("messages", List.of(
@@ -94,7 +92,7 @@ public class OpenAIService {
         }
     }
 
-    public List<String> getAIRecommendedTitles(Integer userId, List<Movie> allMovies) {
+    public List<Integer> getAIRecommendedMovieIds(Integer userId, List<Movie> allMovies) {
         if (!isEnabled()) return Collections.emptyList();
 
         try {
@@ -109,14 +107,14 @@ public class OpenAIService {
 
             // Check cache trước khi gọi API
             String cacheKey = String.valueOf(prompt.hashCode());
-            List<String> cached = getFromCache(cacheKey);
+            List<Integer> cached = getFromCache(cacheKey);
             if (cached != null) {
                 log.debug("Cache hit for user {}", userId);
                 return cached;
             }
 
             // Gọi OpenAI bằng WebClient (non-blocking với timeout)
-            List<String> result = callOpenAIAsync(prompt);
+            List<Integer> result = callOpenAIAsync(prompt);
 
             // Lưu vào cache
             if (!result.isEmpty()) {
@@ -132,7 +130,6 @@ public class OpenAIService {
 
     // Prompt ngắn gọn - giảm 60-70% token so với cũ
     private String buildCompactPrompt(List<Rating> ratings, List<WatchHistory> history, List<Movie> allMovies) {
-        // Lấy top 5 phim được rated cao nhất
         List<String> loved = ratings.stream()
             .filter(r -> r.getRating() >= 4 && r.getMovie() != null)
             .sorted((a, b) -> Double.compare(b.getRating(), a.getRating()))
@@ -140,57 +137,84 @@ public class OpenAIService {
             .map(r -> r.getMovie().getTitle())
             .collect(Collectors.toList());
 
-        // Lấy top 3 phim disliked
         List<String> disliked = ratings.stream()
             .filter(r -> r.getRating() <= 2 && r.getMovie() != null)
             .limit(3)
             .map(r -> r.getMovie().getTitle())
             .collect(Collectors.toList());
 
-        if (loved.isEmpty() && history.isEmpty()) return null;
+        if (loved.isEmpty() && history.isEmpty() && allMovies.isEmpty()) return null;
 
-        // Build set phim đã xem để loại ra khỏi candidates
-        Set<Integer> watchedIds = new HashSet<>();
-        history.forEach(wh -> { if (wh.getMovie() != null) watchedIds.add(wh.getMovie().getMovieId()); });
-        ratings.forEach(r -> { if (r.getMovie() != null) watchedIds.add(r.getMovie().getMovieId()); });
-
-        // Chỉ gửi 20 phim candidates (đủ để AI chọn), loại phim đã xem
-        List<String> candidates = allMovies.stream()
-            .filter(m -> !watchedIds.contains(m.getMovieId()))
-            .limit(20)
-            .map(Movie::getTitle)
-            .collect(Collectors.toList());
-
-        if (candidates.isEmpty()) return null;
-
-        // Prompt cực ngắn - đủ context, không thừa
         StringBuilder sb = new StringBuilder();
-        sb.append("Liked: ").append(String.join(", ", loved)).append("\n");
-        if (!disliked.isEmpty()) sb.append("Disliked: ").append(String.join(", ", disliked)).append("\n");
-        sb.append("Pick 5 from: ").append(String.join(", ", candidates)).append("\n");
-        sb.append("Return JSON array only: [\"title1\",\"title2\",\"title3\",\"title4\",\"title5\"]");
+        sb.append("User Preferences:\n");
+        sb.append("- Liked Movies: ").append(loved.isEmpty() ? "None" : String.join(", ", loved)).append("\n");
+        if (!disliked.isEmpty()) {
+            sb.append("- Disliked Movies: ").append(String.join(", ", disliked)).append("\n");
+        }
+        sb.append("\nCandidates (Hybrid recommendations with scores and metadata):\n");
+        for (Movie m : allMovies) {
+            String genres = m.getGenres() != null ? m.getGenres().stream().map(Genre::getGenreName).collect(Collectors.joining(", ")) : "N/A";
+            String desc = m.getDescription();
+            if (desc != null && desc.length() > 150) {
+                desc = desc.substring(0, 147) + "...";
+            } else if (desc == null) {
+                desc = "No description available.";
+            }
+            sb.append(String.format(
+                "- MovieID: %d | Title: %s | Year: %s | Genres: [%s] | Rating: %.1f | Hybrid Score: %.3f | Desc: %s\n",
+                m.getMovieId(), m.getTitle(), m.getReleaseYear() != null ? String.valueOf(m.getReleaseYear()) : "N/A",
+                genres, m.getAverageRating(), m.getHybridScore(), desc
+            ));
+        }
+        sb.append("\nTask:\n");
+        sb.append("Based on the user's liked and disliked movies, rerank and select the top 5 most suitable movies from the candidates list above.\n");
+        sb.append("Return the response matching the specified JSON Schema containing only the selected movieIds.");
 
         return sb.toString();
     }
 
-    // Non-blocking call dùng WebClient với timeout
-    private List<String> callOpenAIAsync(String prompt) {
+    private List<Integer> callOpenAIAsync(String prompt) {
         try {
             Map<String, Object> body = new HashMap<>();
-            body.put("model", "gpt-3.5-turbo");
-            body.put("max_tokens", 100); // Giới hạn output - đủ cho 5 tên phim
-            body.put("temperature", 0.5); // Giảm randomness -> nhanh hơn, ổn định hơn
+            body.put("model", "gpt-4o-mini");
+            body.put("max_tokens", 150);
+            body.put("temperature", 0.3);
             body.put("messages", List.of(
                 Map.of("role", "user", "content", prompt)
             ));
+
+            // Enforce Structured Outputs
+            Map<String, Object> responseFormat = new HashMap<>();
+            responseFormat.put("type", "json_schema");
+            
+            Map<String, Object> jsonSchema = new HashMap<>();
+            jsonSchema.put("name", "movie_recommendations");
+            jsonSchema.put("strict", true);
+            
+            Map<String, Object> schema = new HashMap<>();
+            schema.put("type", "object");
+            
+            Map<String, Object> properties = new HashMap<>();
+            Map<String, Object> movieIdsProp = new HashMap<>();
+            movieIdsProp.put("type", "array");
+            movieIdsProp.put("items", Map.of("type", "integer"));
+            properties.put("movieIds", movieIdsProp);
+            
+            schema.put("properties", properties);
+            schema.put("required", List.of("movieIds"));
+            schema.put("additionalProperties", false);
+            
+            jsonSchema.put("schema", schema);
+            responseFormat.put("json_schema", jsonSchema);
+            body.put("response_format", responseFormat);
 
             String response = getWebClient().post()
                 .uri("/chat/completions")
                 .bodyValue(body)
                 .retrieve()
                 .bodyToMono(String.class)
-                .timeout(Duration.ofSeconds(4)) // Timeout 4s
-                .block(); // Block ở đây vì controller dùng MVC (không phải Reactive)
+                .timeout(Duration.ofSeconds(4))
+                .block();
 
             if (response == null) return Collections.emptyList();
 
@@ -198,7 +222,14 @@ public class OpenAIService {
             String content = root.at("/choices/0/message/content").asText("").trim();
             if (content.isEmpty()) return Collections.emptyList();
 
-            return parseTitleArray(content);
+            List<Integer> ids = new ArrayList<>();
+            JsonNode contentNode = mapper.readTree(content);
+            if (contentNode.has("movieIds") && contentNode.get("movieIds").isArray()) {
+                for (JsonNode node : contentNode.get("movieIds")) {
+                    ids.add(node.asInt());
+                }
+            }
+            return ids;
 
         } catch (Exception e) {
             if (e.getCause() instanceof java.util.concurrent.TimeoutException) {
@@ -210,7 +241,8 @@ public class OpenAIService {
         }
     }
 
-    private List<String> getFromCache(String key) {
+    @SuppressWarnings("unchecked")
+    private <T> List<T> getFromCache(String key) {
         Object[] entry = cache.get(key);
         if (entry == null) return null;
         long timestamp = (long) entry[1];
@@ -218,35 +250,11 @@ public class OpenAIService {
             cache.remove(key);
             return null;
         }
-        //noinspection unchecked
-        return (List<String>) entry[0];
+        return (List<T>) entry[0];
     }
 
-    private void putInCache(String key, List<String> value) {
-        // Giới hạn cache size tránh OOM
+    private <T> void putInCache(String key, List<T> value) {
         if (cache.size() > 500) cache.clear();
         cache.put(key, new Object[]{value, System.currentTimeMillis()});
-    }
-
-    private List<String> parseTitleArray(String json) {
-        List<String> titles = new ArrayList<>();
-        try {
-            // Tìm JSON array trong response
-            int start = json.indexOf('[');
-            int end = json.lastIndexOf(']');
-            if (start >= 0 && end > start) {
-                json = json.substring(start, end + 1);
-            }
-            JsonNode arr = mapper.readTree(json);
-            if (arr.isArray()) {
-                for (JsonNode node : arr) {
-                    String title = node.asText().trim();
-                    if (!title.isEmpty()) titles.add(title);
-                }
-            }
-        } catch (Exception e) {
-            log.debug("JSON parse fallback: {}", e.getMessage());
-        }
-        return titles;
     }
 }

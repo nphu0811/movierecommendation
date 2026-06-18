@@ -49,7 +49,7 @@ public class RecommendationExplanationTest {
         m1.setTitle("AI Movie");
         List<Movie> recommended = List.of(m1);
 
-        recommendationService.populateExplanations(1, recommended, Set.of("AI Movie"));
+        recommendationService.populateExplanations(1, recommended, Set.of(101));
 
         assertEquals("Vì AI chọn phim này phù hợp với sở thích của bạn.", m1.getRecommendationReason());
     }
