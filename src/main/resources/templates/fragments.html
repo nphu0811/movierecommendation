@@ -9,7 +9,6 @@
   <div class="nav-links">
     <a href="/" th:classappend="${#strings.equals(activeMenu,'home')} ? 'active'">Home</a>
     <a href="/movies" th:classappend="${#strings.equals(activeMenu,'movies')} ? 'active'">Movies</a>
-    <a href="/?chat=1" th:classappend="${#strings.equals(activeMenu,'aichat')} ? 'active'">AI Chat</a>
     <a href="/user/recommendations" th:if="${currentUser != null}"
        th:classappend="${#strings.equals(activeMenu,'rec')} ? 'active'">For You</a>
   </div>
