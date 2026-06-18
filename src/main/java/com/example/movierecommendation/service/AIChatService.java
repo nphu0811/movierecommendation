@@ -384,10 +384,8 @@ public class AIChatService {
         }
 
         // Fallback or Rule-based response
-        String title = movie.getTitle();
-        String genres = movie.getGenres() != null ? movie.getGenres().stream().map(Genre::getGenreName).collect(Collectors.joining(", ")) : "Chưa rõ";
-        
         if (isSummaryRequest) {
+            String title = movie.getTitle();
             return String.format(
                 "### Bản tóm tắt dòng thời gian video phim **%s**:\n\n" +
                 "- **[00:00]**: Khởi đầu video giới thiệu bối cảnh chính của phim và tông màu chủ đạo.\n" +
@@ -398,16 +396,84 @@ public class AIChatService {
                 title
             );
         } else {
-            // General movie QA fallback
-            return String.format(
-                "Chào bạn! Bộ phim **%s** là một tác phẩm thuộc thể loại *%s*. \n\n" +
-                "Dựa trên thông tin của phim, đây là một số điểm nổi bật trong video:\n" +
-                "- Từ **[00:00]** đến **[00:50]**: Thích hợp để xem giới thiệu tổng quan nhân vật.\n" +
-                "- Tại **[01:20]**: Bắt đầu giai đoạn kịch tính nhất của trailer phim.\n" +
-                "- Ở **[02:30]**: Cao trào bộ phim mở ra trước khi kết thúc trailer.\n\n" +
-                "Nếu bạn muốn mình tóm tắt chi tiết hơn hoặc có câu hỏi cụ thể nào khác về nội dung phim, hãy cứ hỏi nhé!",
-                title, genres
-            );
+            return getSmartFallbackResponse(movie, userMessage);
         }
+    }
+
+    private String getSmartFallbackResponse(Movie movie, String userMessage) {
+        String msgLower = userMessage.toLowerCase().trim();
+        String title = movie.getTitle();
+        String genres = movie.getGenres() != null ? movie.getGenres().stream().map(Genre::getGenreName).collect(Collectors.joining(", ")) : "Chưa rõ";
+        
+        // 1. Check for similar movies request
+        if (msgLower.contains("tương tự") || msgLower.contains("tuong tu") 
+                || msgLower.contains("giống") || msgLower.contains("giong")
+                || msgLower.contains("khác") || msgLower.contains("khac")
+                || msgLower.contains("đề xuất") || msgLower.contains("de xuat")
+                || msgLower.contains("recommend")) {
+            
+            List<Integer> genreIds = movie.getGenres() != null ? 
+                movie.getGenres().stream().map(Genre::getGenreId).collect(Collectors.toList()) : 
+                Collections.emptyList();
+            
+            List<Movie> similar;
+            if (!genreIds.isEmpty()) {
+                similar = movieRepository.findByGenreIdsAndNotInIds(genreIds, List.of(movie.getMovieId()), PageRequest.of(0, 5));
+            } else {
+                similar = Collections.emptyList();
+            }
+            
+            if (!similar.isEmpty()) {
+                StringBuilder sb = new StringBuilder();
+                sb.append(String.format("Dưới đây là một số phim tương tự cùng thể loại với **%s** mà bạn có thể quan tâm:\n\n", title));
+                for (Movie m : similar) {
+                    sb.append(String.format("- **%s** (%d) - Rating: %.1f\n", m.getTitle(), m.getReleaseYear(), m.getAverageRating()));
+                }
+                sb.append("\nBạn có thể nhấn vào các bộ phim này trên trang danh sách hoặc tìm kiếm chúng để xem thêm!");
+                return sb.toString();
+            } else {
+                return String.format("Hiện tại hệ thống chưa tìm thấy bộ phim nào tương tự với **%s**. Bạn hãy thử xem thêm các bộ phim khác cùng thể loại *%s* nhé!", title, genres);
+            }
+        }
+        
+        // 2. Check for description / overview / content
+        if (msgLower.contains("mô tả") || msgLower.contains("mo ta") 
+                || msgLower.contains("nội dung") || msgLower.contains("noi dung")
+                || msgLower.contains("cốt truyện") || msgLower.contains("cot truyen")
+                || msgLower.contains("about") || msgLower.contains("description")) {
+            return String.format("Bộ phim **%s** có nội dung tóm tắt như sau:\n\n%s", title, 
+                movie.getDescription() != null ? movie.getDescription() : "Không có mô tả chi tiết.");
+        }
+        
+        // 3. Check for release year
+        if (msgLower.contains("năm") || msgLower.contains("nam") 
+                || msgLower.contains("sản xuất") || msgLower.contains("san xuat")
+                || msgLower.contains("chiếu") || msgLower.contains("chieu")
+                || msgLower.contains("year") || msgLower.contains("release")) {
+            return String.format("Phim **%s** được phát hành vào năm **%d**.", title, movie.getReleaseYear());
+        }
+        
+        // 4. Check for rating
+        if (msgLower.contains("đánh giá") || msgLower.contains("danh gia") 
+                || msgLower.contains("điểm") || msgLower.contains("diem")
+                || msgLower.contains("rating") || msgLower.contains("sao")) {
+            return String.format("Phim **%s** hiện có điểm đánh giá trung bình là **%.1f/5** sao trên hệ thống.", title, movie.getAverageRating());
+        }
+
+        // 5. Check for genres
+        if (msgLower.contains("thể loại") || msgLower.contains("the loai") || msgLower.contains("genre")) {
+            return String.format("Phim **%s** thuộc các thể loại: *%s*.", title, genres);
+        }
+
+        // Default movie QA fallback
+        return String.format(
+            "Chào bạn! Bộ phim **%s** là một tác phẩm thuộc thể loại *%s*. \n\n" +
+            "Dựa trên thông tin của phim, đây là một số điểm nổi bật trong video:\n" +
+            "- Từ **[00:00]** đến **[00:50]**: Thích hợp để xem giới thiệu tổng quan nhân vật.\n" +
+            "- Tại **[01:20]**: Bắt đầu giai đoạn kịch tính nhất của trailer phim.\n" +
+            "- Ở **[02:30]**: Cao trào bộ phim mở ra trước khi kết thúc trailer.\n\n" +
+            "Nếu bạn muốn mình tóm tắt chi tiết hơn hoặc có câu hỏi cụ thể nào khác về nội dung phim, hãy cứ hỏi nhé!",
+            title, genres
+        );
     }
 }
