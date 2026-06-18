@@ -243,17 +243,7 @@ public class SeedDataService {
         });
     }
 
-    @org.springframework.context.event.EventListener(org.springframework.boot.context.event.ApplicationReadyEvent.class)
-    public void init() {
-        new Thread(() -> {
-            try {
-                Thread.sleep(1000);
-                seedDemoUsersAndInteractions();
-            } catch (Exception e) {
-                log.error("Failed to auto-seed demo users at startup: {}", e.getMessage());
-            }
-        }).start();
-    }
+
 
     @Transactional
     public void seedDemoUsersAndInteractions() {
