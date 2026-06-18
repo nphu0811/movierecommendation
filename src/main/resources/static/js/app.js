@@ -37,6 +37,7 @@
   // Dismiss preloader quickly (~1s)
   setTimeout(function() {
     preloader.classList.add('exit');
+    preloader.style.pointerEvents = 'none';
     setTimeout(function() {
       preloader.style.display = 'none';
     }, 800);

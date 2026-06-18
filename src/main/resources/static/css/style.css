@@ -168,7 +168,7 @@ ul { list-style: none; }
 
 .navbar {
   position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
-  height: 48px;
+  height: 80px;
   padding: 0 4%;
   display: flex; align-items: center; gap: 0;
   background: linear-gradient(to bottom, rgba(0,0,0,.88) 0%, rgba(0,0,0,0) 100%);
@@ -184,10 +184,10 @@ ul { list-style: none; }
   box-shadow: 0 1px 0 rgba(255,255,255,.06);
 }
 
-body { padding-top: 48px; }
+body { padding-top: 80px; }
 
 .navbar-brand {
-  font-size: 1.35rem;
+  font-size: 1.55rem;
   font-weight: 700;
   letter-spacing: -0.5px;
   color: var(--red);
@@ -199,11 +199,11 @@ body { padding-top: 48px; }
 .navbar-brand span { color: var(--white); }
 
 .nav-links {
-  display: flex; gap: var(--space-5); align-items: center;
+  display: flex; gap: var(--space-6); align-items: center;
   flex-shrink: 0;
 }
 .nav-links a {
-  font-size: .8rem; font-weight: 500;
+  font-size: .92rem; font-weight: 500;
   color: var(--text-secondary);
   transition: color var(--t-fast);
   position: relative;
@@ -234,11 +234,15 @@ body { padding-top: 48px; }
   margin-right: var(--space-3);
 }
 .search-icon-btn:hover { color: var(--white); background: rgba(255,255,255,.08); transform: scale(1.1); }
-.search-icon-btn svg { width: 18px; height: 18px; }
+.search-icon-btn svg { width: 20px; height: 20px; }
 
 .navbar-actions {
-  display: flex; align-items: center; gap: var(--space-2);
+  display: flex; align-items: center; gap: var(--space-3);
   flex-shrink: 0;
+}
+.navbar-actions .btn-sm {
+  padding: 8px var(--space-4);
+  font-size: .82rem;
 }
 
 /* Admin badge */
@@ -628,8 +632,8 @@ body.home-page .hero-section + .section {
   display: flex; align-items: flex-end;
   padding-bottom: var(--space-8);
   overflow: hidden;
-  margin-top: -48px;
-  padding-top: 48px;
+  margin-top: -80px;
+  padding-top: 80px;
   isolation: isolate;
 }
 .hero-bg {
@@ -2332,6 +2336,7 @@ textarea.form-control { resize: vertical; min-height: 100px; }
 }
 .preloader.exit {
   animation: preloaderSlideUp 0.9s cubic-bezier(.65,0,.35,1) forwards;
+  pointer-events: none;
 }
 
 .preloader-vignette {
@@ -2431,7 +2436,7 @@ textarea.form-control { resize: vertical; min-height: 100px; }
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
-  margin-top: -48px;
+  margin-top: -80px;
 }
 
 .hero-slide {
