@@ -587,7 +587,7 @@ body.home-page .hero-section + .section {
   font-size: .7rem; color: var(--gold); font-weight: 600;
 }
 
-   ============================================================ */
+   /*============================================================ */
 .skeleton {
   background: linear-gradient(90deg, #1a1a1a 25%, #222 50%, #1a1a1a 75%);
   background-size: 400% 100%;
@@ -4036,7 +4036,7 @@ body.auth-page {
   gap: var(--space-5);
   width: 100%;
   max-width: 1000px;
-  margin: 0 auto var(--space-8);
+  margin: 0 0 var(--space-8) 0;
   padding: 0 var(--space-4);
 }
 
@@ -4508,6 +4508,59 @@ body.auth-page {
     width: 100%;
     min-height: auto;
   }
+}
+
+/* Pagination - Show More button and line divider */
+.show-more-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin: var(--space-6) 0 var(--space-8);
+  width: 100%;
+  max-width: 1000px;
+}
+
+.show-more-line {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  z-index: 1;
+}
+
+.show-more-btn {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--bg); /* Blends with general background */
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: var(--radius-pill);
+  padding: 10px 24px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--white);
+  cursor: pointer;
+  transition: all var(--t-fast);
+}
+
+.show-more-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: scale(1.02);
+}
+
+.show-more-btn i {
+  font-size: 1rem;
+  transition: transform var(--t-fast);
+}
+
+.show-more-btn:hover i {
+  transform: translateY(2px);
 }
 
 

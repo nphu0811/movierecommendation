@@ -111,6 +111,62 @@
 </div>
 
 
+<!-- MOVIE HORIZONTAL CARD fragment -->
+<div th:fragment="movieHorizontalCard(movie)" 
+     class="search-result-horizontal-card" 
+     th:classappend="${isHidden} ? 'hidden-movie' : ''"
+     th:style="${isHidden} ? 'display: none;' : ''"
+     th:data-movie-id="${movie.movieId}"
+     th:if="${movie != null}">
+  <!-- Left Poster -->
+  <a th:href="@{/movies/{id}(id=${movie.movieId})}">
+    <img th:if="${movie.posterUrl != null and !#strings.isEmpty(movie.posterUrl)}" th:src="${movie.posterUrl}" class="search-result-poster" alt="Poster"/>
+    <div th:unless="${movie.posterUrl != null and !#strings.isEmpty(movie.posterUrl)}" class="search-result-poster movie-poster-placeholder" style="width: 160px; height: 240px; font-size: 2.5rem; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.03);">
+      <i class="ph-bold ph-film-strip"></i>
+    </div>
+  </a>
+  
+  <!-- Right Info -->
+  <div class="search-result-info">
+    <a th:href="@{/movies/{id}(id=${movie.movieId})}" class="search-result-title" th:text="${movie.title}">Movie Title</a>
+    
+    <div class="search-result-meta-row">
+      <span class="search-result-rating">
+        <i class="ph-fill ph-star"></i>
+        <span th:text="${movie.averageRating != null ? #numbers.formatDecimal(movie.averageRating, 1, 1) : '0.0'}">0.0</span>
+      </span>
+      <span th:text="${movie.releaseYear}">2026</span>
+      <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+        <span class="search-result-genre-tag" th:each="g : ${movie.genres}" th:text="${g.genreName}">Genre</span>
+      </div>
+    </div>
+    
+    <p class="search-result-desc" th:text="${movie.description != null and movie.description.length() > 200 ? movie.description.substring(0, 197) + '...' : movie.description}">
+      Mô tả phim...
+    </p>
+    
+    <!-- AI Summary Accordion -->
+    <div class="ai-summary-wrapper">
+      <button type="button" class="ai-summary-toggle-btn" th:onclick="|toggleAiSummary(this, ${movie.movieId})|">
+        <i class="ph-fill ph-sparkle"></i>
+        <span>Tóm tắt</span>
+        <i class="ph-bold ph-caret-down"></i>
+      </button>
+      
+      <div class="ai-summary-panel" th:id="|aiSummaryPanel-${movie.movieId}|">
+        <div class="ai-summary-box loading">
+          <i class="ph-bold ph-circle-notch ph-spin sparkle-icon"></i>
+          Đang tải bản tóm tắt từ AI...
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+
 <!-- ── ADMIN SIDEBAR ── -->
 <aside th:fragment="adminSidebar(activeMenu)" class="admin-sidebar">
   <div class="sidebar-logo">
