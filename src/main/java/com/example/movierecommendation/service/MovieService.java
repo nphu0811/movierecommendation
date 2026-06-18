@@ -33,6 +33,8 @@ public class MovieService {
     private jakarta.persistence.EntityManager entityManager;
     @Autowired
     private OpenAIService openAIService;
+    @Autowired
+    private MovieEmbeddingService movieEmbeddingService;
 
     public Page<Movie> getAllMovies(int page, int size) {
         return movieRepository.findByDeletedAtIsNull(PageRequest.of(page, size, Sort.by("movieId").ascending()));
@@ -146,7 +148,19 @@ public class MovieService {
         if (keyword == null || keyword.trim().isEmpty()) {
             return Collections.emptyList();
         }
-        return movieRepository.searchByDatabaseVector(keyword);
+        List<Movie> dbVector = movieRepository.searchByDatabaseVector(keyword);
+        if (openAIService.isEnabled()) {
+            List<Movie> semantic = movieEmbeddingService.searchSemantic(keyword, 15);
+            Map<Integer, Movie> merged = new LinkedHashMap<>();
+            for (Movie m : semantic) {
+                merged.put(m.getMovieId(), m);
+            }
+            for (Movie m : dbVector) {
+                merged.putIfAbsent(m.getMovieId(), m);
+            }
+            return new ArrayList<>(merged.values());
+        }
+        return dbVector;
     }
 
     public List<Movie> searchMoviesByVector(String keyword) {

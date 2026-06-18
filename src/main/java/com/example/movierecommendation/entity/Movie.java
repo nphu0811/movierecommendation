@@ -59,6 +59,9 @@ public class Movie {
     @Column(name = "ai_summary", columnDefinition = "TEXT")
     private String aiSummary;
 
+    @Column(name = "embedding", columnDefinition = "TEXT")
+    private String embedding;
+
     @Transient
     private String recommendationReason;
 
@@ -173,4 +176,7 @@ public class Movie {
 
     public String getAiSummary() { return aiSummary; }
     public void setAiSummary(String aiSummary) { this.aiSummary = aiSummary; }
+
+    public String getEmbedding() { return embedding; }
+    public void setEmbedding(String embedding) { this.embedding = embedding; }
 }

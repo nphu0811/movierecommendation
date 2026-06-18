@@ -56,17 +56,17 @@ public class RecommendationService {
         List<Movie> result = hybrid;
 
         if (!openAIService.isEnabled()) {
-            populateExplanations(userId, result, Collections.emptySet());
+            populateExplanations(userId, result, Collections.emptyMap());
             self.persistRecommendations(userId, "HYBRID", result, started, "OpenAI disabled");
             return result;
         }
 
         try {
-            List<Integer> aiMovieIds = openAIService.getAIRecommendedMovieIds(userId, hybrid);
+            Map<Integer, String> aiRecsWithReasons = openAIService.getAIRecommendationsWithReasons(userId, hybrid);
 
-            if (aiMovieIds == null || aiMovieIds.isEmpty()) {
-                populateExplanations(userId, result, Collections.emptySet());
-                self.persistRecommendations(userId, "HYBRID", result, started, "OpenAI returned no movie IDs");
+            if (aiRecsWithReasons == null || aiRecsWithReasons.isEmpty()) {
+                populateExplanations(userId, result, Collections.emptyMap());
+                self.persistRecommendations(userId, "HYBRID", result, started, "OpenAI returned no recommendations");
                 return result;
             }
 
@@ -79,7 +79,7 @@ public class RecommendationService {
             List<Movie> aiMovies = new ArrayList<>();
             Set<Integer> seen = new HashSet<>();
 
-            for (Integer movieId : aiMovieIds) {
+            for (Integer movieId : aiRecsWithReasons.keySet()) {
                 Movie match = movieMap.get(movieId);
                 if (match != null && seen.add(match.getMovieId())) {
                     aiMovies.add(match);
@@ -92,19 +92,19 @@ public class RecommendationService {
             }
 
             result = limitSize(removeExcludedMovies(userId, merged), 20);
-            populateExplanations(userId, result, new HashSet<>(aiMovieIds));
-            self.persistRecommendations(userId, "HYBRID_AI", result, started, "Generated with OpenAI reranking");
+            populateExplanations(userId, result, aiRecsWithReasons);
+            self.persistRecommendations(userId, "HYBRID_AI", result, started, "Generated with OpenAI reranking and custom explanations");
             return result;
 
         } catch (Exception e) {
             log.warn("AI recommendation fallback for user {}: {}", userId, e.getMessage());
-            populateExplanations(userId, result, Collections.emptySet());
+            populateExplanations(userId, result, Collections.emptyMap());
             self.persistRecommendations(userId, "HYBRID", result, started, "AI fallback: " + e.getMessage());
             return result;
         }
     }
 
-    public void populateExplanations(Integer userId, List<Movie> movies, Set<Integer> aiMovieIds) {
+    public void populateExplanations(Integer userId, List<Movie> movies, Map<Integer, String> aiRecsWithReasons) {
         if (movies == null || movies.isEmpty()) return;
 
         // Get user ratings and watch history
@@ -142,8 +142,8 @@ public class RecommendationService {
         }
 
         for (Movie m : movies) {
-            if (aiMovieIds != null && aiMovieIds.contains(m.getMovieId())) {
-                m.setRecommendationReason("Vì AI chọn phim này phù hợp với sở thích của bạn.");
+            if (aiRecsWithReasons != null && aiRecsWithReasons.containsKey(m.getMovieId())) {
+                m.setRecommendationReason(aiRecsWithReasons.get(m.getMovieId()));
                 continue;
             }
 

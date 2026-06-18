@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.context.event.EventListener;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -28,6 +30,7 @@ public class SeedDataService {
     @Autowired private WatchHistoryRepository watchHistoryRepository;
     @Autowired private GenreRepository genreRepository;
     @Autowired private ApiSyncLogRepository apiSyncLogRepository;
+    @Autowired private VideoTimelineRepository videoTimelineRepository;
     @Autowired private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     @Value("${tmdb.api.key:}") private String apiKey;
@@ -246,6 +249,7 @@ public class SeedDataService {
 
 
     @Transactional
+    @EventListener(ApplicationReadyEvent.class)
     public void seedDemoUsersAndInteractions() {
         log.info("Starting demo data seeding and metadata populating...");
         LocalDateTime startedAt = LocalDateTime.now();
@@ -445,6 +449,9 @@ public class SeedDataService {
                 }
             }
 
+            // Seed timeline events
+            seedTimelineEvents(allMovies);
+
             syncLog.setStatus("SUCCESS");
             syncLog.setTotalItems(3 + metadataUpdated);
             syncLog.setSuccessCount(3 + metadataUpdated);
@@ -458,6 +465,42 @@ public class SeedDataService {
             syncLog.setErrorMessage(e.getMessage());
             syncLog.setFinishedAt(LocalDateTime.now());
             apiSyncLogRepository.save(syncLog);
+        }
+    }
+
+    private void seedTimelineEvents(List<Movie> allMovies) {
+        log.info("Seeding video timeline events...");
+        for (Movie m : allMovies) {
+            String title = m.getTitle().toLowerCase();
+            List<VideoTimeline> existing = videoTimelineRepository.findByMovieMovieIdOrderByTimestampSecondsAsc(m.getMovieId());
+            if (!existing.isEmpty()) continue;
+
+            if (title.contains("inception")) {
+                videoTimelineRepository.save(new VideoTimeline(m, 15, "Cobb giới thiệu khái niệm trộm cắp giấc mơ (Dream sharing).", "What is the most resilient parasite? An idea."));
+                videoTimelineRepository.save(new VideoTimeline(m, 45, "Cobb giải thích cách hoạt động của giấc mơ cho Ariadne.", "You create the world of the dream. We bring the subject into that dream."));
+                videoTimelineRepository.save(new VideoTimeline(m, 75, "Phân cảnh hành động hành lang xoay tròn và thành phố Paris gập lại.", "It's never just a dream, is it?"));
+                videoTimelineRepository.save(new VideoTimeline(m, 120, "Cảnh hành động đỉnh điểm dồn dập trước khi kết thúc trailer.", "You need to wake up!"));
+            } else if (title.contains("interstellar")) {
+                videoTimelineRepository.save(new VideoTimeline(m, 20, "Cooper chia tay con gái Murph trước chuyến đi.", "We're researchers, pioneers, not caretakers."));
+                videoTimelineRepository.save(new VideoTimeline(m, 55, "Giáo sư Brand giải thích nhiệm vụ cứu loài người bằng lỗ giun.", "We must reach far beyond our own lifespans."));
+                videoTimelineRepository.save(new VideoTimeline(m, 90, "Cảnh tàu Endurance phóng vào không gian và đi qua lỗ giun.", "Do not go gentle into that good night."));
+                videoTimelineRepository.save(new VideoTimeline(m, 135, "Cooper khóc khi xem lại các tin nhắn ghi hình gửi từ Trái Đất.", "We'll find a way, we always do."));
+            } else if (title.contains("dark knight") || title.contains("batman")) {
+                videoTimelineRepository.save(new VideoTimeline(m, 10, "Joker cướp ngân hàng và giới thiệu bản thân.", "Whatever doesn't kill you, simply makes you stranger."));
+                videoTimelineRepository.save(new VideoTimeline(m, 40, "Joker đột nhập buổi tiệc của Bruce Wayne.", "Let's put a smile on that face!"));
+                videoTimelineRepository.save(new VideoTimeline(m, 70, "Batman đua xe Batpod rượt đuổi Joker trên đường phố Gotham.", "You have nothing, nothing to threaten me with!"));
+                videoTimelineRepository.save(new VideoTimeline(m, 110, "Cảnh vụ nổ lớn và Joker cười điên dại trong xe cảnh sát.", "Why so serious?"));
+            } else if (title.contains("matrix")) {
+                videoTimelineRepository.save(new VideoTimeline(m, 15, "Morpheus giải thích Ma trận là gì cho Neo.", "The Matrix is everywhere. It is all around us."));
+                videoTimelineRepository.save(new VideoTimeline(m, 50, "Neo chọn giữa viên thuốc màu đỏ và màu xanh.", "You take the blue pill, the story ends. You take the red pill, you stay in Wonderland."));
+                videoTimelineRepository.save(new VideoTimeline(m, 85, "Neo né đạn trên sân thượng (Cảnh Bullet-time nổi tiếng).", "I'm trying to free your mind, Neo."));
+                videoTimelineRepository.save(new VideoTimeline(m, 120, "Morpheus nói về niềm tin cứu thế của Neo.", "He is the One."));
+            } else if (title.contains("avatar")) {
+                videoTimelineRepository.save(new VideoTimeline(m, 20, "Jake Sully đặt chân đến hành tinh Pandora huyền ảo.", "You are not in Kansas anymore. You are on Pandora."));
+                videoTimelineRepository.save(new VideoTimeline(m, 55, "Jake Sully học cách cưỡi sinh vật bay Ikran.", "How do I know if he chooses me? He will try to kill you."));
+                videoTimelineRepository.save(new VideoTimeline(m, 95, "Cuộc chiến khốc liệt bảo vệ Cây Hồn (Tree of Souls).", "This is our land!"));
+                videoTimelineRepository.save(new VideoTimeline(m, 130, "Jake Sully mở mắt thức tỉnh hoàn toàn trong cơ thể Avatar.", "I see you."));
+            }
         }
     }
 }

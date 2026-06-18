@@ -39,6 +39,8 @@ public class AIChatService {
     @Autowired private UserPreferenceRepository userPreferenceRepository;
     @Autowired private ChatIntentClassifier intentClassifier;
     @Autowired private ChatHelpService chatHelpService;
+    @Autowired private MovieEmbeddingService movieEmbeddingService;
+    @Autowired private VideoTimelineRepository videoTimelineRepository;
     @Autowired @org.springframework.context.annotation.Lazy private AIChatService self;
 
     private WebClient webClient;
@@ -67,7 +69,7 @@ public class AIChatService {
             String reply = chatHelpService.getHelpResponse(ChatIntent.OUT_OF_SCOPE, userMessage);
             if (self != null) self.saveChatLogOnly(user, userMessage, reply);
             else saveChatLogOnly(user, userMessage, reply);
-            return new ChatResponse("TEXT", reply, Collections.emptyList());
+            return new ChatResponse("TEXT", reply, Collections.emptyList(), Collections.emptyList());
         }
 
         // 1. Find candidate movies in database
@@ -89,7 +91,7 @@ public class AIChatService {
             String reply = String.format("Rất tiếc, hiện tại hệ thống không tìm thấy bộ phim nào phù hợp với yêu cầu hoặc từ khóa '%s'. Bạn hãy thử tìm kiếm bằng tên phim hoặc thể loại khác nhé!", userMessage);
             if (self != null) self.saveChatLogOnly(user, userMessage, reply);
             else saveChatLogOnly(user, userMessage, reply);
-            return new ChatResponse("TEXT", reply, Collections.emptyList());
+            return new ChatResponse("TEXT", reply, Collections.emptyList(), Collections.emptyList());
         }
 
         // 2. Build user preference context if user is logged in
@@ -146,8 +148,8 @@ public class AIChatService {
                 m.getMovieId(), m.getTitle(), m.getReleaseYear() != null ? String.valueOf(m.getReleaseYear()) : "N/A", genres, m.getAverageRating()));
         }
 
-        // 3. Build Prompt
-        String prompt = String.format(
+        // 3. Build System/Initial Prompt
+        String systemPrompt = String.format(
             "Bạn là Trợ lý AI Movie Assistant thân thiện và thông minh cho website MovieRecommendation (MovieRec).\n" +
             "Nhiệm vụ của bạn là hỗ trợ người dùng bằng tiếng Việt về:\n" +
             "1. Gợi ý phim & Tìm kiếm phim (kết hợp sở thích người dùng và danh sách phim có sẵn trong database).\n" +
@@ -168,9 +170,7 @@ public class AIChatService {
             "- Phim đã xem gần đây: %s\n" +
             "- Thể loại thường xem: %s\n\n" +
             "Danh sách phim candidate trong database:\n" +
-            "%s\n" +
-            "Yêu cầu của người dùng:\n" +
-            "\"%s\"\n\n" +
+            "%s\n\n" +
             "QUY TẮC PHẢN HỒI (BẮT BUỘC TRẢ VỀ JSON HỢP LỆ, KHÔNG CHỨA KÝ TỰ THỪA NGOÀI CÚ PHÁP JSON):\n" +
             "{\n" +
             "  \"type\": \"TEXT\" hoặc \"MOVIE_CARDS\",\n" +
@@ -180,27 +180,62 @@ public class AIChatService {
             "       \"movieId\": 123,\n" +
             "       \"reason\": \"Lý do ngắn gọn vì sao gợi ý phim này\"\n" +
             "     }\n" +
+            "  ],\n" +
+            "  \"actions\": [\n" +
+            "     {\n" +
+            "       \"name\": \"ADD_WATCHLIST\" hoặc \"RATE_MOVIE\" hoặc \"FILTER_MOVIES\" hoặc \"VIEW_MOVIE_DETAIL\",\n" +
+            "       \"params\": { ... }\n" +
+            "     }\n" +
             "  ]\n" +
             "}\n\n" +
             "HƯỚNG DẪN CHỌN TYPE VÀ MOVIES:\n" +
             "- Nếu người dùng chào hỏi, hỏi thông tin tài khoản, hỏi hướng dẫn sử dụng web, trò chuyện thông thường, hoặc tìm kiếm một bộ phim cụ thể nhưng phim đó KHÔNG CÓ trong danh sách database candidates ở trên (ví dụ tìm Doraemon nhưng candidates trống):\n" +
             "  1. Đặt type là \"TEXT\".\n" +
             "  2. Đặt movies là mảng rỗng [].\n" +
-            "  3. Trong \"reply\", hãy trò chuyện hoặc hướng dẫn tự nhiên bằng tiếng Việt. Nếu người dùng tìm phim không có trong database (như Doraemon, Dragon Ball,...), hãy thoải mái trò chuyện về phim đó (ví dụ: 'Mình biết Doraemon là chú mèo máy...'), nhưng lịch sự thông báo là hệ thống MovieRec hiện chưa có bộ phim này trong cơ sở dữ liệu và khuyên họ tìm phim khác.\n" +
+            "  3. Trong \"reply\", hãy trò chuyện hoặc hướng dẫn tự nhiên bằng tiếng Việt.\n" +
             "- Nếu người dùng tìm kiếm phim hoặc yêu cầu gợi ý phim mà có các bộ phim phù hợp trong danh sách database candidates ở trên:\n" +
             "  1. Đặt type là \"MOVIE_CARDS\".\n" +
             "  2. Chọn tối đa 5 phim phù hợp nhất từ danh sách candidates ở trên đưa vào danh sách \"movies\". KHÔNG ĐƯỢC TỰ Ý BỊA PHIM HOẶC CHỌN PHIM NGOÀI DANH SÁCH CANDIDATES.\n" +
-            "  3. Đặt \"reply\" là lời chào và tóm tắt lý do gợi ý hoặc kết quả tìm kiếm phim của bạn.",
-            likedMovies, watchHistoryText, favoriteGenres, candidatesBuilder.toString(), userMessage
+            "  3. Đặt \"reply\" là lời chào và tóm tắt lý do gợi ý hoặc kết quả tìm kiếm phim của bạn.\n\n" +
+            "HƯỚNG DẪN VỀ ACTIONS (CỰC KỲ QUAN TRỌNG):\n" +
+            "Nếu người dùng có yêu cầu thực hiện hành động cụ thể trên website, hãy trả về danh sách `actions` tương ứng để hệ thống tự động thực thi thay người dùng:\n" +
+            "1. ADD_WATCHLIST: Thêm phim vào danh sách watchlist. Params: `{\"movieId\": integer}`. Ví dụ: 'lưu phim 123 vào watchlist', 'thêm phim Inception vào watchlist'.\n" +
+            "2. RATE_MOVIE: Đánh giá phim. Params: `{\"movieId\": integer, \"score\": number (từ 1.0 đến 5.0)}`. Ví dụ: 'đánh giá phim 123 5 sao', 'rate Avatar 4 sao'.\n" +
+            "3. VIEW_MOVIE_DETAIL: Mở trang chi tiết/chạy phim. Params: `{\"movieId\": integer}`. Ví dụ: 'xem phim Interstellar', 'mở phim 456', 'play movie Titanic'.\n" +
+            "4. FILTER_MOVIES: Lọc danh sách phim. Params: `{\"q\": string, \"genreId\": integer, \"year\": integer, \"minRating\": number, \"sortBy\": string}` (tất cả các trường đều là tùy chọn). Ví dụ: 'lọc phim hành động năm 2020 trở lên', 'tìm phim hài điểm cao'.\n" +
+            "Nếu không có hành động nào được yêu cầu, hãy trả về mảng rỗng `[]`.",
+            likedMovies, watchHistoryText, favoriteGenres, candidatesBuilder.toString()
         );
 
-        // 4. Call OpenAI API or fallback
+        // 4. Build message list (conversational memory)
+        List<Map<String, String>> chatMessages = new ArrayList<>();
+        chatMessages.add(Map.of("role", "system", "content", systemPrompt));
+
+        if (user != null) {
+            List<AIChatLog> history = aiChatLogRepository.findByUserUserIdOrderByCreatedAtDesc(user.getUserId());
+            if (history != null && !history.isEmpty()) {
+                List<AIChatLog> recentHistory = history.stream().limit(5).collect(Collectors.toList());
+                Collections.reverse(recentHistory);
+                for (AIChatLog logEntry : recentHistory) {
+                    if (logEntry.getMessage() != null && logEntry.getResponseSummary() != null) {
+                        chatMessages.add(Map.of("role", "user", "content", logEntry.getMessage()));
+                        chatMessages.add(Map.of("role", "assistant", "content", logEntry.getResponseSummary()));
+                    }
+                }
+            }
+        }
+
+        // Add the current user request
+        chatMessages.add(Map.of("role", "user", "content", userMessage));
+
+        // Call OpenAI API
         String responseContent = null;
         if (isEnabled()) {
-            responseContent = callOpenAI(prompt);
+            responseContent = callOpenAI(chatMessages);
         }
 
         List<MovieCardDto> recommendedMovies = new ArrayList<>();
+        List<Map<String, Object>> actions = new ArrayList<>();
         String reply = null;
         String responseType = "TEXT";
 
@@ -240,6 +275,29 @@ public class AIChatService {
                         }
                     }
                 }
+
+                if (root.has("actions") && root.get("actions").isArray()) {
+                    for (JsonNode aNode : root.get("actions")) {
+                        if (aNode.has("name") && aNode.has("params")) {
+                            Map<String, Object> action = new HashMap<>();
+                            action.put("name", aNode.get("name").asText());
+                            
+                            Map<String, Object> params = new HashMap<>();
+                            JsonNode pNode = aNode.get("params");
+                            if (pNode.has("movieId")) params.put("movieId", pNode.get("movieId").asInt());
+                            if (pNode.has("score")) params.put("score", pNode.get("score").asDouble());
+                            if (pNode.has("q")) params.put("q", pNode.get("q").asText());
+                            if (pNode.has("genreId")) params.put("genreId", pNode.get("genreId").asInt());
+                            if (pNode.has("year")) params.put("year", pNode.get("year").asInt());
+                            if (pNode.has("minRating")) params.put("minRating", pNode.get("minRating").asDouble());
+                            if (pNode.has("sortBy")) params.put("sortBy", pNode.get("sortBy").asText());
+                            
+                            action.put("params", params);
+                            actions.add(action);
+                        }
+                    }
+                }
+
                 if ("MOVIE_CARDS".equals(responseType) && recommendedMovies.isEmpty()) {
                     responseType = "TEXT";
                 }
@@ -288,7 +346,7 @@ public class AIChatService {
             saveChatLogAndRecommendations(user, userMessage, reply, recommendedMovies, candidateMap);
         }
 
-        return new ChatResponse(responseType, reply, recommendedMovies);
+        return new ChatResponse(responseType, reply, recommendedMovies, actions);
     }
 
     private List<Movie> findCandidates(String message) {
@@ -333,6 +391,14 @@ public class AIChatService {
             matchedMovies.addAll(textSearch);
         }
 
+        // Add semantic embedding search results if enabled
+        if (isEnabled() && movieEmbeddingService != null) {
+            List<Movie> semanticSearch = movieEmbeddingService.searchSemantic(message, 30);
+            if (semanticSearch != null) {
+                matchedMovies.addAll(semanticSearch);
+            }
+        }
+
         // Deduplicate and filter deleted movies
         return matchedMovies.stream()
             .distinct()
@@ -341,15 +407,13 @@ public class AIChatService {
             .collect(Collectors.toList());
     }
 
-    private String callOpenAI(String prompt) {
+    private String callOpenAI(List<Map<String, String>> messages) {
         try {
             Map<String, Object> body = new HashMap<>();
             body.put("model", "gpt-4o-mini");
             body.put("max_tokens", 800);
             body.put("temperature", 0.7);
-            body.put("messages", List.of(
-                Map.of("role", "user", "content", prompt)
-            ));
+            body.put("messages", messages);
 
             // Structured Outputs JSON Schema
             Map<String, Object> responseFormat = new HashMap<>();
@@ -388,9 +452,40 @@ public class AIChatService {
             
             moviesProp.put("items", movieItem);
             properties.put("movies", moviesProp);
+
+            // Add actions property
+            Map<String, Object> actionsProp = new HashMap<>();
+            actionsProp.put("type", "array");
+
+            Map<String, Object> actionItem = new HashMap<>();
+            actionItem.put("type", "object");
+
+            Map<String, Object> actionItemProps = new HashMap<>();
+            actionItemProps.put("name", Map.of("type", "string", "enum", List.of("ADD_WATCHLIST", "RATE_MOVIE", "FILTER_MOVIES", "VIEW_MOVIE_DETAIL")));
+
+            Map<String, Object> paramsObj = new HashMap<>();
+            paramsObj.put("type", "object");
+            Map<String, Object> paramsProps = new HashMap<>();
+            paramsProps.put("movieId", Map.of("type", "integer"));
+            paramsProps.put("score", Map.of("type", "number"));
+            paramsProps.put("q", Map.of("type", "string"));
+            paramsProps.put("genreId", Map.of("type", "integer"));
+            paramsProps.put("year", Map.of("type", "integer"));
+            paramsProps.put("minRating", Map.of("type", "number"));
+            paramsProps.put("sortBy", Map.of("type", "string"));
+            paramsObj.put("properties", paramsProps);
+            paramsObj.put("additionalProperties", false);
+
+            actionItemProps.put("params", paramsObj);
+            actionItem.put("properties", actionItemProps);
+            actionItem.put("required", List.of("name", "params"));
+            actionItem.put("additionalProperties", false);
+
+            actionsProp.put("items", actionItem);
+            properties.put("actions", actionsProp);
             
             schema.put("properties", properties);
-            schema.put("required", List.of("type", "reply", "movies"));
+            schema.put("required", List.of("type", "reply", "movies", "actions"));
             schema.put("additionalProperties", false);
             
             jsonSchema.put("schema", schema);
@@ -435,6 +530,27 @@ public class AIChatService {
         boolean isSummaryRequest = msgLowerRaw.contains("tóm tắt") || msgLowerRaw.contains("tom tat") 
                 || msgLowerRaw.contains("summary") || msgLowerRaw.contains("timeline");
 
+        // Load actual timelines from repository
+        List<VideoTimeline> timelines = videoTimelineRepository.findByMovieMovieIdOrderByTimestampSecondsAsc(movie.getMovieId());
+        
+        StringBuilder timelineText = new StringBuilder();
+        if (timelines != null && !timelines.isEmpty()) {
+            timelineText.append("DƯỚI ĐÂY LÀ DÒNG THỜI GIAN & TRANSCRIPT THỰC TẾ CỦA VIDEO TRAILER PHIM NÀY:\n");
+            for (VideoTimeline vt : timelines) {
+                int min = vt.getTimestampSeconds() / 60;
+                int sec = vt.getTimestampSeconds() % 60;
+                String tsStr = String.format("[%02d:%02d]", min, sec);
+                timelineText.append(String.format("- Mốc %s: %s", tsStr, vt.getEventDescription()));
+                if (vt.getTranscriptText() != null && !vt.getTranscriptText().trim().isEmpty()) {
+                    timelineText.append(String.format(" | Lời thoại: \"%s\"", vt.getTranscriptText()));
+                }
+                timelineText.append("\n");
+            }
+            timelineText.append("\nHƯỚNG DẪN CỰC KỲ QUAN TRỌNG: Bạn PHẢI trả lời dựa trên dữ liệu dòng thời gian thực tế này. Nếu người dùng hỏi về phân cảnh cụ thể tại mốc thời gian nào, hoặc yêu cầu tóm tắt video theo dòng thời gian, bạn hãy chỉ ra mốc thời gian chính xác dạng [MM:SS] từ danh sách trên. Tuyệt đối không được tự bịa đặt các mốc thời gian ảo ngoài danh sách trên.");
+        } else {
+            timelineText.append("LƯU Ý QUAN TRỌNG: Hiện tại hệ thống không có dữ liệu transcript hoặc mốc thời gian (timeline) thực tế của video/trailer này. Do đó, nếu người dùng hỏi về các phân cảnh cụ thể tại mốc thời gian nào, hoặc yêu cầu tóm tắt video theo dòng thời gian, bạn phải lịch sự thông báo là hệ thống chưa hỗ trợ dữ liệu timeline/transcript cho video này và không được tự tiện bịa đặt các mốc thời gian ảo.");
+        }
+
         if (isEnabled()) {
             try {
                 String systemPrompt = String.format(
@@ -445,7 +561,7 @@ public class AIChatService {
                     "1. Trả lời câu hỏi của người dùng bằng tiếng Việt, thân thiện, tự nhiên.\n" +
                     "2. Nếu câu hỏi liên quan đến nội dung, thông tin, phân tích phim:\n" +
                     "   - Hãy trả lời chính xác dựa trên thông tin phim.\n" +
-                    "   - LƯU Ý QUAN TRỌNG: Hiện tại hệ thống không có dữ liệu transcript hoặc mốc thời gian (timeline) thực tế của video/trailer này. Do đó, nếu người dùng hỏi về các phân cảnh cụ thể tại mốc thời gian nào, hoặc yêu cầu tóm tắt video theo dòng thời gian (timeline/timestamp), bạn phải lịch sự thông báo là hệ thống chưa hỗ trợ dữ liệu timeline/transcript cho video này và không được tự tiện bịa đặt các mốc thời gian ảo (hallucinate timestamps).\n" +
+                    "   - %s\n" +
                     "   - Thay vào đó, hãy tóm tắt nội dung và cốt truyện của bộ phim dựa trên phần mô tả phim được cung cấp.\n" +
                     "3. Nếu họ chào hỏi hoặc hỏi về tính năng website, hãy trả lời và hướng dẫn họ một cách thân thiện (ví dụ cách đăng ký/đăng nhập, cách đổi mật khẩu, cách đánh giá phim, cách quản lý Watchlist...).\n" +
                     "4. KHÔNG sử dụng các định dạng markdown phức tạp khác ngoại trừ danh sách và in đậm. Đảm bảo mốc thời gian có dạng [MM:SS] hoặc MM:SS.",
@@ -453,7 +569,8 @@ public class AIChatService {
                     movie.getReleaseYear() != null ? movie.getReleaseYear() : 2026,
                     movie.getGenres() != null ? movie.getGenres().stream().map(Genre::getGenreName).collect(Collectors.joining(", ")) : "Chưa rõ",
                     movie.getDescription() != null ? movie.getDescription() : "Không có mô tả.",
-                    userMessage
+                    userMessage,
+                    timelineText.toString()
                 );
 
                 Map<String, Object> body = new HashMap<>();
@@ -487,6 +604,18 @@ public class AIChatService {
         // Fallback or Rule-based response
         if (isSummaryRequest) {
             String title = movie.getTitle();
+            if (timelines != null && !timelines.isEmpty()) {
+                StringBuilder sb = new StringBuilder();
+                sb.append(String.format("Dòng thời gian tóm tắt video **%s**:\n\n", title));
+                for (VideoTimeline vt : timelines) {
+                    int min = vt.getTimestampSeconds() / 60;
+                    int sec = vt.getTimestampSeconds() % 60;
+                    String tsStr = String.format("[%02d:%02d]", min, sec);
+                    sb.append(String.format("- **%s**: %s\n", tsStr, vt.getEventDescription()));
+                }
+                sb.append("\nBạn có thể nhấn vào các mốc thời gian để xem phân cảnh đó!");
+                return sb.toString();
+            }
             return String.format(
                 "Hiện tại hệ thống chưa có dữ liệu transcript hoặc dòng thời gian chính xác cho video của bộ phim **%s**.\n\n" +
                 "Tuy nhiên, dựa trên mô tả, bộ phim xoay quanh: %s",
@@ -542,17 +671,35 @@ public class AIChatService {
             }
         }
         
-        // 1.5. Check for combat / action / fight scenes
+        // 1.5. Check for combat / action / fight scenes / timeline
         if (msgLower.contains("combat") || msgLower.contains("hành động") 
                 || msgLower.contains("hanh dong") || msgLower.contains("đánh nhau")
                 || msgLower.contains("danh nhau") || msgLower.contains("chiến đấu")
-                || msgLower.contains("chien dau") || msgLower.contains("fight")) {
-            return String.format(
-                "Trong trailer/video phim **%s**:\n\n" +
-                "- Phân cảnh hành động/combat kịch tính và hấp dẫn nhất bắt đầu từ khoảng **[01:15]** đến **[02:10]**.\n\n" +
-                "Bạn có thể click vào mốc thời gian **[01:15]** ở trên để đầu phát tự động tua đến đoạn hành động này nhé!",
-                title
-            );
+                || msgLower.contains("chien dau") || msgLower.contains("fight")
+                || msgLower.contains("phân cảnh") || msgLower.contains("phan canh")
+                || msgLower.contains("mốc thời gian") || msgLower.contains("moc thoi gian")
+                || msgLower.contains("timeline") || msgLower.contains("timestamp")) {
+            
+            List<VideoTimeline> fallbackTimelines = videoTimelineRepository.findByMovieMovieIdOrderByTimestampSecondsAsc(movie.getMovieId());
+            if (fallbackTimelines != null && !fallbackTimelines.isEmpty()) {
+                StringBuilder sb = new StringBuilder();
+                sb.append(String.format("Các phân cảnh nổi bật trong video/trailer phim **%s**:\n\n", title));
+                for (VideoTimeline vt : fallbackTimelines) {
+                    int min = vt.getTimestampSeconds() / 60;
+                    int sec = vt.getTimestampSeconds() % 60;
+                    String tsStr = String.format("[%02d:%02d]", min, sec);
+                    sb.append(String.format("- **%s**: %s\n", tsStr, vt.getEventDescription()));
+                }
+                sb.append("\nBạn có thể nhấn vào các mốc thời gian ở trên để tua nhanh đến đoạn đó!");
+                return sb.toString();
+            } else {
+                return String.format(
+                    "Trong trailer/video phim **%s**:\n\n" +
+                    "- Phân cảnh hành động/combat kịch tính và hấp dẫn nhất bắt đầu từ khoảng **[01:15]** đến **[02:10]**.\n\n" +
+                    "Bạn có thể click vào mốc thời gian **[01:15]** ở trên để đầu phát tự động tua đến đoạn hành động này nhé!",
+                    title
+                );
+            }
         }
         
         // 2. Check for description / overview / content

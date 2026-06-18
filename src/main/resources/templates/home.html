@@ -740,6 +740,9 @@
       
       if (response.ok) {
         appendAiResponse(data.message || data.reply, data.movies, data.type);
+        if (data.actions && data.actions.length > 0) {
+          await executeActions(data.actions);
+        }
       } else {
         appendAiResponse('Có lỗi xảy ra khi kết nối tới Trợ lý AI. Vui lòng thử lại sau.', [], 'TEXT');
       }
@@ -747,6 +750,98 @@
       removeLoadingIndicator();
       appendAiResponse('Lỗi kết nối mạng. Vui lòng kiểm tra lại đường truyền.', [], 'TEXT');
     }
+  }
+
+  async function executeActions(actions) {
+    if (!actions || actions.length === 0) return;
+    
+    const csrfToken = document.querySelector('meta[name="_csrf"]')?.content || '';
+    
+    for (const action of actions) {
+      const { name, params } = action;
+      try {
+        if (name === 'ADD_WATCHLIST') {
+          const movieId = params.movieId;
+          if (!movieId) continue;
+          
+          showLoadingIndicator();
+          const res = await fetch(`/api/movies/${movieId}/watchlist`, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': csrfToken }
+          });
+          removeLoadingIndicator();
+          
+          if (res.ok) {
+            const result = await res.json();
+            const text = result.added 
+              ? `🤖 [Hành động] Đã thêm bộ phim này vào Watchlist của bạn thành công!`
+              : `🤖 [Hành động] Đã xóa bộ phim này khỏi Watchlist của bạn!`;
+            appendActionFeedback(text);
+          } else {
+            appendActionFeedback(`🤖 [Hành động] Vui lòng đăng nhập để thêm phim này vào Watchlist!`);
+          }
+        } 
+        else if (name === 'RATE_MOVIE') {
+          const { movieId, score } = params;
+          if (!movieId || !score) continue;
+          
+          showLoadingIndicator();
+          const res = await fetch(`/api/movies/${movieId}/rate?score=${score}`, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': csrfToken }
+          });
+          removeLoadingIndicator();
+          
+          if (res.ok) {
+            const result = await res.json();
+            appendActionFeedback(`🤖 [Hành động] Đã đánh giá bộ phim này ${score} sao thành công! Điểm trung bình: ${result.average.toFixed(1)}/5 (${result.count} lượt đánh giá).`);
+          } else {
+            appendActionFeedback(`🤖 [Hành động] Vui lòng đăng nhập để đánh giá phim!`);
+          }
+        }
+        else if (name === 'VIEW_MOVIE_DETAIL') {
+          const movieId = params.movieId;
+          if (movieId) {
+            appendActionFeedback(`🤖 [Hành động] Đang chuyển hướng bạn đến trang chi tiết phim...`);
+            setTimeout(() => {
+              window.location.href = `/movies/${movieId}`;
+            }, 1500);
+          }
+        }
+        else if (name === 'FILTER_MOVIES') {
+          appendActionFeedback(`🤖 [Hành động] Đang lọc phim theo yêu cầu của bạn...`);
+          const queryParams = new URLSearchParams();
+          if (params.q) queryParams.set('q', params.q);
+          if (params.genreId) queryParams.set('genreId', params.genreId);
+          if (params.year) queryParams.set('year', params.year);
+          if (params.minRating) queryParams.set('minRating', params.minRating);
+          if (params.sortBy) queryParams.set('sortBy', params.sortBy);
+          
+          setTimeout(() => {
+            window.location.href = `/movies?${queryParams.toString()}`;
+          }, 1500);
+        }
+      } catch (e) {
+        console.error('Failed to execute action:', name, e);
+      }
+    }
+  }
+
+  function appendActionFeedback(text) {
+    const row = document.createElement('div');
+    row.style.cssText = 'display: flex; justify-content: flex-start; width: 100%;';
+    row.innerHTML = `
+      <div style="display:flex; gap:8px; align-items:flex-start; width:100%">
+        <div style="width: 28px; height: 28px; border-radius: 50%; background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.8rem; margin-top: 4px;"><i class="ph-bold ph-gear"></i></div>
+        <div style="flex:1; overflow:hidden;">
+          <div class="ai-bubble" style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.15); color: var(--white); padding: 0.7rem 0.9rem; border-radius: 12px; font-size: 0.78rem; line-height: 1.4; display: inline-block; max-width: 85%; text-align: left; word-break: break-word; font-style: italic;">
+            ${escapeHtml(text)}
+          </div>
+        </div>
+      </div>
+    `;
+    chatBody.appendChild(row);
+    scrollToBottom();
   }
   
   function scrollToBottom() {
