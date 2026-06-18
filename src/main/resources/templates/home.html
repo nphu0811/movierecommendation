@@ -640,12 +640,14 @@
     scrollToBottom();
   }
   
-  function appendAiResponse(reply, movies) {
+  function appendAiResponse(reply, movies, type) {
     const row = document.createElement('div');
     row.style.cssText = 'display: flex; justify-content: flex-start; width: 100%;';
     
     let moviesHtml = '';
-    if (movies && movies.length > 0) {
+    const shouldRenderMovies = (type === 'MOVIE_CARDS') || (!type && movies && movies.length > 0);
+    
+    if (shouldRenderMovies && movies && movies.length > 0) {
       moviesHtml = `<div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px; width: 100%;">`;
       movies.forEach(m => {
         const posterUrl = m.posterUrl || '/images/poster-placeholder.jpg';
@@ -737,13 +739,13 @@
       removeLoadingIndicator();
       
       if (response.ok) {
-        appendAiResponse(data.reply, data.movies);
+        appendAiResponse(data.message || data.reply, data.movies, data.type);
       } else {
-        appendAiResponse('Có lỗi xảy ra khi kết nối tới Trợ lý AI. Vui lòng thử lại sau.', []);
+        appendAiResponse('Có lỗi xảy ra khi kết nối tới Trợ lý AI. Vui lòng thử lại sau.', [], 'TEXT');
       }
     } catch (e) {
       removeLoadingIndicator();
-      appendAiResponse('Lỗi kết nối mạng. Vui lòng kiểm tra lại đường truyền.', []);
+      appendAiResponse('Lỗi kết nối mạng. Vui lòng kiểm tra lại đường truyền.', [], 'TEXT');
     }
   }
   

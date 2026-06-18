@@ -19,6 +19,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+import com.example.movierecommendation.dto.*;
 
 @Service
 public class AIChatService {
@@ -36,6 +37,8 @@ public class AIChatService {
     @Autowired private AIChatLogRepository aiChatLogRepository;
     @Autowired private AIChatRecommendationItemRepository aiChatRecommendationItemRepository;
     @Autowired private UserPreferenceRepository userPreferenceRepository;
+    @Autowired private ChatIntentClassifier intentClassifier;
+    @Autowired private ChatHelpService chatHelpService;
 
     private WebClient webClient;
 
@@ -57,7 +60,26 @@ public class AIChatService {
     }
 
     @Transactional
-    public Map<String, Object> recommendMovies(User user, String userMessage) {
+    public ChatResponse recommendMovies(User user, String userMessage) {
+        ChatIntent intent = intentClassifier.classify(userMessage);
+        
+        if (intent != ChatIntent.MOVIE_RECOMMENDATION && intent != ChatIntent.MOVIE_SEARCH) {
+            String reply = chatHelpService.getHelpResponse(intent);
+            
+            try {
+                AIChatLog chatLog = new AIChatLog();
+                chatLog.setUser(user);
+                chatLog.setMessage(userMessage);
+                chatLog.setResponseSummary(reply);
+                chatLog.setCreatedAt(LocalDateTime.now());
+                aiChatLogRepository.save(chatLog);
+            } catch (Exception e) {
+                log.warn("Failed to save AI Chat log for help response: {}", e.getMessage());
+            }
+            
+            return new ChatResponse("TEXT", reply, Collections.emptyList());
+        }
+
         // 1. Find candidate movies in database
         List<Movie> candidates = findCandidates(userMessage);
         
@@ -159,8 +181,7 @@ public class AIChatService {
             responseContent = callOpenAI(prompt);
         }
 
-        Map<String, Object> result = new HashMap<>();
-        List<Map<String, Object>> recommendedMovies = new ArrayList<>();
+        List<MovieCardDto> recommendedMovies = new ArrayList<>();
         String reply = "Hiện hệ thống chưa có phim phù hợp với yêu cầu này.";
 
         if (responseContent != null && !responseContent.trim().isEmpty()) {
@@ -186,15 +207,19 @@ public class AIChatService {
                             // Validate that movie exists in DB candidates
                             Movie movie = candidateMap.get(movieId);
                             if (movie != null) {
-                                Map<String, Object> mObj = new HashMap<>();
-                                mObj.put("movieId", movie.getMovieId());
-                                mObj.put("title", movie.getTitle());
-                                mObj.put("posterUrl", movie.getPosterUrl());
-                                mObj.put("releaseYear", movie.getReleaseYear());
-                                mObj.put("genres", movie.getGenres().stream().map(Genre::getGenreName).collect(Collectors.toList()));
-                                mObj.put("averageRating", movie.getAverageRating());
-                                mObj.put("reason", reason);
-                                recommendedMovies.add(mObj);
+                                List<String> genreNames = movie.getGenres() != null ? 
+                                    movie.getGenres().stream().map(Genre::getGenreName).collect(Collectors.toList()) : 
+                                    Collections.emptyList();
+                                MovieCardDto mDto = new MovieCardDto(
+                                    movie.getMovieId(),
+                                    movie.getTitle(),
+                                    movie.getPosterUrl(),
+                                    movie.getReleaseYear(),
+                                    genreNames,
+                                    movie.getAverageRating(),
+                                    reason
+                                );
+                                recommendedMovies.add(mDto);
                             }
                         }
                     }
@@ -210,15 +235,19 @@ public class AIChatService {
             log.info("Using fallback recommendation for AI Chat");
             reply = "Dựa trên yêu cầu của bạn, mình đã tìm thấy một số phim phổ biến phù hợp từ hệ thống:";
             for (Movie movie : candidates.stream().limit(5).collect(Collectors.toList())) {
-                Map<String, Object> mObj = new HashMap<>();
-                mObj.put("movieId", movie.getMovieId());
-                mObj.put("title", movie.getTitle());
-                mObj.put("posterUrl", movie.getPosterUrl());
-                mObj.put("releaseYear", movie.getReleaseYear());
-                mObj.put("genres", movie.getGenres() != null ? movie.getGenres().stream().map(Genre::getGenreName).collect(Collectors.toList()) : Collections.emptyList());
-                mObj.put("averageRating", movie.getAverageRating());
-                mObj.put("reason", "Phim phổ biến trong hệ thống phù hợp với từ khóa của bạn.");
-                recommendedMovies.add(mObj);
+                List<String> genreNames = movie.getGenres() != null ? 
+                    movie.getGenres().stream().map(Genre::getGenreName).collect(Collectors.toList()) : 
+                    Collections.emptyList();
+                MovieCardDto mDto = new MovieCardDto(
+                    movie.getMovieId(),
+                    movie.getTitle(),
+                    movie.getPosterUrl(),
+                    movie.getReleaseYear(),
+                    genreNames,
+                    movie.getAverageRating(),
+                    "Phim phổ biến trong hệ thống phù hợp với từ khóa của bạn."
+                );
+                recommendedMovies.add(mDto);
             }
         }
 
@@ -233,13 +262,13 @@ public class AIChatService {
 
             List<AIChatRecommendationItem> items = new ArrayList<>();
             for (int i = 0; i < recommendedMovies.size(); i++) {
-                Map<String, Object> mObj = recommendedMovies.get(i);
-                Movie movie = candidateMap.get((Integer) mObj.get("movieId"));
+                MovieCardDto mDto = recommendedMovies.get(i);
+                Movie movie = candidateMap.get(mDto.getMovieId());
                 if (movie != null) {
                     AIChatRecommendationItem item = new AIChatRecommendationItem();
                     item.setChatLog(savedLog);
                     item.setMovie(movie);
-                    item.setReason((String) mObj.get("reason"));
+                    item.setReason(mDto.getReason());
                     item.setRankOrder(i + 1);
                     items.add(item);
                 }
@@ -249,9 +278,7 @@ public class AIChatService {
             log.warn("Failed to save AI Chat log: {}", e.getMessage());
         }
 
-        result.put("reply", reply);
-        result.put("movies", recommendedMovies);
-        return result;
+        return new ChatResponse("MOVIE_CARDS", reply, recommendedMovies);
     }
 
     private List<Movie> findCandidates(String message) {
@@ -333,6 +360,16 @@ public class AIChatService {
     }
 
     public String chatAboutVideo(User user, Movie movie, String userMessage) {
+        if (intentClassifier != null && chatHelpService != null) {
+            ChatIntent intent = intentClassifier.classify(userMessage);
+            if (intent == ChatIntent.OUT_OF_SCOPE || intent == ChatIntent.GREETING
+                    || intent == ChatIntent.ACCOUNT_HELP || intent == ChatIntent.WATCHLIST_HELP
+                    || intent == ChatIntent.RATING_HELP || intent == ChatIntent.HISTORY_HELP
+                    || intent == ChatIntent.SITE_NAVIGATION) {
+                return chatHelpService.getHelpResponse(intent);
+            }
+        }
+
         String msgLower = userMessage.toLowerCase().trim();
         boolean isSummaryRequest = msgLower.contains("tóm tắt") || msgLower.contains("tom tat") 
                 || msgLower.contains("summary") || msgLower.contains("timeline");

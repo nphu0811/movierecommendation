@@ -76,4 +76,23 @@ public class AiSummaryAndChatTest {
         assertTrue(response.contains("[02:45]"));
         assertTrue(response.contains("The Matrix"));
     }
+
+    @Test
+    public void testChatAboutVideo_OutOfScopeAndGreeting() {
+        AIChatService chatService = new AIChatService();
+        ChatIntentClassifier classifier = new ChatIntentClassifier();
+        ChatHelpService helpService = new ChatHelpService();
+        
+        org.springframework.test.util.ReflectionTestUtils.setField(chatService, "intentClassifier", classifier);
+        org.springframework.test.util.ReflectionTestUtils.setField(chatService, "chatHelpService", helpService);
+
+        Movie movie = new Movie();
+        movie.setTitle("The Matrix");
+
+        String oosResponse = chatService.chatAboutVideo(null, movie, "cách nấu phở");
+        assertTrue(oosResponse.toLowerCase().contains("xin lỗi") || oosResponse.toLowerCase().contains("ngoài phạm vi"));
+
+        String greetResponse = chatService.chatAboutVideo(null, movie, "hello");
+        assertTrue(greetResponse.toLowerCase().contains("xin chào") || greetResponse.toLowerCase().contains("xin chao"));
+    }
 }

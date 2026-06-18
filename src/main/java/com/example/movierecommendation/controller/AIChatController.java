@@ -3,6 +3,7 @@ package com.example.movierecommendation.controller;
 import com.example.movierecommendation.entity.User;
 import com.example.movierecommendation.service.AIChatService;
 import com.example.movierecommendation.service.UserService;
+import com.example.movierecommendation.dto.ChatResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -30,7 +31,7 @@ public class AIChatController {
 
     @PostMapping("/api/ai-chat/recommend")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> recommendMovies(
+    public ResponseEntity<?> recommendMovies(
             @RequestBody Map<String, String> requestBody,
             @AuthenticationPrincipal UserDetails userDetails) {
         
@@ -46,7 +47,7 @@ public class AIChatController {
             currentUser = userService.getCurrentUser(userDetails.getUsername());
         }
 
-        Map<String, Object> recommendation = aiChatService.recommendMovies(currentUser, message.trim());
+        ChatResponse recommendation = aiChatService.recommendMovies(currentUser, message.trim());
         return ResponseEntity.ok(recommendation);
     }
 }
