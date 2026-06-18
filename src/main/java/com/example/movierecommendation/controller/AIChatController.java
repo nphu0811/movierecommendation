@@ -24,12 +24,8 @@ public class AIChatController {
     private UserService userService;
 
     @GetMapping("/ai-chat")
-    public String aiChatPage(@AuthenticationPrincipal UserDetails userDetails, Model model) {
-        if (userDetails != null) {
-            User user = userService.getCurrentUser(userDetails.getUsername());
-            model.addAttribute("currentUser", user);
-        }
-        return "ai-chat";
+    public String aiChatPage() {
+        return "redirect:/?chat=1";
     }
 
     @PostMapping("/api/ai-chat/recommend")
