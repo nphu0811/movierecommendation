@@ -5,6 +5,9 @@ import com.example.movierecommendation.entity.User;
 import com.example.movierecommendation.repository.MovieRepository;
 import com.example.movierecommendation.repository.UserPreferenceRepository;
 import com.example.movierecommendation.repository.VideoTimelineRepository;
+import com.example.movierecommendation.service.AIChatService;
+import com.example.movierecommendation.service.ChatHelpService;
+import com.example.movierecommendation.service.ChatIntentClassifier;
 import com.example.movierecommendation.service.InteractionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -136,6 +139,21 @@ class ChatAgentOrchestrationTest {
         ReflectionTestUtils.setField(client, "legacyApiKey", "existing-railway-secret");
 
         assertTrue(client.isEnabled());
+    }
+
+    @Test
+    void fallbackRouterStillUsesBackendToolsWhenModelIsDisabled() {
+        AIChatService chatService = new AIChatService();
+        ReflectionTestUtils.setField(chatService, "intentClassifier", new ChatIntentClassifier());
+        ReflectionTestUtils.setField(chatService, "chatHelpService", new ChatHelpService());
+
+        ChatAgentPlan plan = ReflectionTestUtils.invokeMethod(chatService, "buildDeterministicAgentPlan",
+            "Lưu phim Interstellar vào watchlist giúp tôi", Collections.emptyList());
+
+        assertNotNull(plan);
+        assertEquals("USER_ACTION", plan.getIntent());
+        assertEquals("ADD_WATCHLIST", plan.getToolCalls().getFirst().getName());
+        assertTrue(plan.getToolCalls().getFirst().getArguments().contains("Interstellar"));
     }
 
     private ChatAgentPlan plan(String tool, String arguments) {

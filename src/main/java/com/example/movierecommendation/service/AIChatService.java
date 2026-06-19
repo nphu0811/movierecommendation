@@ -74,8 +74,7 @@ public class AIChatService {
     }
 
     public ChatResponse recommendMovies(User user, String userMessage) {
-        if (chatAgentPlanner == null || chatToolExecutor == null || chatAgentResponder == null
-                || !chatAgentPlanner.isEnabled()) {
+        if (chatAgentPlanner == null || chatToolExecutor == null || chatAgentResponder == null) {
             return recommendMoviesLegacy(user, userMessage);
         }
 
@@ -91,12 +90,10 @@ public class AIChatService {
 
         Optional<ChatAgentPlan> planned = chatAgentPlanner.plan(
             userMessage, userContext, candidateCatalog, recentConversation);
-        if (planned.isEmpty()) {
-            log.info("Agent planner unavailable, using deterministic fallback");
-            return recommendMoviesLegacy(user, userMessage);
-        }
-
-        ChatAgentPlan plan = planned.get();
+        ChatAgentPlan plan = planned.isPresent()
+            ? planned.get()
+            : buildDeterministicAgentPlan(userMessage, candidates);
+        if (planned.isEmpty()) log.info("Model planner unavailable, using fallback router with the same tool executor");
         ensureRetrievalToolForMovieIntent(plan, candidates);
         List<ChatToolResult> toolResults = chatToolExecutor.execute(user, plan, candidates);
 
@@ -119,6 +116,107 @@ public class AIChatService {
             saveChatLogAndRecommendations(user, userMessage, reply, movieCards, candidateMap);
         }
         return new ChatResponse(type, reply, movieCards, clientActions);
+    }
+
+    private ChatAgentPlan buildDeterministicAgentPlan(String userMessage, List<Movie> candidates) {
+        ChatAgentPlan plan = new ChatAgentPlan();
+        ChatIntent intent = intentClassifier.classify(userMessage);
+        String normalized = removeAccent(userMessage.toLowerCase(Locale.ROOT));
+        String movieQuery = extractMovieQuery(userMessage, candidates);
+
+        if (intent == ChatIntent.WATCHLIST_HELP && (normalized.contains("luu phim")
+                || normalized.contains("them phim") || normalized.contains("add watchlist"))) {
+            plan.setIntent("USER_ACTION");
+            if (movieQuery.isBlank()) {
+                plan.setMissingInfo("tên phim bạn muốn thêm vào Watchlist");
+            } else {
+                plan.getToolCalls().add(new ChatAgentPlan.ToolCall("ADD_WATCHLIST",
+                    jsonArguments(Map.of("query", movieQuery))));
+            }
+            return plan;
+        }
+
+        if (intent == ChatIntent.RATING_HELP && (normalized.contains("danh gia")
+                || normalized.contains("cho diem") || normalized.contains("rate"))) {
+            Double score = extractRatingScore(normalized);
+            plan.setIntent("USER_ACTION");
+            if (movieQuery.isBlank() || score == null) {
+                plan.setMissingInfo("tên phim và điểm đánh giá từ 0.5 đến 5 sao");
+            } else {
+                plan.getToolCalls().add(new ChatAgentPlan.ToolCall("RATE_MOVIE",
+                    jsonArguments(Map.of("query", movieQuery, "score", score))));
+            }
+            return plan;
+        }
+
+        switch (intent) {
+            case MOVIE_SEARCH -> {
+                plan.setIntent("MOVIE_SEARCH");
+                plan.getToolCalls().add(new ChatAgentPlan.ToolCall("SEARCH_MOVIES",
+                    jsonArguments(Map.of("query", movieQuery.isBlank() ? userMessage : movieQuery))));
+            }
+            case MOVIE_RECOMMENDATION -> plan.setIntent("MOVIE_RECOMMENDATION");
+            case MOVIE_INFO -> {
+                plan.setIntent("MOVIE_QA");
+                if (!movieQuery.isBlank()) {
+                    plan.getToolCalls().add(new ChatAgentPlan.ToolCall("GET_MOVIE_DETAIL",
+                        jsonArguments(Map.of("query", movieQuery))));
+                } else {
+                    plan.setMissingInfo("tên phim bạn muốn hỏi");
+                }
+            }
+            case GREETING -> {
+                plan.setIntent("SMALL_TALK");
+                plan.setResponseGuidance(chatHelpService.getHelpResponse(intent, userMessage));
+            }
+            case ACCOUNT_HELP, WATCHLIST_HELP, RATING_HELP, HISTORY_HELP, SITE_NAVIGATION -> {
+                plan.setIntent("WEBSITE_HELP");
+                plan.setResponseGuidance(chatHelpService.getHelpResponse(intent, userMessage));
+            }
+            case OUT_OF_SCOPE -> {
+                plan.setIntent("OUT_OF_SCOPE");
+                plan.setResponseGuidance(chatHelpService.getHelpResponse(intent, userMessage));
+            }
+        }
+        return plan;
+    }
+
+    private String extractMovieQuery(String message, List<Movie> candidates) {
+        String normalizedMessage = removeAccent(message.toLowerCase(Locale.ROOT));
+        for (Movie candidate : candidates) {
+            if (candidate.getTitle() != null
+                    && normalizedMessage.contains(removeAccent(candidate.getTitle().toLowerCase(Locale.ROOT)))) {
+                return candidate.getTitle();
+            }
+        }
+
+        String query = message.trim();
+        query = query.replaceFirst("(?iu)^.*?\\bphim\\s+", "");
+        query = query.replaceFirst("(?iu)\\s+(giúp tôi|giup toi|cho tôi|cho toi|nhé|nhe)[.!?]*$", "");
+        query = query.replaceFirst("(?iu)\\s+(vào|vao)\\s+(watchlist|danh sách.*)$", "");
+        query = query.replaceFirst("(?iu)\\s+[0-5](?:[.,]5)?\\s*(sao|star).*$", "");
+        query = query.replaceFirst("(?iu)^(tìm|tim|kiếm|kiem|search)\\s+", "");
+        return query.trim();
+    }
+
+    private Double extractRatingScore(String normalizedMessage) {
+        java.util.regex.Matcher matcher = java.util.regex.Pattern
+            .compile("([0-5](?:[.,]5)?)\\s*(?:sao|star)")
+            .matcher(normalizedMessage);
+        if (!matcher.find()) return null;
+        try {
+            return Double.parseDouble(matcher.group(1).replace(',', '.'));
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
+    }
+
+    private String jsonArguments(Map<String, Object> arguments) {
+        try {
+            return mapper.writeValueAsString(arguments);
+        } catch (Exception ignored) {
+            return "{}";
+        }
     }
 
     private ChatResponse recommendMoviesLegacy(User user, String userMessage) {
