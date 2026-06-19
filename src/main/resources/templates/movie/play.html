@@ -88,7 +88,7 @@
         <th:block th:if="${currentUser != null}">
           <div class="action-btn-pill" style="gap: var(--space-3);">
             <span>Đánh giá:</span>
-            <div class="pill-rating-stars" th:id="|ratingStarsPill|">
+            <div class="pill-rating-stars" th:id="|ratingStarsPill|" th:data-current="${userRating != null ? userRating : 0}">
               <i class="ph-bold ph-star" th:each="i : ${#numbers.sequence(1,5)}" th:data-val="${i}" th:data-movie-id="${movie.movieId}" onclick="rateMoviePill(this.getAttribute('data-movie-id'), this.getAttribute('data-val'))"></i>
             </div>
           </div>
@@ -340,7 +340,7 @@
           let cleanSrc = currentSrc.replace(/[\?&#](?:start|t|time)=\d+(?:s)?/g, '');
           const connector = cleanSrc.includes('?') ? '&' : '?';
           player.src = cleanSrc + connector + 't=' + LAST_DURATION + '&start=' + LAST_DURATION + '#t=' + LAST_DURATION;
-          showToast(`Đang tải phim. Nếu phim không tự động tua, bạn hãy tự kéo thanh trượt đến ${formatTime(LAST_DURATION)}.`, 'info');
+          showToast(`Đã tua tiếp từ ${formatTime(LAST_DURATION)}! 🎥`, 'success');
       }
   }
 
@@ -740,7 +740,7 @@
   }
   
   function linkifyTimestamps(text) {
-      return text.replace(/(?:\[)?(\d{2}):(\d{2})(?:\])?/g, (match, mins, secs) => {
+      return text.replace(/(?:\[)?(\d{1,3}):(\d{2})(?:\])?/g, (match, mins, secs) => {
           const totalSeconds = parseInt(mins) * 60 + parseInt(secs);
           return `<span class="timestamp-link" onclick="seekToSeconds(${totalSeconds})">${mins}:${secs}</span>`;
       });
@@ -749,9 +749,7 @@
   // ============================================================
   // YOUTUBE TRAILER PLAYER CONTROLLER API
   // ============================================================
-  let ytPlayer = null;
-  let pendingSeekSeconds = null;
-  
+   
   // Load the YouTube API script
   const tag = document.createElement('script');
   tag.src = "https://www.youtube.com/iframe_api";

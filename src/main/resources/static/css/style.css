@@ -3203,12 +3203,14 @@ textarea.form-control { resize: vertical; min-height: 100px; }
   background: rgba(0, 0, 0, 0.94);
   z-index: 90;
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
-  transition: opacity 0.5s var(--ease);
+  transition: opacity 0.5s var(--ease), visibility 0.5s var(--ease);
 }
 
 .lights-out-overlay.active {
   opacity: 1;
+  visibility: visible;
   pointer-events: all;
 }
 
@@ -4489,6 +4491,8 @@ body.auth-page {
   flex-wrap: wrap;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   padding-bottom: var(--space-4);
+  position: relative;
+  z-index: 102;
 }
 
 .action-btn-pill {
