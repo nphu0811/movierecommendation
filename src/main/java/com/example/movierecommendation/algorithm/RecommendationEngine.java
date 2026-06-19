@@ -19,7 +19,6 @@ public class RecommendationEngine {
     @Autowired private RatingRepository ratingRepository;
     @Autowired private WatchHistoryRepository watchHistoryRepository;
     @Autowired private MovieRepository movieRepository;
-    @Autowired private SimilarMovieRepository similarMovieRepository;
     @Autowired private UserPreferenceRepository userPreferenceRepository;
     @Autowired private GenreRepository genreRepository;
 
@@ -121,16 +120,6 @@ public class RecommendationEngine {
     }
 
     public List<Movie> getSimilarMovies(Movie targetMovie, Integer currentUserId) {
-        List<Movie> storedSimilar = similarMovieRepository
-            .findByMovieMovieIdOrderBySimilarityScoreDesc(targetMovie.getMovieId(), PageRequest.of(0, similarMoviesLimit))
-            .stream()
-            .map(SimilarMovie::getSimilarMovie)
-            .filter(movie -> movie.getDeletedAt() == null)
-            .toList();
-        if (!storedSimilar.isEmpty()) {
-            return currentUserId == null ? storedSimilar : removeExcluded(storedSimilar, buildExcludedMovieIds(currentUserId));
-        }
-
         List<Integer> targetGenreIds = new ArrayList<>();
         if (targetMovie.getGenres() != null) {
             for (Genre g : targetMovie.getGenres()) targetGenreIds.add(g.getGenreId());
@@ -160,15 +149,6 @@ public class RecommendationEngine {
 
         List<Movie> result = new ArrayList<>();
         for (int i = 0; i < Math.min(similarMoviesLimit, similar.size()); i++) result.add(similar.get(i));
-        return result;
-    }
-
-    private List<Movie> removeExcluded(List<Movie> movies, Set<Integer> excluded) {
-        if (excluded.isEmpty()) return movies;
-        List<Movie> result = new ArrayList<>();
-        for (Movie movie : movies) {
-            if (!excluded.contains(movie.getMovieId())) result.add(movie);
-        }
         return result;
     }
 

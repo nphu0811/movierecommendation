@@ -5,7 +5,6 @@ import com.example.movierecommendation.entity.Movie;
 import com.example.movierecommendation.entity.Rating;
 import com.example.movierecommendation.repository.MovieRepository;
 import com.example.movierecommendation.repository.RatingRepository;
-import com.example.movierecommendation.repository.SimilarMovieRepository;
 import com.example.movierecommendation.repository.UserPreferenceRepository;
 import com.example.movierecommendation.repository.WatchHistoryRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,7 +30,6 @@ class RecommendationEnginePersonalizationTest {
     @Mock RatingRepository ratingRepository;
     @Mock WatchHistoryRepository watchHistoryRepository;
     @Mock MovieRepository movieRepository;
-    @Mock SimilarMovieRepository similarMovieRepository;
     @Mock UserPreferenceRepository userPreferenceRepository;
 
     private RecommendationEngine engine;
@@ -42,7 +40,6 @@ class RecommendationEnginePersonalizationTest {
         ReflectionTestUtils.setField(engine, "ratingRepository", ratingRepository);
         ReflectionTestUtils.setField(engine, "watchHistoryRepository", watchHistoryRepository);
         ReflectionTestUtils.setField(engine, "movieRepository", movieRepository);
-        ReflectionTestUtils.setField(engine, "similarMovieRepository", similarMovieRepository);
         ReflectionTestUtils.setField(engine, "userPreferenceRepository", userPreferenceRepository);
         ReflectionTestUtils.setField(engine, "alpha", 0.40);
         ReflectionTestUtils.setField(engine, "beta", 0.40);
