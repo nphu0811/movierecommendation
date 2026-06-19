@@ -95,6 +95,7 @@ public class SecurityConfig {
             .authenticationProvider(authProvider())
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/css/**", "/js/**", "/images/**", "/webjars/**", "/favicon.svg", "/favicon.ico").permitAll()
+                .requestMatchers("/movies/*/play", "/movies/*/play/superembed").authenticated()
                 .requestMatchers("/", "/home", "/movies", "/movies/**", "/search", "/ai-chat", "/api/ai-chat/**").permitAll()
                 .requestMatchers("/api/search/**", "/api/search-history/**", "/api/movies/*/ai-summary", "/api/movies/*/video-chat").permitAll()
                 .requestMatchers("/auth/**").permitAll()
