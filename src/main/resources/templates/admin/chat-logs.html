@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Nhật ký AI Chat – Admin</title>
+  <link rel="icon" type="image/svg+xml" sizes="any" th:href="@{/favicon.svg(v=2)}"/>
+  <link rel="stylesheet" th:href="@{/css/style.css}"/>
+  <!-- Include Phosphor Icons -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <style>
+    /* Sleek detail modal styles */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(12px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    .modal-overlay.active {
+      display: flex;
+    }
+    .modal-content-wrapper {
+      background: rgba(20, 20, 20, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      width: 90%;
+      max-width: 800px;
+      max-height: 85vh;
+      overflow-y: auto;
+      position: relative;
+      padding: 30px;
+      animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    .modal-close-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border: none;
+      color: var(--text-secondary);
+      font-size: 1.5rem;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+    .modal-close-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--white);
+    }
+    .chat-detail-header {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 20px;
+      margin-bottom: 24px;
+    }
+    .chat-detail-user-info {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-top: 8px;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+    .chat-section-bubble {
+      background: rgba(255, 255, 255, 0.015);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 20px;
+    }
+    .chat-section-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+    .chat-text-content {
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: var(--text-secondary);
+      white-space: pre-wrap;
+    }
+    .chat-user-message {
+      border-left: 3px solid var(--red);
+    }
+    .chat-ai-response {
+      border-left: 3px solid #6366f1;
+    }
+    .recommended-movies-title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: var(--white);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .recommended-movies-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+    }
+    .rec-movie-item {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      gap: 12px;
+      transition: border-color 0.2s ease;
+    }
+    .rec-movie-item:hover {
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+    .rec-movie-poster {
+      width: 60px;
+      height: 90px;
+      object-fit: cover;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.02);
+      flex-shrink: 0;
+    }
+    .rec-movie-info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .rec-movie-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--white);
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .rec-movie-meta {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .rec-movie-reason {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      line-height: 1.4;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+<div class="admin-layout">
+  <div th:replace="~{fragments :: adminSidebar('chat-logs')}"></div>
+
+  <main class="admin-main">
+    <div class="admin-header" style="margin-bottom:20px;">
+      <h1>Lịch sử chat AI</h1>
+      <p style="color:#6c757d;font-size:.875rem" th:text="|Có tất cả ${chatLogPage.totalElements} lượt chat với trợ lý AI|">0 lượt chat</p>
+    </div>
+
+    <div class="alert alert-success" th:if="${success}" th:text="${success}"></div>
+    <div class="alert alert-danger" th:if="${error}" th:text="${error}"></div>
+
+    <div style="background:var(--bg-elevated);border-radius:12px;overflow:hidden">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Người dùng</th>
+            <th>Câu hỏi người dùng</th>
+            <th>Tóm tắt AI phản hồi</th>
+            <th>Thời gian</th>
+            <th>Hành động</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="log : ${chatLogPage.content}">
+            <td style="color:#6c757d" th:text="${log.chatId}">1</td>
+            <td>
+              <span th:if="${log.user != null}">
+                <strong th:text="${log.user.username}">Username</strong>
+              </span>
+              <span th:unless="${log.user != null}" class="badge badge-info">Guest / Anonymous</span>
+            </td>
+            <td style="max-width:250px; word-wrap: break-word; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" 
+                th:text="${log.message}" th:title="${log.message}">Câu hỏi...</td>
+            <td style="max-width:350px; word-wrap: break-word; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" 
+                th:text="${log.responseSummary}" th:title="${log.responseSummary}">AI trả lời...</td>
+            <td style="color:#6c757d;font-size:.8rem;"
+                th:text="${log.createdAt != null} ? ${#temporals.format(log.createdAt, 'dd/MM/yyyy HH:mm')} : '-'">Date</td>
+            <td>
+              <div style="display:flex;gap:.5rem">
+                <!-- Details Trigger -->
+                <button type="button" class="btn btn-sm btn-outline" th:onclick="|openChatDetails(${log.chatId})|">
+                  <i class="ph ph-chat-circle-dots" style="margin-right:4px;vertical-align:-2px;"></i> Chi tiết
+                </button>
+                
+                <!-- Delete Log Form -->
+                <form th:action="@{/admin/chat-logs/{id}/delete(id=${log.chatId})}"
+                      method="post" style="margin:0" 
+                      th:onsubmit="return confirm('Bạn có chắc chắn muốn xóa nhật ký chat này không? Hành động này sẽ xóa cả gợi ý phim liên quan.')">
+                  <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                  <button type="submit" class="btn btn-sm btn-outline btn-danger-hover">
+                    <i class="ph ph-trash" style="margin-right:4px;vertical-align:-2px;"></i> Xóa
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          <tr th:if="${chatLogPage.isEmpty()}">
+            <td colspan="6" style="text-align:center; padding: 30px; color: var(--text-muted);">Không có nhật ký chat nào.</td>
+          </tr>
+        </tbody>
+      </table>
+      
+      <div th:if="${chatLogPage.totalPages > 1}" id="pagination-container"
+           th:attr="data-current=${chatLogPage.number}, data-total=${chatLogPage.totalPages}">
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Details Modal -->
+<div id="chat-detail-modal" class="modal-overlay" onclick="closeModal(event)">
+  <div class="modal-content-wrapper" onclick="event.stopPropagation()">
+    <button type="button" class="modal-close-btn" onclick="closeModal()">&times;</button>
+    <div id="modal-body-content">
+      <div style="display:flex; justify-content:center; align-items:center; min-height: 200px; color: var(--text-muted);">
+        <i class="ph-bold ph-circle-notch ph-spin" style="font-size:2rem; margin-right:8px;"></i> Đang tải chi tiết...
+      </div>
+    </div>
+  </div>
+</div>
+
+<script th:src="@{/js/app.js}"></script>
+<script th:src="@{/js/pagination.js}"></script>
+<script>
+  initPagination('pagination-container', '/admin/chat-logs');
+
+  const modal = document.getElementById('chat-detail-modal');
+  const modalBody = document.getElementById('modal-body-content');
+
+  function openChatDetails(chatId) {
+    // Show modal loading
+    modalBody.innerHTML = `
+      <div style="display:flex; justify-content:center; align-items:center; min-height: 200px; color: var(--text-muted);">
+        <i class="ph-bold ph-circle-notch ph-spin" style="font-size:2rem; margin-right:8px;"></i> Đang tải chi tiết...
+      </div>
+    `;
+    modal.classList.add('active');
+
+    // Fetch detail fragment
+    fetch(`/admin/chat-logs/${chatId}/details`)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Lỗi tải thông tin cuộc trò chuyện.');
+        }
+        return response.text();
+      })
+      .then(html => {
+        modalBody.innerHTML = html;
+      })
+      .catch(error => {
+        modalBody.innerHTML = `
+          <div style="color:var(--red); padding: 20px; text-align:center;">
+            <i class="ph ph-warning-circle" style="font-size: 2.5rem; margin-bottom: 8px; display:block;"></i>
+            ${error.message}
+          </div>
+        `;
+      });
+  }
+
+  function closeModal(event) {
+    modal.classList.remove('active');
+  }
+
+  // Close modal with Escape key
+  document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+      closeModal();
+    }
+  });
+</script>
+</body>
+</html>
