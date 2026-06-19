@@ -56,6 +56,7 @@ public class AdminController {
         model.addAttribute("seedTotal",     seedDataService.getTotal());
         model.addAttribute("seedRatingsAdded",  seedDataService.getRatingsAdded());
         model.addAttribute("seedCommentsAdded", seedDataService.getCommentsAdded());
+        model.addAttribute("demoSeedEnabled", seedDataService.isDemoSeedEnabled());
         return "admin/dashboard";
     }
 
@@ -83,7 +84,9 @@ public class AdminController {
 
     @PostMapping("/seed-data")
     public String seedData(RedirectAttributes redirect) {
-        if (seedDataService.isRunning()) {
+        if (!seedDataService.isDemoSeedEnabled()) {
+            redirect.addFlashAttribute("error", "Demo data seeding is disabled in this environment");
+        } else if (seedDataService.isRunning()) {
             redirect.addFlashAttribute("info", "Seed đang chạy: "
                 + seedDataService.getDone() + "/" + seedDataService.getTotal());
         } else {

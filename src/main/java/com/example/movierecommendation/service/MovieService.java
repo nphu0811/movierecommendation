@@ -19,9 +19,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.Set;
 
 @Service
 public class MovieService {
+
+    private static final Set<String> RESERVED_GENRE_NAMES = Set.of("testgenre", "new genre");
 
     @Autowired
     private MovieRepository movieRepository;
@@ -285,6 +288,10 @@ public class MovieService {
         return movies;
     }
 
+    public List<Movie> getLatestReleases(int limit) {
+        return movieRepository.findLatestReleases(PageRequest.of(0, limit));
+    }
+
     @Transactional
     public Movie createMovie(MovieRequest request) {
         Movie movie = new Movie();
@@ -352,17 +359,32 @@ public class MovieService {
     }
 
     public List<Genre> getAllGenres() {
-        return genreRepository.findAll();
+        return genreRepository.findAllPublicGenres();
     }
 
     @Transactional
     public Genre createGenre(String name) {
-        if (genreRepository.existsByGenreName(name)) {
+        String normalized = normalizeGenreName(name);
+        if (genreRepository.existsByGenreNameIgnoreCase(normalized)) {
             throw new RuntimeException("Genre already exists");
         }
         Genre genre = new Genre();
-        genre.setGenreName(name);
+        genre.setGenreName(normalized);
         return genreRepository.save(genre);
+    }
+
+    static String normalizeGenreName(String name) {
+        if (name == null) {
+            throw new IllegalArgumentException("Genre name is required");
+        }
+        String normalized = name.trim().replaceAll("\\s+", " ");
+        if (normalized.isEmpty() || normalized.length() > 100) {
+            throw new IllegalArgumentException("Genre name must contain 1 to 100 characters");
+        }
+        if (RESERVED_GENRE_NAMES.contains(normalized.toLowerCase(java.util.Locale.ROOT))) {
+            throw new IllegalArgumentException("Test genre names are not allowed");
+        }
+        return normalized;
     }
 
     @Transactional

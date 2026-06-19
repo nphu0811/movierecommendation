@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface MovieRepository extends JpaRepository<Movie, Integer> {
@@ -92,6 +93,12 @@ public interface MovieRepository extends JpaRepository<Movie, Integer> {
 
     Page<Movie> findByDeletedAtIsNull(Pageable pageable);
 
+    Optional<Movie> findFirstByTitleIgnoreCaseAndReleaseYearAndDeletedAtIsNull(String title, Integer releaseYear);
+
+    @Query("SELECT m FROM Movie m WHERE m.deletedAt IS NULL AND m.releaseYear IS NOT NULL " +
+           "ORDER BY m.releaseYear DESC, m.averageRating DESC, m.ratingCount DESC, m.movieId DESC")
+    List<Movie> findLatestReleases(Pageable pageable);
+
     @Query("SELECT m FROM Movie m WHERE m.deletedAt IS NULL ORDER BY m.ratingCount DESC")
     List<Movie> findTopMoviesByRatingCount(Pageable pageable);
 
@@ -103,6 +110,9 @@ public interface MovieRepository extends JpaRepository<Movie, Integer> {
 
     @Query("SELECT DISTINCT m FROM Movie m LEFT JOIN FETCH m.genres WHERE m.deletedAt IS NULL")
     List<Movie> findAllWithGenres();
+
+    @Query("SELECT m FROM Movie m LEFT JOIN FETCH m.link WHERE m.deletedAt IS NULL")
+    List<Movie> findAllWithExternalLinks();
 
     @Query("SELECT m.movieId, m.embedding FROM Movie m WHERE m.deletedAt IS NULL AND m.embedding IS NOT NULL AND TRIM(m.embedding) <> ''")
     List<Object[]> findAllMovieEmbeddingsOnly();

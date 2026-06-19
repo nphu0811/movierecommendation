@@ -34,6 +34,8 @@ public class SeedDataService {
     @Autowired private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     @Value("${tmdb.api.key:}") private String apiKey;
+    @Value("${app.demo.seed-enabled:false}") private boolean demoSeedEnabled;
+    @Value("${app.demo.password:}") private String demoPassword;
 
     private final RestTemplate rest = new RestTemplate();
     private volatile boolean running = false;
@@ -44,6 +46,7 @@ public class SeedDataService {
     public int getTotal()      { return total; }
     public int getRatingsAdded()  { return ratingsAdded; }
     public int getCommentsAdded() { return commentsAdded; }
+    public boolean isDemoSeedEnabled() { return demoSeedEnabled; }
 
     private String url(String path) {
         return TMDB + path + "?api_key=" + apiKey;
@@ -52,6 +55,7 @@ public class SeedDataService {
     @Async
     public void seedRatingsAndComments() {
         if (running) return;
+        if (!demoSeedEnabled) { log.warn("Demo data seeding is disabled"); return; }
         if (apiKey == null || apiKey.isBlank()) { log.error("No TMDB API key"); return; }
 
         running = true; done = 0; ratingsAdded = 0; commentsAdded = 0;
@@ -96,7 +100,20 @@ public class SeedDataService {
                     List results = (List) searchResult.get("results");
                     if (results == null || results.isEmpty()) { done++; continue; }
 
-                    Map tmdbMovie = (Map) results.get(0);
+                    Map tmdbMovie = null;
+                    for (Object candidate : results) {
+                        if (candidate instanceof Map candidateMap
+                                && TmdbMetadataValidator.matches(movie, candidateMap)) {
+                            tmdbMovie = candidateMap;
+                            break;
+                        }
+                    }
+                    if (tmdbMovie == null) {
+                        log.warn("Skipped demo seed for unmatched TMDB search result: movieId={}, title='{}'",
+                            movie.getMovieId(), movie.getTitle());
+                        done++;
+                        continue;
+                    }
                     Object tmdbIdObj = tmdbMovie.get("id");
                     if (tmdbIdObj == null) { done++; continue; }
 
@@ -251,6 +268,14 @@ public class SeedDataService {
     @Transactional
     @EventListener(ApplicationReadyEvent.class)
     public void seedDemoUsersAndInteractions() {
+        if (!demoSeedEnabled) {
+            log.info("Demo user seeding is disabled");
+            return;
+        }
+        if (demoPassword == null || demoPassword.length() < 12) {
+            log.error("Demo user seeding requires app.demo.password with at least 12 characters");
+            return;
+        }
         log.info("Starting demo data seeding and metadata populating...");
         LocalDateTime startedAt = LocalDateTime.now();
         ApiSyncLog syncLog = new ApiSyncLog();
@@ -262,7 +287,7 @@ public class SeedDataService {
 
         try {
             // 1. Seed the 3 demo users
-            String encodedPassword = passwordEncoder.encode("123456");
+            String encodedPassword = passwordEncoder.encode(demoPassword);
             int successCount = 0;
 
             User actionUser = userRepository.findByEmail("action.demo@example.com").orElse(null);
@@ -302,6 +327,15 @@ public class SeedDataService {
                 newUser.setIsEmailVerified(true);
                 newUser = userRepository.save(newUser);
                 successCount++;
+            }
+
+            // Demo credentials are controlled by environment and are rotated
+            // whenever demo seeding is explicitly enabled.
+            for (User demoUser : List.of(actionUser, comedyUser, newUser)) {
+                demoUser.setPasswordHash(encodedPassword);
+                demoUser.setIsActive(true);
+                demoUser.setIsEmailVerified(true);
+                userRepository.save(demoUser);
             }
 
             // 2. Fetch movies to seed ratings

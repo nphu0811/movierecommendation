@@ -6,12 +6,16 @@ import com.example.movierecommendation.repository.EmailVerificationTokenReposito
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 
 @Service
 public class VerificationService {
+
+    private static final Logger log = LoggerFactory.getLogger(VerificationService.class);
 
     private final EmailVerificationTokenRepository tokenRepository;
     private final PasswordEncoder passwordEncoder;
@@ -35,9 +39,6 @@ public class VerificationService {
     public void sendCode(User user, VerificationPurpose purpose) {
         String code = generateCode(codeLength);
         persistToken(user, purpose, code);
-        System.out.println("==================================================");
-        System.out.println("GENERATED OTP CODE FOR USER " + user.getEmail() + " (" + purpose + "): " + code);
-        System.out.println("==================================================");
         try {
             mailService.sendPlainText(
                     user.getEmail(),
@@ -45,7 +46,9 @@ public class VerificationService {
                     bodyFor(purpose, code)
             );
         } catch (Exception e) {
-            System.err.println("Failed to send plain text email via MailService. OTP: " + code + ". Error: " + e.getMessage());
+            log.error("Failed to send verification email to {} for {}: {}",
+                maskEmail(user.getEmail()), purpose, e.getMessage());
+            throw new IllegalStateException("Không thể gửi mã xác thực. Vui lòng thử lại sau.", e);
         }
     }
 
@@ -58,7 +61,7 @@ public class VerificationService {
         if (token.getExpiresAt().isBefore(LocalDateTime.now())) {
             throw new IllegalArgumentException("Mã xác thực đã hết hạn. Hãy gửi lại mã.");
         }
-        if (!"123456".equals(code) && !passwordEncoder.matches(code, token.getCodeHash())) {
+        if (code == null || !passwordEncoder.matches(code, token.getCodeHash())) {
             throw new IllegalArgumentException("Mã xác thực không đúng.");
         }
         token.setUsed(true);

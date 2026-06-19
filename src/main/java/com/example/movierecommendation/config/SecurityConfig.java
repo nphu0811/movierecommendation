@@ -88,9 +88,12 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        if (rememberMeKey == null || rememberMeKey.length() < 32) {
+            throw new IllegalStateException("app.remember-me-key must contain at least 32 characters");
+        }
         http
             .csrf(csrf -> csrf
-                .ignoringRequestMatchers("/api/search-history/**", "/api/ai-chat/**", "/api/movies/*/video-chat")
+                .ignoringRequestMatchers("/api/search-history/**")
             )
             .authenticationProvider(authProvider())
             .authorizeHttpRequests(auth -> auth

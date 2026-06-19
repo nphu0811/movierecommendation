@@ -1,409 +1,205 @@
-# 🎬 MovieRec — AI Movie Recommendation System
+# MovieRec
 
-**Hệ thống gợi ý phim thông minh** sử dụng **hybrid algorithm** (Content-based + Collaborative Filtering + Popularity) tích hợp **OpenAI GPT-3.5** để cung cấp trải nghiệm cá nhân hóa.
+Hệ thống duyệt và gợi ý phim cá nhân hóa, xây dựng bằng Spring Boot, Thymeleaf và PostgreSQL. Hệ thống kết hợp content-based, collaborative filtering và popularity; mô hình AI tương thích OpenAI là lớp rerank tùy chọn, không phải nguồn gợi ý duy nhất.
 
-<div align="center">
+[Live demo](https://movierecommendation-production-6e68.up.railway.app/)
 
-[![Live Demo](https://img.shields.io/badge/🚀%20Live%20Demo-Railway-blue?style=for-the-badge)](https://movierecommendation-production-6e68.up.railway.app/)
-[![Java](https://img.shields.io/badge/Java-21-orange?style=flat-square&logo=java)](https://www.oracle.com/java/technologies/downloads/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.5-green?style=flat-square&logo=spring-boot)](https://spring.io/projects/spring-boot)
-[![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
+## Chức năng đã triển khai
 
-</div>
+- Guest: xem danh sách/chi tiết phim, tìm kiếm, lọc genre và xem phim tương tự.
+- User: đăng ký, đăng nhập, rating, comment, tag, watchlist, lịch sử xem và trang gợi ý cá nhân.
+- Admin: quản lý phim, genre, user, comment, report, analytics và đồng bộ metadata.
+- Recommendation: hybrid score, cold-start fallback, loại phim đã xem/đã rating, lưu kết quả và thời gian chạy.
+- AI: chat và rerank tùy chọn; khi API lỗi hoặc chưa cấu hình, hệ thống dùng kết quả hybrid.
+- Data enrichment: TMDB metadata được upsert theo `tmdb_id` và chỉ ghi khi title/year khớp.
 
----
+## Công nghệ thực tế
 
-## 📋 Mục Lục
+| Thành phần | Công nghệ |
+|---|---|
+| Backend | Java 21, Spring Boot 3.4.5 |
+| Web | Spring MVC, Thymeleaf, HTML/CSS/JavaScript |
+| Security | Spring Security session, BCrypt, CSRF, role `USER`/`ADMIN` |
+| Database | PostgreSQL 14+, Spring Data JPA, Flyway |
+| Cache | Caffeine |
+| External API | TMDB, OpenAI-compatible API |
+| Build/deploy | Gradle, Docker, Railway |
 
-- [✨ Tính Năng Chính](#-tính-năng-chính)
-- [🛠️ Tech Stack](#️-tech-stack)
-- [⚙️ Cài Đặt](#️-cài-đặt)
-- [🚀 Deploy](#-deploy)
-- [📁 Cấu Trúc Project](#-cấu-trúc-project)
-- [👥 Team Workflow](#-team-workflow)
-- [📞 Hỗ Trợ](#-hỗ-trợ)
+Dự án hiện dùng session authentication, không dùng JWT.
 
----
+## Cấu trúc source
 
-## ✨ Tính Năng Chính
-
-### 🤖 AI & Recommendation Engine
-- **Hybrid Recommendation**: Kết hợp Content-based + Collaborative Filtering + Popularity
-- **GPT-3.5 Integration**: Gợi ý phim thông minh dựa trên ngữ cảnh
-- **Real-time Search**: Tìm kiếm phim với autocomplete tức thì
-
-### 🎥 User Experience
-- 🎬 Xem trailer YouTube trực tiếp trong ứng dụng
-- 🔗 Links nhanh đến Netflix / FPT Play
-- ⭐ Đánh giá & bình luận phim
-- 📌 Watchlist & lịch sử xem
-- 💾 Lưu trữ các phim yêu thích
-
-### 🔧 Admin Features
-- 📸 Tự động fetch poster từ TMDB API
-- 🌱 Seed dữ liệu ratings & comments
-- 📊 Dashboard quản lý nội dung
-- 👤 Quản lý người dùng
-
----
-
-## 🛠️ Tech Stack
-
-| Layer | Technology | Version |
-|-------|-----------|---------|
-| **Backend** | Java, Spring Boot | 21 / 3.4.5 |
-| **Security** | Spring Security, BCrypt, JWT | Latest |
-| **Frontend** | Thymeleaf, HTML5, CSS3 | Netflix-style |
-| **Database** | PostgreSQL (Prod) / SQL Server (Local) | 14+ |
-| **AI/ML** | OpenAI GPT-3.5-turbo | Latest |
-| **External APIs** | TMDB API, MovieLens 100K | - |
-| **Build Tool** | Gradle | 8.x |
-| **Deployment** | Railway, Docker | Latest |
-
----
-
-## ⚙️ Cài Đặt
-
-### 📋 Yêu Cầu
-- Java 21+
-- PostgreSQL 14+ (hoặc SQL Server cho local)
-- Gradle 8.x
-- Git
-
-### 1️⃣ Clone Repository
-
-```bash
-git clone https://github.com/nphu0811/movierecommendation.git
-cd movierecommendation
+```text
+src/
+├── main/
+│   ├── java/com/example/movierecommendation/
+│   │   ├── algorithm/RecommendationEngine.java
+│   │   ├── config/
+│   │   ├── controller/
+│   │   ├── dto/
+│   │   ├── entity/
+│   │   ├── repository/
+│   │   └── service/
+│   └── resources/
+│       ├── db/migration/
+│       ├── static/
+│       ├── templates/
+│       ├── application.properties.example
+│       └── application-prod.properties
+└── test/java/com/example/movierecommendation/
 ```
 
-### 2️⃣ Cấu Hình Database
+Source backend, template, migration và test đều nằm trong repo; package gốc là `com.example.movierecommendation`.
 
-#### Local (SQL Server)
-```bash
-# Chạy file setup
-sqlcmd -S localhost -U sa -P <password> -i setup_full.sql
-```
+## Chạy local
 
-#### Production (PostgreSQL)
-Liên hệ team lead để nhận file `setup_full.sql`:
-```bash
-psql -U postgres -d movierecommendation -f setup_full.sql
-```
+Yêu cầu:
 
-### 3️⃣ Tạo File Configuration
+- Java 21
+- PostgreSQL 14+
+
+Tạo database trống, sau đó copy file cấu hình mẫu:
 
 ```bash
 cp src/main/resources/application.properties.example \
    src/main/resources/application.properties
 ```
 
-**Điền các giá trị sau vào `application.properties`:**
+Cấu hình tối thiểu:
 
 ```properties
-# OpenAI Configuration
-openai.api.key=sk-proj-YOUR_OPENAI_KEY
-
-# TMDB API Configuration
-tmdb.api.key=YOUR_TMDB_API_KEY
-
-# Security
-app.remember-me-key=YOUR_RANDOM_32_CHARACTER_STRING
-
-# Database (Local)
-spring.datasource.url=jdbc:sqlserver://localhost:1433;databaseName=movierecommendation
-spring.datasource.username=sa
+spring.datasource.url=jdbc:postgresql://localhost:5432/movierecommendation
+spring.datasource.username=postgres
 spring.datasource.password=your_password
+spring.datasource.driver-class-name=org.postgresql.Driver
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
 
-# Server
-server.port=8080
+tmdb.api.key=
+ai.api-key=
+app.remember-me-key=a-random-secret-at-least-32-characters
+app.demo.seed-enabled=false
 ```
 
-**Cách lấy API Keys:**
-- 🔑 **OpenAI**: https://platform.openai.com/account/api-keys
-- 🎬 **TMDB**: https://www.themoviedb.org/settings/api
-
-### 4️⃣ Chạy Application
+Chạy ứng dụng:
 
 ```bash
-# Build & Run
 ./gradlew bootRun
-
-# Hoặc build JAR
-./gradlew build
-java -jar build/libs/movierecommendation-*.jar
 ```
 
-Truy cập tại: **http://localhost:8080**
+Mặc định local dùng port cấu hình trong `application.properties`. Flyway tự tạo core schema trên database trống và tự chạy migration mới khi ứng dụng khởi động.
 
-### 👤 Tài Khoản Test hệ thống
+## Migration và data integrity
 
-#### Tài Khoản Admin
+Migration nằm tại `src/main/resources/db/migration`:
+
+- `V1__core_schema.sql`: core schema có FK, unique và check constraint.
+- `V7__data_integrity_and_demo_cleanup.sql`: cleanup database legacy v1-v6 và thêm guardrail.
+
+V7 thực hiện:
+
+- xóa `TestGenre`, `New Genre` và chặn tạo lại ở DB/application;
+- gộp genre trùng khác hoa-thường/khoảng trắng;
+- unique `tmdb_id`, `imdb_id`, rating user/movie và watchlist user/movie;
+- check rating 0.5–5.0, comment không rỗng;
+- thêm index cho title, release year, movie genre, rating, watch history và search history;
+- sửa metadata/genre của bốn record demo bị báo lỗi: The Big Green, King Kong vs. Godzilla, The Shawshank Redemption và The Matrix;
+- thêm `metadata_source`, `metadata_verified_at` để truy vết metadata.
+
+TMDB enrichment dùng `links.tmdb_id` làm khóa chính. Response bị bỏ qua nếu title không khớp hoặc release year lệch quá một năm, vì vậy external ID sai không thể ghi đè overview/poster của phim khác.
+
+## Recommendation engine
+
+Điểm cuối:
+
+```text
+hybrid = 0.40 × content + 0.40 × collaborative + 0.20 × popularity
 ```
-Email:    admin@movierec.com
-Password: (liên hệ team lead)
+
+- Content-based: tạo genre profile từ rating/lịch sử xem/preference và chấm candidate theo độ phù hợp.
+- Collaborative: cosine similarity giữa vector rating, lấy các neighbor đủ số phim chung và dự đoán điểm có trọng số.
+- Popularity: fallback theo dữ liệu xem/đánh giá toàn hệ thống.
+- Exclusion rule: không gợi ý phim user đã xem hoặc đã rating.
+- Cold start: preference nếu có; nếu chưa có dữ liệu thì dùng top-rated/trending.
+- AI rerank: chỉ sắp xếp lại candidate do hybrid tạo; lỗi API sẽ fallback về hybrid.
+
+Mỗi lần sinh gợi ý được lưu trong `user_recommendations` và `recommendation_logs`, gồm algorithm type, số phim, thời gian chạy và ghi chú fallback. UI hiển thị lý do theo genre/history hoặc lý do từ AI.
+
+Các trọng số có thể đổi bằng properties:
+
+```properties
+recommendation.alpha=0.40
+recommendation.beta=0.40
+recommendation.gamma=0.20
 ```
 
-#### Tài Khoản Demo Người dùng (Phase 2 Seeded)
-Dưới đây là 3 tài khoản demo được tự động seed khi khởi động hệ thống để kiểm thử sự khác biệt trong thuật toán gợi ý phim:
+## Business rules
 
-1. **User thích Hành động / Phiêu lưu (Action/Adventure)**
-   - Email: `action.demo@example.com`
-   - Mật khẩu: `123456`
-   - Trải nghiệm: Gợi ý các phim thiên về Hành động và lý do hiển thị theo gu Hành động.
+| Nghiệp vụ | Rule |
+|---|---|
+| Rating | Một user/phim; rate lại là update; chỉ nhận bước 0.5 từ 0.5 đến 5.0 |
+| Watchlist | Khóa chính `(user_id, movie_id)`, không duplicate |
+| Comment/tag | Bắt buộc đăng nhập, không rỗng, giới hạn độ dài, output được escape |
+| Recommendation | Không trả lại phim đã xem/đã rating |
+| Genre | Trim/chuẩn hóa khoảng trắng, unique không phân biệt hoa-thường, cấm tên test |
+| TMDB import | Upsert theo `tmdb_id`, kiểm tra title/year trước khi cập nhật |
+| Admin | Mọi URL `/admin/**` yêu cầu `ROLE_ADMIN` ở backend |
 
-2. **User thích Hài hước / Lãng mạn (Comedy/Romance)**
-   - Email: `comedy.demo@example.com`
-   - Mật khẩu: `123456`
-   - Trải nghiệm: Gợi ý các phim thiên về Hài hước, Lãng mạn.
+## Bảo mật
 
-3. **User mới tinh (New user - Cold Start)**
-   - Email: `new.demo@example.com`
-   - Mật khẩu: `123456`
-   - Trải nghiệm: Nhận gợi ý phổ biến (trending) hoặc theo thiết lập sở thích Preferences.
-
----
-
-## 🚀 Deploy
-
-### Railway (Automatic Deployment)
-
-Railway tự động deploy khi push code lên nhánh `main`.
-
-#### 📌 Cấu Hình Environment Variables
-
-Vào [Railway Dashboard](https://railway.app) và set các biến sau:
+- Password được hash bằng BCrypt.
+- Session cookie + Spring Security filter chain; form POST dùng CSRF token.
+- User ID cho rating/watchlist/comment lấy từ principal, không lấy từ request.
+- OTP chỉ so khớp hash, có thời hạn và chỉ dùng một lần; không có mã bypass và không ghi OTP ra log.
+- `REMEMBER_ME_KEY`, API key và database credential phải truyền qua environment variable.
+- Demo seed mặc định tắt. Chỉ bật ở môi trường demo riêng bằng:
 
 ```env
-# Database
-DATABASE_URL=postgresql://user:password@host:5432/movierecommendation
-
-# AI & APIs
-OPENAI_API_KEY=sk-proj-...
-TMDB_API_KEY=f3e922...
-
-# Security
-REMEMBER_ME_KEY=your_random_secret_key
-
-# Server
-JAVA_OPTS=-Xmx512m -Xms256m
+DEMO_SEED_ENABLED=true
+DEMO_PASSWORD=<a-demo-password-with-at-least-12-characters>
 ```
 
-#### 🔄 Deploy Flow
+Không công khai mật khẩu demo trong repo.
+
+## Kiểm thử
 
 ```bash
-# 1. Commit code
-git add .
-git commit -m "✨ Add feature X"
-
-# 2. Push lên main
-git push origin main
-
-# 3. Railway tự động deploy
-# ✅ Check Railway dashboard để xem trạng thái
+./gradlew test
 ```
 
-#### 🔗 Live URL
-🎯 **https://movierecommendation-production-6e68.up.railway.app/**
+Bộ test hiện kiểm tra context/schema trên database độc lập, security policy cho guest/user/admin và CSRF, hai user khác genre nhận hai kết quả recommendation khác nhau, AI fallback/chat orchestration, recommendation explanation, movie report, error template, TMDB title/year validation, TMDB upsert theo external ID, genre cleanup rule, latest release query và việc mã OTP cố định không thể bypass.
 
----
+## Production environment
 
-## 📁 Cấu Trúc Project
+Các biến chính trên Railway:
 
-```
-movierecommendation/
-├── src/main/java/com/movierec/
-│   ├── algorithm/           # 🤖 Hybrid recommendation engine
-│   │   ├── ContentBased.java
-│   │   ├── CollaborativeFiltering.java
-│   │   └── HybridRecommender.java
-│   ├── config/              # ⚙️ Security, WebClient config
-│   │   ├── SecurityConfig.java
-│   │   └── WebClientConfig.java
-│   ├── controller/          # 🌐 HTTP endpoints (REST API)
-│   │   ├── MovieController.java
-│   │   ├── UserController.java
-│   │   └── AdminController.java
-│   ├── entity/              # 🗄️ JPA entities (Database models)
-│   │   ├── Movie.java
-│   │   ├── User.java
-│   │   ├── Rating.java
-│   │   └── Comment.java
-│   ├── repository/          # 🔍 Database queries (Spring Data JPA)
-│   │   ├── MovieRepository.java
-│   │   ├── UserRepository.java
-│   │   └── RatingRepository.java
-│   ├── service/             # 💼 Business logic, OpenAI, TMDB integration
-│   │   ├── MovieService.java
-│   │   ├── RecommendationService.java
-│   │   ├── OpenAIService.java
-│   │   └── TMDBService.java
-│   └── MovieRecommendationApplication.java
-├── src/main/resources/
-│   ├── application.properties.example
-│   ├── templates/           # 🎨 Thymeleaf HTML templates
-│   │   ├── home.html
-│   │   ├── movie-detail.html
-│   │   └── admin-dashboard.html
-│   └── static/
-│       ├── css/             # Netflix-style styling
-│       ├── js/              # Frontend logic
-│       └── images/
-├── src/test/
-│   ├── java/                # 🧪 Unit tests
-│   └── resources/
-├── build.gradle             # Gradle build configuration
-├── Dockerfile               # Docker image definition
-├── docker-compose.yml       # Local development with Docker
-└── README.md
+```env
+SPRING_PROFILES_ACTIVE=prod
+SPRING_DATASOURCE_URL=jdbc:postgresql://host:5432/database
+PGUSER=database_user
+PGPASSWORD=database_password
+REMEMBER_ME_KEY=<random-secret-at-least-32-characters>
+TMDB_API_KEY=<optional>
+AI_API_KEY=<optional>
+AI_BASE_URL=https://api.openai.com/v1
+AI_CHAT_MODEL=gpt-4o-mini
+DEMO_SEED_ENABLED=false
 ```
 
----
-
-## 👥 Team Workflow
-
-### 🔄 Git Flow
+Build image:
 
 ```bash
-# 1️⃣ Bước 1: Update code mới nhất
-git pull origin main
-
-# 2️⃣ Bước 2: Tạo feature branch (tuỳ chọn)
-git checkout -b feature/your-feature-name
-
-# 3️⃣ Bước 3: Code & Commit
-git add .
-git commit -m "✨ Your feature description"
-
-# 4️⃣ Bước 4: Push & Create Pull Request
-git push origin feature/your-feature-name
-# Vào GitHub tạo Pull Request
-
-# 5️⃣ Bước 5: Merge sau khi approved
-git checkout main
-git pull origin main
-git merge feature/your-feature-name
-git push origin main
+./gradlew clean build
+docker build -t movierec .
 ```
 
-### 💡 Commit Message Convention
+## Demo bảo vệ đề xuất
 
-```
-✨ Thêm feature mới
-🐛 Fix bug
-📖 Update documentation
-🎨 Refactor code
-🧪 Add tests
-⚡ Improve performance
-🔒 Security fix
-```
+1. Guest: Home → filter/search → movie detail → similar movies.
+2. Action user: đăng nhập → rating/watchlist → For You → xem lý do gợi ý.
+3. New user: chứng minh cold-start bằng trending/preference.
+4. Admin: dashboard → genre/movie management → sync log.
+5. Kỹ thuật: mở `RecommendationEngine`, migration V7 và test report để chứng minh thuật toán/data integrity.
 
-### 🤝 Code Review Checklist
-- [ ] Code theo style guide của team
-- [ ] Có unit tests
-- [ ] Không có magic numbers
-- [ ] Error handling hoàn thiện
-- [ ] Documentation cập nhật
+## License
 
----
-
-## 🏗️ Architecture & Recommendation Flow
-
-Hệ thống sử dụng cơ chế gợi ý lai (Hybrid Recommendation) kết hợp giữa các thuật toán lọc cộng tác (Collaborative Filtering), lọc dựa trên nội dung nâng cao (Content-Based Filtering) và độ phổ biến hệ thống (Popularity Score). 
-
-### Luồng xử lý thuật toán (Recommendation Flow)
-
-```
-[Rating + Lịch sử xem + Thể loại ưu thích + Độ phổ biến]
-                       ↓
-         ┌─────────────┼─────────────┐
-         ↓             ↓             ↓
-  [Content-based] [Collaborative] [Popularity]
-    Score (40%)     Score (40%)   Score (20%)
-         └─────────────┼─────────────┘
-                       ↓
-                [Hybrid Score]
-                       ↓
-           [Optional AI Chat Rerank]
-                       ↓
-          [Personalized Explanations]
-```
-
-1. **Thu thập dữ liệu đầu vào**: Lịch sử đánh giá phim (ratings), lịch sử xem phim (watch history) và các tùy chọn sở thích (User Preferences) của người dùng.
-2. **Lọc dựa trên nội dung (Content-Based Score)**: 
-   - Xây dựng hồ sơ thể loại (Genre Profile) dựa trên các phim được đánh giá cao. Nếu lịch sử trống, hệ thống sẽ sử dụng thể loại yêu thích được khai báo trong `User Preferences` (để giải quyết bài toán khởi động lạnh - cold start).
-   - Lọc bỏ các thể loại nằm trong danh sách không thích (disliked genres).
-   - Tính toán độ tương tự tương đồng (Cosine/Jaccard Similarity) của phim dựa trên 4 yếu tố trọng số:
-     - Thể loại trùng lặp (Genre Overlap): 50%
-     - Tags trùng lặp (Tag Overlap): 20%
-     - Từ khóa nội dung (Description keyword overlap): 20%
-     - Đạo diễn & Diễn viên trùng lặp (Actor/Director overlap): 10%
-3. **Lọc cộng tác (Collaborative Filtering)**:
-   - Tìm kiếm các người dùng láng giềng tương đồng (k-Nearest Neighbors) có chung danh sách phim đã đánh giá.
-   - Tính Cosine Similarity giữa các vector rating của người dùng mục tiêu với các láng giềng.
-   - Dự đoán điểm đánh giá cho các phim chưa xem dựa trên điểm số của láng giềng có trọng số similarity.
-4. **Điểm phổ biến (Popularity Score)**:
-   - Tính toán điểm phổ biến dựa trên tổng lượt xem (rating count) của phim trên toàn hệ thống.
-5. **Điểm lai Hybrid (Hybrid Score)**:
-   - Điểm số cuối cùng = `alpha * ContentScore` + `beta * CollabScore` + `gamma * PopularityScore` (mặc định: 40% Content + 40% Collab + 20% Popularity).
-6. **AI Reranking (Tùy chọn)**:
-   - Khi sử dụng AI Chatbot, danh sách các phim phù hợp nhất sẽ được chuyển làm candidate gửi tới OpenAI GPT kèm theo ngữ cảnh sở thích của người dùng để chọn lọc, sắp xếp lại và đưa ra lý giải bằng ngôn ngữ tự nhiên.
-
-### Security Flow
-
-```
-User Login
-    ↓
-Spring Security Filter Chain
-    ↓
-JWT Token / Session
-    ↓
-Role-Based Access Control (RBAC)
-    ↓
-Encrypted Password (BCrypt)
-```
-
----
-
-## 📞 Hỗ Trợ
-
-### 🐛 Report Bugs
-1. Mô tả chi tiết lỗi
-2. Steps to reproduce
-3. Expected vs Actual behavior
-4. Attach screenshots nếu có
-
-**Liên hệ:** team lead hoặc tạo Issue trên GitHub
-
-### 📚 Documentation
-- [Spring Boot Docs](https://spring.io/projects/spring-boot)
-- [TMDB API](https://developer.themoviedb.org/docs)
-- [OpenAI API](https://platform.openai.com/docs)
-
-### 🔐 Security Issues
-⚠️ **Không công khai bug bảo mật!** Liên hệ team lead trực tiếp.
-
----
-
-## 📄 License
-
-MIT License - Xem file [LICENSE](LICENSE) để chi tiết.
-
----
-
-## 👨‍💻 Contributors
-
-| Role | Contact |
-|------|---------|
-| Team Lead & Backend |  [@Yuhnart-07](https://github.com/Yuhnart-07) |
-| FullStack |[@nphu0811](https://github.com/nphu0811) |
-
----
-
-<div align="center">
-
-**Made with ❤️ by MovieRec Team**
-
-⭐ Nếu project hữu ích, hãy cho một star!
-
-</div>
+[MIT](LICENSE)

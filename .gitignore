@@ -29,6 +29,8 @@ Thumbs.db
 
 # Dataset SQL - quá nặng, không cần trong repo
 *.sql
+!src/main/resources/db/migration/
+!src/main/resources/db/migration/*.sql
 
 # Local Gradle
 .gradle-local/

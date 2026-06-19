@@ -62,6 +62,12 @@ public class Movie {
     @Column(name = "embedding", columnDefinition = "TEXT")
     private String embedding;
 
+    @Column(name = "metadata_source", length = 40)
+    private String metadataSource;
+
+    @Column(name = "metadata_verified_at")
+    private LocalDateTime metadataVerifiedAt;
+
     @Transient
     private String recommendationReason;
 
@@ -131,6 +137,10 @@ public class Movie {
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
     public LocalDateTime getDeletedAt() { return deletedAt; }
     public void setDeletedAt(LocalDateTime deletedAt) { this.deletedAt = deletedAt; }
+    public String getMetadataSource() { return metadataSource; }
+    public void setMetadataSource(String metadataSource) { this.metadataSource = metadataSource; }
+    public LocalDateTime getMetadataVerifiedAt() { return metadataVerifiedAt; }
+    public void setMetadataVerifiedAt(LocalDateTime metadataVerifiedAt) { this.metadataVerifiedAt = metadataVerifiedAt; }
 
     public List<Genre> getGenres() { return genres; }
     public void setGenres(List<Genre> genres) { this.genres = genres; }

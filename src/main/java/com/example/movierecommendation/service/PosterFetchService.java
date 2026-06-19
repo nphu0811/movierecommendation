@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
+import java.time.LocalDateTime;
 
 @Service
 public class PosterFetchService {
@@ -46,7 +47,7 @@ public class PosterFetchService {
         running = true; done = 0;
         try {
             // Lấy phim cần fetch: chưa có poster HOẶC poster sai format HOẶC chưa có description/trailer
-            List<Movie> toFix = movieRepository.findAll().stream()
+            List<Movie> toFix = movieRepository.findAllWithExternalLinks().stream()
                 .filter(m -> m.getPosterUrl() == null
                           || (m.getPosterUrl() != null && m.getPosterUrl().matches(".*\\/\\d+\\.jpg"))
                           || m.getDescription() == null || m.getDescription().isEmpty()
@@ -61,19 +62,27 @@ public class PosterFetchService {
                 try {
                     // 1) Extract tmdbId từ poster_url cũ (format: .../123.jpg)
                     String tmdbId = null;
-                    if (movie.getPosterUrl() != null && movie.getPosterUrl().matches(".*\\/\\d+\\.jpg")) {
+                    // links.tmdb_id is the authoritative mapping. The numeric
+                    // legacy poster URL is only a fallback for old seed rows.
+                    if (movie.getLink() != null && movie.getLink().getTmdbId() != null) {
+                        tmdbId = movie.getLink().getTmdbId().toString();
+                    }
+                    if (tmdbId == null && movie.getPosterUrl() != null && movie.getPosterUrl().matches(".*\\/\\d+\\.jpg")) {
                         String u = movie.getPosterUrl();
                         tmdbId = u.substring(u.lastIndexOf('/') + 1, u.lastIndexOf('.'));
                     }
                     // 2) Nếu không có → tra bảng links (phim mới import từ CSV)
-                    if (tmdbId == null && movie.getLink() != null && movie.getLink().getTmdbId() != null) {
-                        tmdbId = movie.getLink().getTmdbId().toString();
-                    }
                     if (tmdbId == null) { done++; continue; }
 
                     // Fetch movie details
                     Map detail = rest.getForObject(url("/movie/" + tmdbId), Map.class);
                     if (detail != null) {
+                        if (!TmdbMetadataValidator.matches(movie, detail)) {
+                            log.warn("Skipped mismatched TMDB metadata: movieId={}, localTitle='{}', tmdbId={}, tmdbTitle='{}', releaseDate='{}'",
+                                movie.getMovieId(), movie.getTitle(), tmdbId, detail.get("title"), detail.get("release_date"));
+                            done++;
+                            continue;
+                        }
                         // Poster
                         if (detail.get("poster_path") != null)
                             movie.setPosterUrl(IMG342 + detail.get("poster_path"));
@@ -85,6 +94,9 @@ public class PosterFetchService {
                         // Backdrop
                         if (detail.get("backdrop_path") != null)
                             movie.setBackdropUrl(IMG780 + detail.get("backdrop_path"));
+
+                        movie.setMetadataSource("TMDB");
+                        movie.setMetadataVerifiedAt(LocalDateTime.now());
                     }
 
                     // Fetch trailer

@@ -9,4 +9,5 @@ import java.util.Optional;
 @Repository
 public interface LinkRepository extends JpaRepository<Link, Integer> {
     Optional<Link> findByMovieMovieId(Integer movieId);
+    Optional<Link> findByTmdbId(Integer tmdbId);
 }

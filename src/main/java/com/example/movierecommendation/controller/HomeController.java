@@ -77,7 +77,7 @@ public class HomeController {
             model.addAttribute("trending", recommendationService.getTrendingMovies());
             model.addAttribute("topRated", recommendationService.getTopRatedMovies());
         }
-        model.addAttribute("newReleases", movieService.getAllMovies(0, 8).getContent());
+        model.addAttribute("newReleases", movieService.getLatestReleases(8));
         model.addAttribute("allGenres", movieService.getAllGenres());
         return "home";
     }
