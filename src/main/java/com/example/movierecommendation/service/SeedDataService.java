@@ -336,6 +336,9 @@ public class SeedDataService {
             Random rand = new Random();
             int metadataUpdated = 0;
             for (Movie m : allMovies) {
+                if (metadataUpdated >= 100) {
+                    break;
+                }
                 boolean updated = false;
                 if (m.getActorsText() == null || m.getActorsText().trim().isEmpty()) {
                     String title = m.getTitle().toLowerCase();
@@ -472,6 +475,11 @@ public class SeedDataService {
         log.info("Seeding video timeline events...");
         for (Movie m : allMovies) {
             String title = m.getTitle().toLowerCase();
+            if (!title.contains("inception") && !title.contains("interstellar") 
+                    && !title.contains("dark knight") && !title.contains("batman") 
+                    && !title.contains("matrix") && !title.contains("avatar")) {
+                continue;
+            }
             List<VideoTimeline> existing = videoTimelineRepository.findByMovieMovieIdOrderByTimestampSecondsAsc(m.getMovieId());
             if (!existing.isEmpty()) continue;
 
