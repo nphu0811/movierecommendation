@@ -8,6 +8,7 @@ import com.example.movierecommendation.repository.VideoTimelineRepository;
 import com.example.movierecommendation.service.InteractionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Collections;
 import java.util.List;
@@ -125,6 +126,16 @@ class ChatAgentOrchestrationTest {
         assertEquals("MOVIE_RECOMMENDATION", plan.getIntent());
         assertEquals("RECOMMEND_MOVIES", plan.getToolCalls().getFirst().getName());
         assertEquals("{\"movieIds\":[42]}", plan.getToolCalls().getFirst().getArguments());
+    }
+
+    @Test
+    void providerKeepsBackwardCompatibilityWithExistingOpenAiKey() {
+        OpenAICompatibleChatModelClient client = new OpenAICompatibleChatModelClient();
+        ReflectionTestUtils.setField(client, "baseUrl", "https://api.openai.com/v1");
+        ReflectionTestUtils.setField(client, "apiKey", "");
+        ReflectionTestUtils.setField(client, "legacyApiKey", "existing-railway-secret");
+
+        assertTrue(client.isEnabled());
     }
 
     private ChatAgentPlan plan(String tool, String arguments) {

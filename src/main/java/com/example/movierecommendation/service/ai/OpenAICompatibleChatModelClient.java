@@ -23,8 +23,11 @@ public class OpenAICompatibleChatModelClient implements ChatModelClient {
     @Value("${ai.base-url:https://api.openai.com/v1}")
     private String baseUrl;
 
-    @Value("${ai.api-key:${openai.api.key:}}")
+    @Value("${ai.api-key:}")
     private String apiKey;
+
+    @Value("${openai.api.key:}")
+    private String legacyApiKey;
 
     @Value("${ai.chat-model:gpt-4o-mini}")
     private String chatModel;
@@ -37,7 +40,7 @@ public class OpenAICompatibleChatModelClient implements ChatModelClient {
     @Override
     public boolean isEnabled() {
         String url = clean(baseUrl);
-        String key = clean(apiKey);
+        String key = effectiveApiKey();
         boolean localProvider = url.contains("localhost") || url.contains("127.0.0.1") || url.contains("host.docker.internal");
         return !url.isEmpty() && (!key.isEmpty() || localProvider);
     }
@@ -82,7 +85,7 @@ public class OpenAICompatibleChatModelClient implements ChatModelClient {
                     WebClient.Builder builder = WebClient.builder()
                         .baseUrl(clean(baseUrl))
                         .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
-                    String key = clean(apiKey);
+                    String key = effectiveApiKey();
                     if (!key.isEmpty()) {
                         builder.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + key);
                     }
@@ -95,5 +98,10 @@ public class OpenAICompatibleChatModelClient implements ChatModelClient {
 
     private String clean(String value) {
         return value == null ? "" : value.replace("\"", "").trim().replaceAll("/+$", "");
+    }
+
+    private String effectiveApiKey() {
+        String configured = clean(apiKey);
+        return configured.isEmpty() ? clean(legacyApiKey) : configured;
     }
 }
