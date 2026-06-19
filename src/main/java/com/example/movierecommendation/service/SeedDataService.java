@@ -29,7 +29,6 @@ public class SeedDataService {
     @Autowired private CommentRepository commentRepository;
     @Autowired private WatchHistoryRepository watchHistoryRepository;
     @Autowired private GenreRepository genreRepository;
-    @Autowired private ApiSyncLogRepository apiSyncLogRepository;
     @Autowired private VideoTimelineRepository videoTimelineRepository;
     @Autowired private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
@@ -277,13 +276,6 @@ public class SeedDataService {
             return;
         }
         log.info("Starting demo data seeding and metadata populating...");
-        LocalDateTime startedAt = LocalDateTime.now();
-        ApiSyncLog syncLog = new ApiSyncLog();
-        syncLog.setProvider("SYSTEM");
-        syncLog.setAction("SEED_DEMO_DATA");
-        syncLog.setStatus("RUNNING");
-        syncLog.setStartedAt(startedAt);
-        syncLog = apiSyncLogRepository.save(syncLog);
 
         try {
             // 1. Seed the 3 demo users
@@ -489,19 +481,10 @@ public class SeedDataService {
             // Seed timeline events
             seedTimelineEvents(allMovies);
 
-            syncLog.setStatus("SUCCESS");
-            syncLog.setTotalItems(3 + metadataUpdated);
-            syncLog.setSuccessCount(3 + metadataUpdated);
-            syncLog.setFinishedAt(LocalDateTime.now());
-            apiSyncLogRepository.save(syncLog);
             log.info("✅ Demo data seeding finished successfully!");
 
         } catch (Exception e) {
             log.error("❌ Seeding demo data failed: {}", e.getMessage(), e);
-            syncLog.setStatus("FAILED");
-            syncLog.setErrorMessage(e.getMessage());
-            syncLog.setFinishedAt(LocalDateTime.now());
-            apiSyncLogRepository.save(syncLog);
         }
     }
 
