@@ -31,12 +31,12 @@ public interface RatingRepository extends JpaRepository<Rating, Integer> {
         return findByMovieMovieIdAndDeletedAtIsNull(movieId);
     }
 
-    // Chỉ lấy users đã rate ít nhất 1 phim trong danh sách (thay thế findAll)
+    // Only get users who have rated at least 1 movie in the list (replace findAll)
     @Query("SELECT DISTINCT r.user.userId FROM Rating r WHERE r.movie.movieId IN :movieIds AND r.user.userId != :userId AND r.deletedAt IS NULL")
     List<Integer> findUserIdsWithCommonMovies(@Param("movieIds") List<Integer> movieIds,
                                                @Param("userId") Integer userId);
 
-    // Lấy ratings của danh sách users cụ thể
+    // Get ratings of a specific list of users
     @Query("SELECT r FROM Rating r JOIN FETCH r.movie JOIN FETCH r.user WHERE r.user.userId IN :userIds AND r.deletedAt IS NULL")
     List<Rating> findByUserUserIdIn(@Param("userIds") List<Integer> userIds);
 

@@ -28,12 +28,12 @@
                     <input type="text" id="mainSearchInput" 
                            name="q"
                            th:value="${keyword}"
-                           placeholder="Movies, actors, or genres..." 
+                           th:placeholder="#{search.placeholder}" 
                            autocomplete="off" autofocus/>
                     <button type="button" class="search-clear-btn" id="searchClearBtn">
                         <i class="ph-bold ph-x"></i>
                     </button>
-                    <button type="submit" class="search-submit-btn">Tìm kiếm</button>
+                    <button type="submit" class="search-submit-btn" th:text="#{search.title}">Search</button>
                 </div>
                 
                 <!-- Autocomplete Dropdown -->
@@ -50,8 +50,8 @@
                     <th:block th:each="trend, iter : ${trendingSearches}" th:if="${iter.index < 5}">
                         <a class="search-initial-trend"
                            th:href="@{/search(q=${trend.query}, source='trending')}">
-                            <i class="ph-fill ph-fire"></i>
-                            <span th:text="${trend.query}">Trending query</span>
+                             <i class="ph-fill ph-fire"></i>
+                             <span th:text="${trend.query}">Trending query</span>
                         </a>
                     </th:block>
                 </div>
@@ -66,7 +66,7 @@
                 <!-- Empty Search State -->
                 <div th:if="${keyword != null and #lists.isEmpty(movies)}" class="search-empty-state" style="margin-bottom: 40px;">
                     <i class="ph-bold ph-magnifying-glass"></i>
-                    <h2 th:text="|No results for &quot;${keyword}&quot;|">No results found</h2>
+                    <h2 th:text="#{search.noResults}">No results found</h2>
                     <p>Try different keywords or explore our top picks below.</p>
                 </div>
 
@@ -103,12 +103,12 @@
             <!-- ── Search Results ── -->
             <div th:if="${keyword != null and !#lists.isEmpty(movies)}">
 
-                <!-- Section 1: Kết quả tìm kiếm -->
+                <!-- Section 1: Search Results -->
                 <div class="search-results-section section">
                     <div class="section-header" style="margin-bottom: var(--space-5);">
                         <h2 class="section-title">
                             <i class="ph-bold ph-magnifying-glass" style="color:var(--red);margin-right:8px"></i>
-                            Kết quả tìm kiếm cho "<span th:text="${keyword}" style="color:var(--white)">query</span>"
+                            <span th:text="#{search.resultsFor}">Search results for</span> "<span th:text="${keyword}" style="color:var(--white)">query</span>"
                         </h2>
                     </div>
 
@@ -122,13 +122,13 @@
                     <div class="show-more-container" id="showMoreContainer" th:if="${#lists.size(movies) > 10}">
                         <div class="show-more-line"></div>
                         <button type="button" class="show-more-btn" onclick="showMoreResults()">
-                            <span>Hiện thêm</span>
+                            <span th:text="#{search.viewMore}">Show More</span>
                             <i class="ph-bold ph-caret-down"></i>
                         </button>
                     </div>
                 </div>
 
-                <!-- Section 2: Nội dung tương tự -->
+                <!-- Section 2: Similar Content -->
                 <div class="search-results-section section" th:if="${similarMovies != null and !#lists.isEmpty(similarMovies)}">
                     <div class="section-header" style="margin-bottom: var(--space-5);">
                         <h2 class="section-title section-title--lg">
@@ -136,7 +136,7 @@
                                 style="margin-right:8px; vertical-align:middle">
                                 <path d="M239.29,144.29l-49.95,14.65a25.86,25.86,0,0,0-17.4,17.4l-14.65,49.95a15.89,15.89,0,0,1-30.58,0l-14.65-49.95a25.86,25.86,0,0,0-17.4-17.4l-49.95-14.65a15.89,15.89,0,0,1,0-30.58l49.95-14.65a25.86,25.86,0,0,0,17.4-17.4l14.65-49.95a15.89,15.89,0,0,1,30.58,0l14.65,49.95a25.86,25.86,0,0,0,17.4,17.4l49.95,14.65A15.89,15.89,0,0,1,239.29,144.29Z"></path>
                             </svg>
-                            Recommended <span>Similar</span>
+                            <span th:text="#{search.similarContent}">Recommended Similar</span>
                         </h2>
                     </div>
                     
@@ -155,7 +155,7 @@
                                 style="margin-right:8px; vertical-align:middle">
                                 <path d="M239.29,144.29l-49.95,14.65a25.86,25.86,0,0,0-17.4,17.4l-14.65,49.95a15.89,15.89,0,0,1-30.58,0l-14.65-49.95a25.86,25.86,0,0,0-17.4-17.4l-49.95-14.65a15.89,15.89,0,0,1,0-30.58l49.95-14.65a25.86,25.86,0,0,0,17.4-17.4l14.65-49.95a15.89,15.89,0,0,1,30.58,0l14.65,49.95a25.86,25.86,0,0,0,17.4,17.4l49.95,14.65A15.89,15.89,0,0,1,239.29,144.29Z"></path>
                             </svg>
-                            Recommended <span>For You</span>
+                            <span th:text="#{nav.forYou}">Recommended For You</span>
                         </h2>
                     </div>
                     
@@ -174,7 +174,8 @@
 
     <script th:src="@{/js/app.js}"></script>
     <script th:src="@{/js/search.js}"></script>
-    <script>
+    <script th:inline="javascript">
+        /*<![CDATA[*/
         function toggleAiSummary(btn, movieId) {
             const panel = document.getElementById(`aiSummaryPanel-${movieId}`);
             const isExpanded = panel.classList.contains('expanded');
@@ -195,7 +196,8 @@
                         })
                         .catch(err => {
                             box.classList.remove('loading');
-                            box.innerHTML = `<i class="ph-bold ph-warning-circle sparkle-icon"></i> Không thể tải bản tóm tắt tại thời điểm này.`;
+                            const aiSummaryErrorMsg = /*[[#{search.aiSummaryError}]]*/ '';
+                            box.innerHTML = `<i class="ph-bold ph-warning-circle sparkle-icon"></i> ${aiSummaryErrorMsg}`;
                         });
                 }
             }
@@ -222,6 +224,7 @@
                 }
             }
         }
+        /*]]>*/
     </script>
 </body>
 </html>

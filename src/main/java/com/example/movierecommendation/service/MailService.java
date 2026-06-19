@@ -73,11 +73,11 @@ public class MailService {
                 log.info("Verification email sent to {}", recipients);
             } else {
                 log.error("Failed to send email via Brevo HTTP. Status {} Body {}", response.statusCode(), response.body());
-                throw new RuntimeException("Gửi email thất bại: HTTP " + response.statusCode());
+                throw new RuntimeException("Failed to send email: HTTP " + response.statusCode());
             }
         } catch (Exception ex) {
             log.error("Failed to send email via Brevo HTTP", ex);
-            throw new RuntimeException("Gửi email thất bại: " + ex.getMessage());
+            throw new RuntimeException("Failed to send email: " + ex.getMessage());
         }
     }
 }

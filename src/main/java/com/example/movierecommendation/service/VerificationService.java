@@ -48,7 +48,7 @@ public class VerificationService {
         } catch (Exception e) {
             log.error("Failed to send verification email to {} for {}: {}",
                 maskEmail(user.getEmail()), purpose, e.getMessage());
-            throw new IllegalStateException("Không thể gửi mã xác thực. Vui lòng thử lại sau.", e);
+            throw new IllegalStateException("Unable to send verification code. Please try again later.", e);
         }
     }
 
@@ -56,13 +56,13 @@ public class VerificationService {
         EmailVerificationToken token = tokenRepository
                 .findTopByUserUserIdAndPurposeAndUsedFalseOrderByCreatedAtDesc(
                         user.getUserId(), purpose.name())
-                .orElseThrow(() -> new IllegalArgumentException("Mã xác thực không tồn tại hoặc đã dùng."));
+                .orElseThrow(() -> new IllegalArgumentException("Verification code does not exist or has already been used."));
 
         if (token.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new IllegalArgumentException("Mã xác thực đã hết hạn. Hãy gửi lại mã.");
+            throw new IllegalArgumentException("Verification code has expired. Please request a new code.");
         }
         if (code == null || !passwordEncoder.matches(code, token.getCodeHash())) {
-            throw new IllegalArgumentException("Mã xác thực không đúng.");
+            throw new IllegalArgumentException("Incorrect verification code.");
         }
         token.setUsed(true);
         tokenRepository.save(token);
@@ -110,26 +110,26 @@ public class VerificationService {
 
     private String subjectFor(VerificationPurpose purpose) {
         return switch (purpose) {
-            case EMAIL_VERIFY -> "Xác thực email MovieRec";
-            case PASSWORD_CHANGE -> "Mã xác thực đổi mật khẩu";
-            case PASSWORD_RESET -> "Mã khôi phục mật khẩu";
+            case EMAIL_VERIFY -> "Verify MovieRec Email";
+            case PASSWORD_CHANGE -> "Password Change Verification Code";
+            case PASSWORD_RESET -> "Password Reset Code";
         };
     }
 
     private String bodyFor(VerificationPurpose purpose, String code) {
         String purposeText = switch (purpose) {
-            case EMAIL_VERIFY -> "xác thực địa chỉ email của bạn";
-            case PASSWORD_CHANGE -> "xác nhận yêu cầu đổi mật khẩu";
-            case PASSWORD_RESET -> "khôi phục mật khẩu của bạn";
+            case EMAIL_VERIFY -> "verify your email address";
+            case PASSWORD_CHANGE -> "confirm your password change request";
+            case PASSWORD_RESET -> "reset your password";
         };
         return """
-Xin chào,
+Hello,
 
-Mã xác thực của bạn là: %s
+Your verification code is: %s
 
-Mã có hiệu lực trong %d phút. Nếu bạn không thực hiện yêu cầu %s, vui lòng bỏ qua email này.
+This code is valid for %d minutes. If you did not make a request to %s, please ignore this email.
 
-Cảm ơn bạn đã sử dụng MovieRec!
+Thank you for using MovieRec!
 """.formatted(code, codeExpirationMinutes, purposeText);
     }
 }

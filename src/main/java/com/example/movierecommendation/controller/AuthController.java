@@ -76,7 +76,8 @@ public class AuthController {
             redirect.addFlashAttribute("step", "code");
             redirect.addFlashAttribute("maskedEmail", masked);
             redirect.addFlashAttribute("email", email);
-            redirect.addFlashAttribute("success", "Đã gửi mã xác thực tới " + masked);
+            boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
+            redirect.addFlashAttribute("success", isVi ? "Đã gửi mã xác thực tới " + masked : "Verification code sent to " + masked);
         } catch (RuntimeException e) {
             redirect.addFlashAttribute("error", e.getMessage());
         }
@@ -89,15 +90,16 @@ public class AuthController {
                                 @RequestParam("newPassword") String newPassword,
                                 @RequestParam("confirmPassword") String confirmPassword,
                                 RedirectAttributes redirect) {
+        boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
         if (!newPassword.equals(confirmPassword)) {
-            redirect.addFlashAttribute("error", "Mật khẩu xác nhận không khớp");
+            redirect.addFlashAttribute("error", isVi ? "Mật khẩu xác nhận không khớp" : "Confirm password does not match");
             redirect.addFlashAttribute("step", "code");
             redirect.addFlashAttribute("email", email);
             return "redirect:/auth/forgot-password";
         }
         try {
             userService.resetPassword(email, code, newPassword);
-            redirect.addFlashAttribute("success", "Đổi mật khẩu thành công. Hãy đăng nhập lại.");
+            redirect.addFlashAttribute("success", isVi ? "Đổi mật khẩu thành công. Hãy đăng nhập lại." : "Password reset successful. Please log in again.");
             return "redirect:/auth/login";
         } catch (RuntimeException e) {
             redirect.addFlashAttribute("error", e.getMessage());

@@ -63,7 +63,8 @@ public class AdminController {
     @PostMapping("/fetch-posters")
     public String fetchPosters(RedirectAttributes redirect) {
         if (posterFetchService.isRunning()) {
-            redirect.addFlashAttribute("info", "Poster fetch đang chạy: "
+            boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
+            redirect.addFlashAttribute("info", (isVi ? "Poster fetch đang chạy: " : "Poster fetch is running: ")
                 + posterFetchService.getDone() + "/" + posterFetchService.getTotal());
         } else {
             posterFetchService.fetchAllPosters();
@@ -87,7 +88,8 @@ public class AdminController {
         if (!seedDataService.isDemoSeedEnabled()) {
             redirect.addFlashAttribute("error", "Demo data seeding is disabled in this environment");
         } else if (seedDataService.isRunning()) {
-            redirect.addFlashAttribute("info", "Seed đang chạy: "
+            boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
+            redirect.addFlashAttribute("info", (isVi ? "Seed đang chạy: " : "Seed is running: ")
                 + seedDataService.getDone() + "/" + seedDataService.getTotal());
         } else {
             seedDataService.seedRatingsAndComments();
@@ -211,7 +213,7 @@ public class AdminController {
     public String manageUsers(@RequestParam(name = "page", defaultValue = "0") int page,
                                @AuthenticationPrincipal UserDetails ud, Model model) {
         addCurrentUser(ud, model);
-        // FIX: Dùng pagination thay vì findAll()
+        // FIX: Use pagination instead of findAll()
         model.addAttribute("userPage", userService.getAllUsersPaged(page, 20));
         return "admin/users";
     }

@@ -33,7 +33,7 @@ public class SecurityConfig {
     @Autowired
     private CustomUserDetailsService userDetailsService;
 
-    // Key từ env var, không hardcode
+    // Key from env var, not hardcoded
     @Value("${app.remember-me-key}")
     private String rememberMeKey;
 

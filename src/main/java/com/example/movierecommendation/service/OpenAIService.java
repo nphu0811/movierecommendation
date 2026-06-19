@@ -36,7 +36,7 @@ public class OpenAIService {
     @Autowired private RatingRepository ratingRepository;
     @Autowired private WatchHistoryRepository watchHistoryRepository;
 
-    // WebClient singleton - không tạo mới mỗi request
+    // WebClient singleton - do not recreate per request
     private WebClient webClient;
 
     private WebClient getWebClient() {
@@ -63,7 +63,10 @@ public class OpenAIService {
     public String generateMovieSummary(String title, String description) {
         if (!isEnabled()) return null;
         try {
-            String prompt = String.format("Hãy tóm tắt phim '%s' dựa trên mô tả: '%s'. Tóm tắt bằng tiếng Việt, khoảng 2-3 câu ngắn gọn, lôi cuốn, không có lời mở đầu hay kết luận.", title, description);
+            boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
+            String prompt = isVi 
+                ? String.format("Hãy tóm tắt phim '%s' dựa trên mô tả: '%s'. Tóm tắt bằng tiếng Việt, khoảng 2-3 câu ngắn gọn, lôi cuốn, không có lời mở đầu hay kết luận.", title, description)
+                : String.format("Summarize the movie '%s' based on the description: '%s'. Summarize in English, in about 2-3 concise, engaging sentences, without introduction or conclusion.", title, description);
             
             Map<String, Object> body = new HashMap<>();
             body.put("model", "gpt-4o-mini");
@@ -101,11 +104,11 @@ public class OpenAIService {
 
             if (ratings.isEmpty() && history.isEmpty()) return Collections.emptyList();
 
-            // Build prompt NGẮN - chỉ lấy những gì cần thiết
+            // Build SHORT prompt - only get what is necessary
             String prompt = buildCompactPrompt(ratings, history, allMovies);
             if (prompt == null) return Collections.emptyList();
 
-            // Check cache trước khi gọi API
+            // Check cache before calling API
             String cacheKey = String.valueOf(prompt.hashCode());
             List<Integer> cached = getFromCache(cacheKey);
             if (cached != null) {
@@ -113,10 +116,10 @@ public class OpenAIService {
                 return cached;
             }
 
-            // Gọi OpenAI bằng WebClient (non-blocking với timeout)
+            // Call OpenAI using WebClient (non-blocking with timeout)
             List<Integer> result = callOpenAIAsync(prompt);
 
-            // Lưu vào cache
+            // Save to cache
             if (!result.isEmpty()) {
                 putInCache(cacheKey, result);
             }
@@ -128,7 +131,7 @@ public class OpenAIService {
         }
     }
 
-    // Prompt ngắn gọn - giảm 60-70% token so với cũ
+    // Concise prompt - reduces tokens by 60-70% compared to old one
     private String buildCompactPrompt(List<Rating> ratings, List<WatchHistory> history, List<Movie> allMovies) {
         List<String> loved = ratings.stream()
             .filter(r -> r.getRating() >= 4 && r.getMovie() != null)
@@ -284,7 +287,8 @@ public class OpenAIService {
 
             if (ratings.isEmpty() && history.isEmpty() && allMovies.isEmpty()) return Collections.emptyMap();
 
-            String prompt = buildRecommendationsWithReasonsPrompt(ratings, history, allMovies);
+            boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
+            String prompt = buildRecommendationsWithReasonsPrompt(ratings, history, allMovies, isVi);
             if (prompt == null) return Collections.emptyMap();
 
             String cacheKey = "recs_reasons_" + prompt.hashCode();
@@ -305,7 +309,7 @@ public class OpenAIService {
         }
     }
 
-    private String buildRecommendationsWithReasonsPrompt(List<Rating> ratings, List<WatchHistory> history, List<Movie> allMovies) {
+    private String buildRecommendationsWithReasonsPrompt(List<Rating> ratings, List<WatchHistory> history, List<Movie> allMovies, boolean isVi) {
         List<String> loved = ratings.stream()
             .filter(r -> r.getRating() >= 4 && r.getMovie() != null)
             .sorted((a, b) -> Double.compare(b.getRating(), a.getRating()))
@@ -344,7 +348,11 @@ public class OpenAIService {
         }
         sb.append("\nTask:\n");
         sb.append("Based on the user's liked and disliked movies, rerank and select the top 5 most suitable movies from the candidates list above.\n");
-        sb.append("For each selected movie, provide a personalized explanation (reason) in Vietnamese (20-35 words) explaining why this movie fits their taste. Refer to their favorite genres or similar movies they liked. Example: 'Vì bạn thích Action + Sci-Fi và từng đánh giá cao Interstellar, phim này có cùng nhóm chủ đề không gian, nhịp căng và rating cao.'\n");
+        if (isVi) {
+            sb.append("For each selected movie, provide a personalized explanation (reason) in Vietnamese (20-35 words) explaining why this movie fits their taste. Refer to their favorite genres or similar movies they liked. Example: 'Vì bạn thích Action + Sci-Fi và từng đánh giá cao Interstellar, phim này có cùng nhóm chủ đề không gian, nhịp căng và rating cao.'\n");
+        } else {
+            sb.append("For each selected movie, provide a personalized explanation (reason) in English (20-35 words) explaining why this movie fits their taste. Refer to their favorite genres or similar movies they liked. Example: 'Since you like Action + Sci-Fi and highly rated Interstellar, this movie shares space themes, intense pacing, and a high rating.'\n");
+        }
         sb.append("Return the response matching the specified JSON Schema containing the selected recommendations with reasons.");
 
         return sb.toString();

@@ -32,24 +32,24 @@
 <main class="player-main-container">
   <div class="player-header">
     <div class="player-title-box">
-      <p class="player-subtitle">Now Streaming</p>
+      <p class="player-subtitle" th:text="#{play.nowStreaming}">Now Streaming</p>
       <h1 class="player-movie-title" th:text="${movie.title}">Movie Title</h1>
       
       <div class="player-actions-row">
         <div class="server-switcher">
-          <button th:if="${server1 != null}" class="server-pill active" data-server="1" th:data-src="${server1}" onclick="switchServer(this)">Server 1</button>
+          <button th:if="${server1 != null}" class="server-pill active" data-server="1" th:data-src="${server1}" onclick="switchServer(this)" th:text="#{play.server1}">Server 1</button>
         </div>
         
         <button id="lightsOutBtn" class="lights-out-btn" onclick="toggleLightsOut()">
           <i class="ph ph-lamp"></i>
-          <span>Lights Out</span>
+          <span th:text="#{play.lightsOut}">Lights Out</span>
         </button>
       </div>
     </div>
     
     <div style="display:flex;gap:12px">
        <a class="btn btn-ghost" th:href="@{/movies/{id}(id=${movie.movieId})}">
-         <i class="ph ph-arrow-left"></i> Back to Detail
+         <i class="ph ph-arrow-left"></i> <span th:text="#{play.backToDetail}">Back to Detail</span>
        </a>
     </div>
   </div>
@@ -67,7 +67,7 @@
         <div th:unless="${server1 != null or movie.trailerKey != null}"
              class="empty-comments-state" style="padding:100px 20px;height:100%;display:flex;flex-direction:column;justify-content:center">
           <i class="ph ph-warning-circle" style="font-size:3rem;margin-bottom:16px;opacity:0.5"></i>
-          <p>Phim này hiện chưa hỗ trợ xem trực tuyến và không có trailer.</p>
+          <p th:text="#{play.noStreamSupport}">This movie is not supported for online streaming and has no trailer.</p>
         </div>
       </div>
       
@@ -80,32 +80,32 @@
                   th:data-movie-id="${movie.movieId}"
                   onclick="toggleWatchlistPill(this.getAttribute('data-movie-id'), this)">
             <i th:class="${inWatchlist} ? 'ph-fill ph-heart' : 'ph ph-heart'" style="color: var(--red);"></i>
-            <span th:text="${inWatchlist} ? 'Đã yêu thích' : 'Yêu thích'">Yêu thích</span>
+            <span th:text="${inWatchlist} ? #{play.favoritedPill} : #{play.favoritePill}">Favorite</span>
           </button>
         </th:block>
 
         <!-- Star Rating Pill -->
         <th:block th:if="${currentUser != null}">
           <div class="action-btn-pill" style="gap: var(--space-3);">
-            <span>Đánh giá:</span>
+            <span th:text="#{play.ratingLabel}">Rating:</span>
             <div class="pill-rating-stars" th:id="|ratingStarsPill|" th:data-current="${userRating != null ? userRating : 0}">
               <i class="ph-bold ph-star" th:each="i : ${#numbers.sequence(1,5)}" th:data-val="${i}" th:data-movie-id="${movie.movieId}" onclick="rateMoviePill(this.getAttribute('data-movie-id'), this.getAttribute('data-val'))"></i>
             </div>
           </div>
         </th:block>
 
-        <!-- Báo lỗi Pill -->
+        <!-- Report Error Pill -->
         <th:block th:if="${currentUser != null}">
           <button class="action-btn-pill" onclick="openReportModal()">
             <i class="ph-bold ph-warning-octagon" style="color: var(--gold);"></i>
-            <span>Báo lỗi</span>
+            <span th:text="#{play.reportError}">Report Error</span>
           </button>
         </th:block>
 
-        <!-- Đặt câu hỏi (AI Chat) Pill -->
+        <!-- Ask Question (AI Chat) Pill -->
         <button class="action-btn-pill" id="askAiBtn" onclick="toggleVideoChatSidebar()">
           <i class="ph-fill ph-sparkle" style="color: #34cfeb;"></i>
-          <span>Đặt câu hỏi</span>
+          <span th:text="#{play.askQuestion}">Ask Question</span>
         </button>
       </div>
 
@@ -168,7 +168,7 @@
       <!-- AI Video Chat Sidebar (starts collapsed) -->
       <div class="chat-sidebar-container" id="videoChatSidebar">
         <div class="chat-sidebar-header">
-          <h3><i class="ph-fill ph-sparkle"></i> Hỏi về video này</h3>
+          <h3><i class="ph-fill ph-sparkle"></i> <span th:text="#{play.videoChatTitle}">Ask about this video</span></h3>
           <button class="close-btn" onclick="toggleVideoChatSidebar()">✕</button>
         </div>
         
@@ -177,17 +177,17 @@
         </div>
         
         <div class="chat-sidebar-suggestions">
-          <button class="chat-suggestion-pill" onclick="sendSuggestion('Tóm tắt video này')">Tóm tắt video này</button>
-          <button class="chat-suggestion-pill" onclick="sendSuggestion('Đề xuất nội dung có liên quan')">Đề xuất nội dung có liên quan</button>
+          <button class="chat-suggestion-pill" th:data-text="#{play.videoChatSuggestion1}" onclick="sendSuggestion(this.dataset.text)" th:text="#{play.videoChatSuggestion1}">Summarize this video</button>
+          <button class="chat-suggestion-pill" th:data-text="#{play.videoChatSuggestion2}" onclick="sendSuggestion(this.dataset.text)" th:text="#{play.videoChatSuggestion2}">Recommend related content</button>
         </div>
         
         <div class="chat-sidebar-input-row">
-          <input type="text" id="chatSidebarInput" placeholder="Đặt câu hỏi..." onkeydown="handleChatInputKey(event)"/>
+          <input type="text" id="chatSidebarInput" th:placeholder="#{play.videoChatPlaceholder}" onkeydown="handleChatInputKey(event)"/>
           <button class="send-btn" onclick="sendChatMessage()">
             <i class="ph-bold ph-paper-plane-right"></i>
           </button>
         </div>
-        <div class="chat-disclaimer">AI có thể mắc sai sót, vì vậy, hãy xác minh thông tin.</div>
+        <div class="chat-disclaimer" th:text="#{play.aiDisclaimer}">AI can make mistakes, so please verify information.</div>
       </div>
 
       <!-- Meta Card (Details) -->
@@ -235,11 +235,11 @@
     <div class="resume-icon">
       <i class="ph-fill ph-play"></i>
     </div>
-    <div class="resume-text">Hệ thống ghi nhận bạn đã từng xem phim này trước đó! Bạn có muốn xem tiếp từ đoạn:</div>
+    <div class="resume-text" th:text="#{play.resumeNotice}">We noticed you watched this movie before! Would you like to resume from:</div>
     <div class="resume-timestamp" id="resumeTimestampDisplay">00:00:00</div>
     <div class="resume-actions">
-      <button class="resume-btn resume-btn-primary" onclick="resumeFromLast()">Xem tiếp</button>
-      <button class="resume-btn resume-btn-secondary" onclick="closeResumeModal()">Từ đầu</button>
+      <button class="resume-btn resume-btn-primary" onclick="resumeFromLast()" th:text="#{play.resumeContinue}">Resume</button>
+      <button class="resume-btn resume-btn-secondary" onclick="closeResumeModal()" th:text="#{play.resumeStartOver}">Start Over</button>
     </div>
   </div>
 </div>
@@ -248,6 +248,7 @@
 <script th:inline="javascript">
   const MOVIE_ID = /*[[${movie.movieId}]]*/ 0;
   const LAST_DURATION = /*[[${lastDuration}]]*/ 0;
+  const isVi = /*[[${#locale.language == 'vi'}]]*/ false;
   let ytPlayer = null;
   let pendingSeekSeconds = 0;
 
@@ -322,7 +323,7 @@
           try {
               ytPlayer.seekTo(LAST_DURATION, true);
               ytPlayer.playVideo();
-              showToast(`Đã tua đến ${formatTime(LAST_DURATION)}! 🎥`, 'success');
+              showToast((/*[[#{play.toastSeeked}]]*/ '').replace('{0}', formatTime(LAST_DURATION)) + '! 🎥', 'success');
           } catch (e) {
               pendingSeekSeconds = LAST_DURATION;
           }
@@ -340,7 +341,7 @@
           let cleanSrc = currentSrc.replace(/[\?&#](?:start|t|time)=\d+(?:s)?/g, '');
           const connector = cleanSrc.includes('?') ? '&' : '?';
           player.src = cleanSrc + connector + 't=' + LAST_DURATION + '&start=' + LAST_DURATION + '#t=' + LAST_DURATION;
-          showToast(`Đã tua tiếp từ ${formatTime(LAST_DURATION)}! 🎥`, 'success');
+          showToast((/*[[#{play.toastResume}]]*/ '').replace('{0}', formatTime(LAST_DURATION)) + '! 🎥', 'success');
       }
   }
 
@@ -387,10 +388,10 @@
     btn.classList.toggle('active', isActive);
     
     if (isActive) {
-      btn.querySelector('span').textContent = 'Lights On';
+      btn.querySelector('span').textContent = /*[[#{play.lightsOn}]]*/ '';
       btn.querySelector('i').className = 'ph-fill ph-lamp';
     } else {
-      btn.querySelector('span').textContent = 'Lights Out';
+      btn.querySelector('span').textContent = /*[[#{play.lightsOut}]]*/ '';
       btn.querySelector('i').className = 'ph ph-lamp';
     }
   }
@@ -488,18 +489,18 @@
           if (data.added) {
               btn.classList.add('active');
               icon.className = 'ph-fill ph-heart';
-              span.textContent = 'Đã yêu thích';
-              showToast('Đã thêm vào danh sách yêu thích! ❤️', 'success');
+              span.textContent = /*[[#{play.favoritedPill}]]*/ '';
+              showToast(/*[[#{play.toastWatchlistAdd}]]*/ '', 'success');
           } else {
               btn.classList.remove('active');
               icon.className = 'ph ph-heart';
-              span.textContent = 'Yêu thích';
-              showToast('Đã xóa khỏi danh sách yêu thích.', 'info');
+              span.textContent = /*[[#{play.favoritePill}]]*/ '';
+              showToast(/*[[#{play.toastWatchlistRemove}]]*/ '', 'info');
           }
       })
       .catch(err => {
           btn.disabled = false;
-          showToast('Có lỗi xảy ra, vui lòng thử lại.', 'error');
+          showToast(/*[[#{play.toastWatchlistError}]]*/ '', 'error');
       });
   }
 
@@ -513,10 +514,10 @@
       .then(res => res.json())
       .then(data => {
           highlightPillStars(score);
-          showToast(`Đã đánh giá ${score} sao! ⭐`, 'success');
+          showToast((/*[[#{play.toastRated}]]*/ '').replace('{0}', score), 'success');
       })
       .catch(err => {
-          showToast('Đánh giá thất bại, vui lòng thử lại.', 'error');
+          showToast(/*[[#{play.toastRateError}]]*/ '', 'error');
       });
   }
   
@@ -620,8 +621,8 @@
       if (!messagesContainer) return;
       
       const welcomeHtml = `
-          <p class="welcome-line-1">Xin chào! Bạn có thắc mắc về nội dung đang xem? Tôi sẵn sàng giúp bạn.</p>
-          <p class="welcome-line-2" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; opacity: 0; transition: opacity 0.35s ease-out;">Bạn chưa biết nên hỏi gì? Hãy thử hỏi về:</p>
+          <p class="welcome-line-1">${/*[[#{play.videoChatWelcome1}]]*/ ''}</p>
+          <p class="welcome-line-2" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; opacity: 0; transition: opacity 0.35s ease-out;">${/*[[#{play.videoChatWelcome2}]]*/ ''}</p>
       `;
       
       const msgDiv = document.createElement('div');
@@ -667,7 +668,7 @@
       const loadingId = 'ai-loading-' + Date.now();
       const loadingHtml = `
           <div class="chat-msg chat-msg-ai" id="${loadingId}">
-              <i class="ph-bold ph-circle-notch ph-spin"></i> Đang phân tích video...
+              <i class="ph-bold ph-circle-notch ph-spin"></i> ${/*[[#{play.aiAnalyzing}]]*/ ''}
           </div>
       `;
       messagesContainer.insertAdjacentHTML('beforeend', loadingHtml);
@@ -692,7 +693,7 @@
       .catch(err => {
           const loadingEl = document.getElementById(loadingId);
           if (loadingEl) loadingEl.remove();
-          appendChatMessage('Đã xảy ra lỗi khi trao đổi với AI. Vui lòng thử lại sau!', 'ai');
+          appendChatMessage(/*[[#{play.chatError}]]*/ '', 'ai');
       });
   }
   
@@ -771,7 +772,7 @@
                           try {
                               ytPlayer.seekTo(pendingSeekSeconds, true);
                               ytPlayer.playVideo();
-                              showToast(`Đã tua đến ${formatMinutesSeconds(pendingSeekSeconds)}! 🎥`, 'success');
+                              showToast(isVi ? `Đã tua đến ${formatMinutesSeconds(pendingSeekSeconds)}! 🎥` : `Seeked to ${formatMinutesSeconds(pendingSeekSeconds)}! 🎥`, 'success');
                           } catch (e) {
                               console.error("Seek on ready failed", e);
                           }
@@ -803,7 +804,7 @@
           try {
               ytPlayer.seekTo(seconds, true);
               ytPlayer.playVideo();
-              showToast(`Đã tua đến ${formatMinutesSeconds(seconds)}! 🎥`, 'success');
+              showToast((/*[[#{play.toastSeeked}]]*/ '').replace('{0}', formatMinutesSeconds(seconds)) + '! 🎥', 'success');
           } catch(e) {
               fallbackSeek(seconds);
           }
@@ -819,7 +820,7 @@
           src = src.replace(/[\?&#](?:start|t|time)=\d+(?:s)?/g, '');
           const connector = src.includes('?') ? '&' : '?';
           player.src = src + connector + 't=' + seconds + '&start=' + seconds + '#t=' + seconds;
-          showToast(`Đã tua đến ${formatMinutesSeconds(seconds)}! 🎥`, 'success');
+          showToast((/*[[#{play.toastSeeked}]]*/ '').replace('{0}', formatMinutesSeconds(seconds)) + '! 🎥', 'success');
       }
   }
   
@@ -849,10 +850,10 @@
     const msgInput = document.getElementById('reportMessage');
     if (type === 'OTHER') {
       msgInput.required = true;
-      msgInput.placeholder = "BẮT BUỘC: Hãy mô tả chi tiết lỗi khác tại đây...";
+      msgInput.placeholder = /*[[#{detail.reportPlaceholderOther}]]*/ '';
     } else {
       msgInput.required = false;
-      msgInput.placeholder = "Nhập chi tiết lỗi gặp phải tại đây...";
+      msgInput.placeholder = /*[[#{detail.reportPlaceholderDetail}]]*/ '';
     }
   }
   function submitReportForm(event) {
@@ -866,7 +867,7 @@
     const csrfHeader = document.querySelector('meta[name="_csrf_header"]');
     if (csrfMeta) headers[csrfHeader.content] = csrfMeta.content;
 
-    btn.disabled = true; btn.textContent = 'Đang gửi…';
+    btn.disabled = true; btn.textContent = /*[[#{detail.reportSubmitting}]]*/ '';
     fetch(`/api/movies/${MOVIE_ID}/report`, {
       method: 'POST',
       headers: headers,
@@ -880,11 +881,11 @@
         showToast(data.message, 'success');
         closeReportModal();
       }
-      btn.disabled = false; btn.textContent = 'Gửi báo lỗi';
+      btn.disabled = false; btn.textContent = /*[[#{detail.reportSubmit}]]*/ '';
     })
     .catch(() => {
-      btn.disabled = false; btn.textContent = 'Gửi báo lỗi';
-      showToast('Có lỗi xảy ra khi gửi báo lỗi.', 'error');
+      btn.disabled = false; btn.textContent = /*[[#{detail.reportSubmit}]]*/ '';
+      showToast(/*[[#{detail.toastReportError}]]*/ '', 'error');
     });
   }
 
@@ -904,28 +905,28 @@
 <div class="resume-modal" id="reportModal" onclick="closeReportOnBg(event)">
   <div class="resume-content" style="max-width: 500px; text-align: left;">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
-      <h3 style="margin:0; font-size:1.25rem;"><i class="ph-fill ph-warning-octagon" style="color:var(--red); margin-right:6px; vertical-align: middle;"></i> Báo lỗi phim</h3>
+      <h3 style="margin:0; font-size:1.25rem;"><i class="ph-fill ph-warning-octagon" style="color:var(--red); margin-right:6px; vertical-align: middle;"></i> <span th:text="#{detail.reportTitle}">Report movie error</span></h3>
       <button onclick="closeReportModal()" style="background:none; border:none; color:var(--text-muted); font-size:1.2rem; cursor:pointer;">✕</button>
     </div>
     <form id="reportForm" onsubmit="submitReportForm(event)">
       <div style="margin-bottom: 16px;">
-        <label for="reportType" style="display:block; font-size:0.85rem; color:var(--text-secondary); margin-bottom: 6px;">Loại lỗi</label>
+        <label for="reportType" style="display:block; font-size:0.85rem; color:var(--text-secondary); margin-bottom: 6px;" th:text="#{detail.reportLabelType}">Error type</label>
         <select id="reportType" class="form-control" style="width:100%; padding:10px; border-radius:8px; background: #1a1a1a; color: #fff;" required onchange="onReportTypeChange()">
-          <option value="WRONG_INFO">Thông tin sai (năm chiếu, diễn viên, tiêu đề)</option>
-          <option value="BROKEN_TRAILER">Trailer hỏng / không xem được</option>
-          <option value="BROKEN_POSTER">Poster / ảnh nền hỏng</option>
-          <option value="DUPLICATE_MOVIE">Trùng lặp phim</option>
-          <option value="WRONG_GENRE">Sai thể loại phim</option>
-          <option value="OTHER">Lỗi khác (Yêu cầu ghi chi tiết bên dưới)</option>
+          <option value="WRONG_INFO" th:text="#{detail.reportTypeWrongInfo}">Incorrect info (year, cast, title)</option>
+          <option value="BROKEN_TRAILER" th:text="#{detail.reportTypeBrokenTrailer}">Broken trailer / cannot play</option>
+          <option value="BROKEN_POSTER" th:text="#{detail.reportTypeBrokenPoster}">Broken poster / backdrop</option>
+          <option value="DUPLICATE_MOVIE" th:text="#{detail.reportTypeDuplicate}">Duplicate movie</option>
+          <option value="WRONG_GENRE" th:text="#{detail.reportTypeWrongGenre}">Incorrect genre</option>
+          <option value="OTHER" th:text="#{detail.reportTypeOther}">Other error (please detail below)</option>
         </select>
       </div>
       <div style="margin-bottom: 20px;">
-        <label for="reportMessage" style="display:block; font-size:0.85rem; color:var(--text-secondary); margin-bottom: 6px;">Mô tả chi tiết</label>
-        <textarea id="reportMessage" class="form-control" rows="4" placeholder="Nhập chi tiết lỗi gặp phải tại đây..." style="width:100%; padding:10px; border-radius:8px; resize:none; background: #1a1a1a; color: #fff; border-color: rgba(255,255,255,0.1);"></textarea>
+        <label for="reportMessage" style="display:block; font-size:0.85rem; color:var(--text-secondary); margin-bottom: 6px;" th:text="#{detail.reportLabelDetail}">Detailed description</label>
+        <textarea id="reportMessage" class="form-control" rows="4" th:placeholder="#{detail.reportPlaceholderDetail}" style="width:100%; padding:10px; border-radius:8px; resize:none; background: #1a1a1a; color: #fff; border-color: rgba(255,255,255,0.1);"></textarea>
       </div>
       <div style="display:flex; gap:12px; justify-content:flex-end;">
-        <button type="button" class="btn btn-ghost" onclick="closeReportModal()">Hủy</button>
-        <button type="submit" class="btn btn-primary" id="btnSubmitReport">Gửi báo lỗi</button>
+        <button type="button" class="btn btn-ghost" onclick="closeReportModal()" th:text="#{detail.reportCancel}">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="btnSubmitReport" th:text="#{detail.reportSubmit}">Submit report</button>
       </div>
     </form>
   </div>

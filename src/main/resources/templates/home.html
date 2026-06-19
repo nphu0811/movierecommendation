@@ -299,9 +299,9 @@
           <div th:replace="~{fragments :: movieCard(${movie})}"></div>
           <div class="rec-explanation" th:if="${movie.recommendationReason != null}" style="margin-top: 8px; text-align: center;">
             <span class="explanation-trigger">
-              <i class="ph-bold ph-info" style="vertical-align: middle;"></i> Vì sao gợi ý?
+              <i class="ph-bold ph-info" style="vertical-align: middle;"></i> <span th:text="#{movie.whyRecommended}">Why recommended?</span>
             </span>
-            <div class="explanation-tooltip" th:text="${movie.recommendationReason}">Lý do gợi ý</div>
+            <div class="explanation-tooltip" th:text="${movie.recommendationReason}">Recommendation reason</div>
           </div>
         </div>
       </th:block>
@@ -515,8 +515,8 @@
   <div class="chatbot-container" style="position:fixed; bottom: 2rem; right: 2rem; z-index: 1000; font-family: var(--font);">
     <!-- Popover Speech Badge -->
     <div class="chat-badge-popover" id="chatPopover">
-      <span>Hỏi Trợ lý AI! 🍿</span>
-      <button onclick="dismissPopover(event)" class="close-badge" title="Đóng"><i class="ph-bold ph-x"></i></button>
+      <span th:text="#{play.chatAIAssistant} + '! 🍿'">Ask AI Assistant! 🍿</span>
+      <button onclick="dismissPopover(event)" class="close-badge" th:title="#{chat.close}"><i class="ph-bold ph-x"></i></button>
     </div>
 
     <!-- Chat Button -->
@@ -536,14 +536,14 @@
           </div>
           <div>
             <h4 style="margin: 0; font-size: 0.92rem; font-weight: 700; color: var(--white); font-family: var(--font-display); letter-spacing: 0.02em;">AI Movie Assistant</h4>
-            <span style="font-size: 0.7rem; color: var(--text-secondary); font-weight: 500; display: flex; align-items: center; gap: 4px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #10b981; display: inline-block;"></span>Trực tuyến</span>
+            <span style="font-size: 0.7rem; color: var(--text-secondary); font-weight: 500; display: flex; align-items: center; gap: 4px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #10b981; display: inline-block;"></span><span th:text="#{chat.online}">Online</span></span>
           </div>
         </div>
         <div style="display: flex; gap: 8px; align-items: center;">
-          <button onclick="resetChat()" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1rem; padding: 4px; display: flex; align-items: center; justify-content: center; transition: color 0.2s;" title="Làm mới cuộc trò chuyện">
+          <button onclick="resetChat()" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1rem; padding: 4px; display: flex; align-items: center; justify-content: center; transition: color 0.2s;" th:title="#{chat.refresh}">
             <i class="ph-bold ph-arrows-clockwise"></i>
           </button>
-          <button onclick="toggleChatbot()" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1rem; padding: 4px; display: flex; align-items: center; justify-content: center; transition: color 0.2s;" title="Đóng">
+          <button onclick="toggleChatbot()" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1rem; padding: 4px; display: flex; align-items: center; justify-content: center; transition: color 0.2s;" th:title="#{chat.close}">
             <i class="ph-bold ph-x"></i>
           </button>
         </div>
@@ -557,7 +557,7 @@
       <!-- Chat Footer -->
       <div style="padding: 0.85rem 1rem; background: rgba(10, 10, 10, 0.95); border-top: 1px solid rgba(255, 255, 255, 0.08);">
         <div class="chat-input-wrapper" style="display: flex; gap: 8px; background: #1a1a1a; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 24px; padding: 4px 4px 4px 14px; align-items: center; transition: border-color 0.2s;">
-          <input type="text" id="chatInput" style="flex: 1; background: transparent; border: none; outline: none; color: var(--white); font-size: 0.82rem; padding: 6px 0;" placeholder="Hỏi AI: 'Tìm phim hành động vui'..." onkeydown="if(event.key==='Enter') sendMessage()"/>
+          <input type="text" id="chatInput" style="flex: 1; background: transparent; border: none; outline: none; color: var(--white); font-size: 0.82rem; padding: 6px 0;" th:placeholder="#{chat.askPlaceholder}" onkeydown="if(event.key==='Enter') sendMessage()"/>
           <button type="button" onclick="sendMessage()" style="background: linear-gradient(135deg, var(--red) 0%, #ff4d4d 100%); border: none; color: var(--white); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(229,9,20,0.3);"><i class="ph-bold ph-paper-plane-right" style="font-size: 0.85rem;"></i></button>
         </div>
       </div>
@@ -571,7 +571,12 @@
   const chatInput = document.getElementById('chatInput');
   const chatWindow = document.querySelector('.chatbot-window');
   const chatPopover = document.getElementById('chatPopover');
-  const welcomeText = 'Xin chào! Mình là Trợ lý AI gợi ý phim. Bạn cần tìm phim gì tối nay? Hãy chọn gợi ý hoặc nhập tin nhắn bên dưới nhé:';
+  const isVi = /*[[${#locale.language == 'vi'}]]*/ false;
+  const welcomeText = isVi ? 'Xin chào! Mình là Trợ lý AI gợi ý phim. Bạn cần tìm phim gì tối nay? Hãy chọn gợi ý hoặc nhập tin nhắn bên dưới nhé:' : 'Hello! I am your AI movie assistant. What kind of movie are you looking for tonight? Select a suggestion or type your message below:';
+  const suggestion1 = isVi ? 'Tôi muốn xem phim hành động vui, dễ xem.' : 'I want to watch a fun, easy-going action movie.';
+  const suggestion2 = isVi ? 'Gợi ý phim tình cảm nhẹ nhàng, điểm cao.' : 'Recommend a high-rated, light romantic movie.';
+  const suggestion3 = isVi ? 'Gợi ý phim viễn tưởng tương tự Interstellar.' : 'Recommend a sci-fi movie similar to Interstellar.';
+
   let welcomeRendered = false;
   
   /**
@@ -651,9 +656,9 @@
           <div class="ai-bubble" style="background: rgba(30, 30, 30, 0.95); border: 1px solid rgba(255, 255, 255, 0.05); color: var(--white); padding: 0.85rem 1rem; border-radius: 18px 18px 18px 2px; font-size: 0.82rem; line-height: 1.45; word-break: break-word;">
             <span class="typing-text">${welcomeText}</span>
             <div class="suggestion-pills" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px; opacity: 0; transform: translateY(10px); transition: all 0.4s ease-out;">
-              <div class="suggestion-pill" onclick="sendSuggestion(this.innerText)">Tôi muốn xem phim hành động vui, dễ xem.</div>
-              <div class="suggestion-pill" onclick="sendSuggestion(this.innerText)">Gợi ý phim tình cảm nhẹ nhàng, điểm cao.</div>
-              <div class="suggestion-pill" onclick="sendSuggestion(this.innerText)">Gợi ý phim viễn tưởng tương tự Interstellar.</div>
+              <div class="suggestion-pill" onclick="sendSuggestion(this.innerText)">${suggestion1}</div>
+              <div class="suggestion-pill" onclick="sendSuggestion(this.innerText)">${suggestion2}</div>
+              <div class="suggestion-pill" onclick="sendSuggestion(this.innerText)">${suggestion3}</div>
             </div>
           </div>
         </div>
@@ -744,7 +749,7 @@
       movies.forEach(m => {
         const posterUrl = m.posterUrl || '/images/poster-placeholder.jpg';
         const rating = m.averageRating > 0 ? m.averageRating.toFixed(1) : 'NR';
-        const genresList = m.genres && m.genres.length > 0 ? m.genres.join(', ') : 'Chưa cập nhật';
+        const genresList = m.genres && m.genres.length > 0 ? m.genres.join(', ') : (isVi ? 'Chưa cập nhật' : 'N/A');
         moviesHtml += `
           <div class="chat-movie-card">
             <img src="${posterUrl}" style="width:48px; height:72px; object-fit:cover; border-radius:6px; flex-shrink:0; border: 1px solid rgba(255,255,255,0.08);" onerror="this.src='/images/poster-placeholder.jpg'"/>
@@ -761,7 +766,7 @@
               </div>
               <div class="chat-movie-reason">${escapeHtml(m.reason)}</div>
             </div>
-            <a href="/movies/${m.movieId}" class="btn btn-outline" style="align-self: center; padding: 6px 10px; font-size: 0.68rem; font-weight: 600; height: fit-content; flex-shrink: 0; border-radius: 6px; display: inline-block; text-align: center;">Xem →</a>
+            <a href="/movies/${m.movieId}" class="btn btn-outline" style="align-self: center; padding: 6px 10px; font-size: 0.68rem; font-weight: 600; height: fit-content; flex-shrink: 0; border-radius: 6px; display: inline-block; text-align: center;">${isVi ? 'Xem →' : 'View →'}</a>
           </div>
         `;
       });
@@ -849,11 +854,11 @@
           await executeActions(data.actions);
         }
       } else {
-        appendAiResponse('Có lỗi xảy ra khi kết nối tới Trợ lý AI. Vui lòng thử lại sau.', [], 'TEXT');
+        appendAiResponse(isVi ? 'Có lỗi xảy ra khi kết nối tới Trợ lý AI. Vui lòng thử lại sau.' : 'An error occurred while connecting to the AI Assistant. Please try again later.', [], 'TEXT');
       }
     } catch (e) {
       removeLoadingIndicator();
-      appendAiResponse('Lỗi kết nối mạng. Vui lòng kiểm tra lại đường truyền.', [], 'TEXT');
+      appendAiResponse(isVi ? 'Lỗi kết nối mạng. Vui lòng kiểm tra lại đường truyền.' : 'Network connection error. Please check your connection.', [], 'TEXT');
     }
   }
 
@@ -879,11 +884,11 @@
           if (res.ok) {
             const result = await res.json();
             const text = result.added 
-              ? `🤖 [Hành động] Đã thêm bộ phim này vào Watchlist của bạn thành công!`
-              : `🤖 [Hành động] Đã xóa bộ phim này khỏi Watchlist của bạn!`;
+              ? (isVi ? `🤖 [Hành động] Đã thêm bộ phim này vào Watchlist của bạn thành công!` : `🤖 [Action] Successfully added this movie to your Watchlist!`)
+              : (isVi ? `🤖 [Hành động] Đã xóa bộ phim này khỏi Watchlist của bạn!` : `🤖 [Action] Removed this movie from your Watchlist!`);
             appendActionFeedback(text);
           } else {
-            appendActionFeedback(`🤖 [Hành động] Vui lòng đăng nhập để thêm phim này vào Watchlist!`);
+            appendActionFeedback(isVi ? `🤖 [Hành động] Vui lòng đăng nhập để thêm phim này vào Watchlist!` : `🤖 [Action] Please log in to add this movie to your Watchlist!`);
           }
         } 
         else if (name === 'RATE_MOVIE') {
@@ -899,22 +904,25 @@
           
           if (res.ok) {
             const result = await res.json();
-            appendActionFeedback(`🤖 [Hành động] Đã đánh giá bộ phim này ${score} sao thành công! Điểm trung bình: ${result.average.toFixed(1)}/5 (${result.count} lượt đánh giá).`);
+            const text = isVi 
+              ? `🤖 [Hành động] Đã đánh giá bộ phim này ${score} sao thành công! Điểm trung bình: ${result.average.toFixed(1)}/5 (${result.count} lượt đánh giá).`
+              : `🤖 [Action] Successfully rated this movie ${score} stars! Average rating: ${result.average.toFixed(1)}/5 (${result.count} reviews).`;
+            appendActionFeedback(text);
           } else {
-            appendActionFeedback(`🤖 [Hành động] Vui lòng đăng nhập để đánh giá phim!`);
+            appendActionFeedback(isVi ? `🤖 [Hành động] Vui lòng đăng nhập để đánh giá phim!` : `🤖 [Action] Please log in to rate the movie!`);
           }
         }
         else if (name === 'VIEW_MOVIE_DETAIL') {
           const movieId = params.movieId;
           if (movieId) {
-            appendActionFeedback(`🤖 [Hành động] Đang chuyển hướng bạn đến trang chi tiết phim...`);
+            appendActionFeedback(isVi ? `🤖 [Hành động] Đang chuyển hướng bạn đến trang chi tiết phim...` : `🤖 [Action] Redirecting you to the movie details page...`);
             setTimeout(() => {
               window.location.href = `/movies/${movieId}`;
             }, 1500);
           }
         }
         else if (name === 'FILTER_MOVIES') {
-          appendActionFeedback(`🤖 [Hành động] Đang lọc phim theo yêu cầu của bạn...`);
+          appendActionFeedback(isVi ? `🤖 [Hành động] Đang lọc phim theo yêu cầu của bạn...` : `🤖 [Action] Filtering movies according to your request...`);
           const queryParams = new URLSearchParams();
           if (params.q) queryParams.set('q', params.q);
           if (params.genreId) queryParams.set('genreId', params.genreId);

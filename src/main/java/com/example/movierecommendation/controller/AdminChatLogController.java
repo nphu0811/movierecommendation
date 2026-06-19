@@ -44,7 +44,7 @@ public class AdminChatLogController {
     @GetMapping("/{id}/details")
     public String getChatLogDetails(@PathVariable("id") Integer id, Model model) {
         AIChatLog chatLog = aiChatLogRepository.findByIdWithRecommendations(id)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhật ký chat với ID: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("Chat log not found with ID: " + id));
         model.addAttribute("chatLog", chatLog);
         return "admin/chat-logs :: detail-modal-content";
     }
@@ -53,9 +53,11 @@ public class AdminChatLogController {
     public String deleteChatLog(@PathVariable("id") Integer id, RedirectAttributes redirect) {
         try {
             aiChatLogRepository.deleteById(id);
-            redirect.addFlashAttribute("success", "Xóa nhật ký chat thành công.");
+            boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
+            redirect.addFlashAttribute("success", isVi ? "Xóa nhật ký chat thành công." : "Chat log deleted successfully.");
         } catch (Exception e) {
-            redirect.addFlashAttribute("error", "Lỗi khi xóa nhật ký chat: " + e.getMessage());
+            boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
+            redirect.addFlashAttribute("error", isVi ? "Lỗi khi xóa nhật ký chat: " + e.getMessage() : "Error deleting chat log: " + e.getMessage());
         }
         return "redirect:/admin/chat-logs";
     }

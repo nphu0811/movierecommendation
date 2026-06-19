@@ -48,7 +48,7 @@ class ChatAgentOrchestrationTest {
         ChatToolResult result = executor.execute(null, plan, List.of(movie)).getFirst();
 
         assertFalse(result.isSuccess());
-        assertTrue(result.getMessage().contains("đăng nhập"));
+        assertTrue(result.getMessage().contains("log in") || result.getMessage().contains("đăng nhập") || result.getMessage().contains("login"));
         verifyNoInteractions(interactionService);
     }
 
@@ -62,7 +62,7 @@ class ChatAgentOrchestrationTest {
             plan("ADD_WATCHLIST", "{\"movieId\":42}"), List.of(movie)).getFirst();
 
         assertTrue(result.isSuccess());
-        assertTrue(result.getMessage().contains("thành công"));
+        assertTrue(result.getMessage().contains("Successfully") || result.getMessage().contains("thành công"));
         assertNull(result.getClientAction(), "frontend must not execute the mutation a second time");
         verify(interactionService).addToWatchlist(7, 42);
     }
@@ -89,7 +89,7 @@ class ChatAgentOrchestrationTest {
         ChatAgentPlan plan = new ChatAgentPlan();
         plan.setIntent("USER_ACTION");
         ChatToolResult failure = new ChatToolResult("ADD_WATCHLIST", false,
-            "Bạn cần đăng nhập để thêm phim vào Watchlist.", Collections.emptyList(), null);
+            "You need to log in to add movies to your Watchlist.", Collections.emptyList(), null);
 
         String response = responder.respond("lưu phim này", "guest", plan, List.of(failure));
 

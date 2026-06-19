@@ -26,6 +26,16 @@ public class RecommendationExplanationTest {
     @InjectMocks
     private RecommendationService recommendationService;
 
+    @org.junit.jupiter.api.BeforeEach
+    public void setUp() {
+        org.springframework.context.i18n.LocaleContextHolder.setLocale(new Locale("vi"));
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    public void tearDown() {
+        org.springframework.context.i18n.LocaleContextHolder.resetLocaleContext();
+    }
+
     @Test
     public void testPopulateExplanations_ColdStart() {
         // Mock empty user history

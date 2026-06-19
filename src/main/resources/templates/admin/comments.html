@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Kiểm duyệt bình luận – Admin</title>
+  <title>Comment Moderation – Admin</title>
   <link rel="icon" type="image/svg+xml" sizes="any" th:href="@{/favicon.svg(v=2)}"/>
   <link rel="stylesheet" th:href="@{/css/style.css}"/>
 </head>
@@ -13,8 +13,8 @@
 
   <main class="admin-main">
     <div class="admin-header" style="margin-bottom:20px;">
-      <h1>Kiểm duyệt bình luận</h1>
-      <p style="color:#6c757d;font-size:.875rem" th:text="|Có tất cả ${commentPage.totalElements} bình luận|">0 bình luận</p>
+      <h1>Comment Moderation</h1>
+      <p style="color:#6c757d;font-size:.875rem" th:text="|Total of ${commentPage.totalElements} comment(s)|">0 comments</p>
     </div>
 
     <div class="alert alert-success" th:if="${success}" th:text="${success}"></div>
@@ -25,12 +25,12 @@
         <thead>
           <tr>
             <th>ID</th>
-            <th>Người dùng</th>
-            <th>Phim</th>
-            <th>Nội dung bình luận</th>
-            <th>Thời gian</th>
-            <th>Trạng thái</th>
-            <th>Hành động</th>
+            <th>User</th>
+            <th>Movie</th>
+            <th>Comment Content</th>
+            <th>Date/Time</th>
+            <th>Status</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -43,12 +43,12 @@
                  target="_blank" 
                  style="color:var(--red); font-weight:600; text-decoration:none;">Movie Title</a>
             </td>
-            <td style="max-width:300px; word-wrap: break-word;" th:text="${comment.commentText}">Nội dung bình luận</td>
+            <td style="max-width:300px; word-wrap: break-word;" th:text="${comment.commentText}">Comment content</td>
             <td style="color:#6c757d;font-size:.8rem;"
                 th:text="${comment.createdAt != null} ? ${#temporals.format(comment.createdAt, 'dd/MM/yyyy HH:mm')} : '-'">Date</td>
             <td>
               <span class="badge" th:classappend="${comment.deletedAt == null} ? 'badge-success' : 'badge-danger'"
-                    th:text="${comment.deletedAt == null} ? 'Hiển thị' : 'Đã ẩn'">Hiển thị</span>
+                    th:text="${comment.deletedAt == null} ? 'Visible' : 'Hidden'">Visible</span>
             </td>
             <td>
               <div style="display:flex;gap:.5rem">
@@ -57,7 +57,7 @@
                       method="post" style="margin:0">
                   <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                   <button type="submit" class="btn btn-sm btn-outline btn-danger-hover">
-                    <i class="ph ph-eye-slash" style="margin-right:4px;vertical-align:-2px;"></i> Ẩn đi
+                    <i class="ph ph-eye-slash" style="margin-right:4px;vertical-align:-2px;"></i> Hide
                   </button>
                 </form>
                 
@@ -66,14 +66,14 @@
                       method="post" style="margin:0">
                   <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                   <button type="submit" class="btn btn-sm btn-success">
-                    <i class="ph ph-eye" style="margin-right:4px;vertical-align:-2px;"></i> Hiện lại
+                    <i class="ph ph-eye" style="margin-right:4px;vertical-align:-2px;"></i> Unhide
                   </button>
                 </form>
               </div>
             </td>
           </tr>
           <tr th:if="${commentPage.isEmpty()}">
-            <td colspan="7" style="text-align:center; padding: 30px; color: var(--text-muted);">Không có bình luận nào.</td>
+            <td colspan="7" style="text-align:center; padding: 30px; color: var(--text-muted);">No comments found.</td>
           </tr>
         </tbody>
       </table>

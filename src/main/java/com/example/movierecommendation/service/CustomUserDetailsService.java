@@ -24,7 +24,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
 
-        // Dùng DisabledException để Spring Security phân biệt với sai mật khẩu
+        // Use DisabledException to let Spring Security distinguish from wrong password
         if (Boolean.FALSE.equals(user.getIsActive())) {
             throw new DisabledException("Account is locked: " + email);
         }

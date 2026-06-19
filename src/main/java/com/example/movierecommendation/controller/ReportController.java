@@ -34,12 +34,13 @@ public class ReportController {
         }
 
         User user = userService.getCurrentUser(userDetails.getUsername());
+        boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
         MovieReportType reportType;
         try {
             reportType = MovieReportType.valueOf(reportTypeStr);
         } catch (IllegalArgumentException e) {
             Map<String, Object> err = new HashMap<>();
-            err.put("error", "Loại báo cáo không hợp lệ.");
+            err.put("error", isVi ? "Loại báo cáo không hợp lệ." : "Invalid report type.");
             return ResponseEntity.badRequest().body(err);
         }
 
@@ -48,7 +49,7 @@ public class ReportController {
             Map<String, Object> result = new HashMap<>();
             result.put("status", "success");
             result.put("reportId", report.getReportId());
-            result.put("message", "Báo cáo của bạn đã được gửi và đang chờ xử lý.");
+            result.put("message", isVi ? "Báo cáo của bạn đã được gửi và đang chờ xử lý." : "Your report has been sent and is pending review.");
             return ResponseEntity.ok(result);
         } catch (IllegalArgumentException e) {
             Map<String, Object> err = new HashMap<>();

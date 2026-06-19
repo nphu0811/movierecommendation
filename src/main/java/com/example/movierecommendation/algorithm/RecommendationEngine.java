@@ -53,7 +53,7 @@ public class RecommendationEngine {
     private int similarMoviesLimit;
 
     /**
-     * Phim không nên gợi ý lại: đã xem (watch_history) hoặc đã chấm điểm (rating).
+     * Movies that should not be recommended again: watched (watch_history) or rated (rating).
      */
     public Set<Integer> getExcludedMovieIdsForRecommendations(Integer userId) {
         return Collections.unmodifiableSet(buildExcludedMovieIds(userId));
@@ -238,7 +238,7 @@ public class RecommendationEngine {
 
         if (candidateUserIds.isEmpty()) return scores;
 
-        // Lấy ratings chỉ của candidate users (giới hạn theo candidateLimit)
+        // Get ratings of candidate users only (limited to candidateLimit)
         List<Integer> limitedCandidates = candidateUserIds.size() > candidateLimit
             ? candidateUserIds.subList(0, candidateLimit) : candidateUserIds;
 

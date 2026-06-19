@@ -5,7 +5,7 @@
   <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>My Watchlist – MovieRec</title>
+  <title th:text="#{watchlist.title} + ' – MovieRec'">My Watchlist – MovieRec</title>
   <link rel="icon" type="image/svg+xml" sizes="any" th:href="@{/favicon.svg(v=2)}"/>
   <link rel="stylesheet" th:href="@{/css/style.css}"/>
 </head>
@@ -15,7 +15,7 @@
 <div th:replace="~{search-overlay :: searchOverlay}"></div>
 <div class="section">
   <div class="section-header">
-    <h1 class="section-title"><i class="ph-fill ph-heart" style="margin-right:8px;vertical-align:-3px;color:var(--red)"></i> My <span>Watchlist</span></h1>
+    <h1 class="section-title"><i class="ph-fill ph-heart" style="margin-right:8px;vertical-align:-3px;color:var(--red)"></i> <span th:text="#{watchlist.title}">My Watchlist</span></h1>
     <span style="color:#6c757d;font-size:.875rem"
           th:text="|${#lists.size(watchlist)} movie(s)|">0 movies</span>
   </div>
@@ -28,9 +28,9 @@
 
   <div class="empty-state" th:if="${#lists.isEmpty(watchlist)}">
     <div class="icon"><i class="ph-fill ph-heart" style="color:var(--red)"></i></div>
-    <h3>Your watchlist is empty</h3>
-    <p style="margin-bottom:1.5rem">Save movies you want to watch later.</p>
-    <a href="/movies" class="btn btn-primary">Browse Movies</a>
+    <h3 th:text="#{watchlist.title}">Your watchlist</h3>
+    <p th:text="#{watchlist.empty}" style="margin-bottom:1.5rem">Your watchlist is empty.</p>
+    <a href="/movies" class="btn btn-primary" th:text="#{nav.movies}">Browse Movies</a>
   </div>
 </div>
 <footer th:replace="~{fragments :: footer}"></footer>

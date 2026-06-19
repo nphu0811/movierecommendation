@@ -126,7 +126,7 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         if (Boolean.TRUE.equals(user.getIsEmailVerified())) {
-            throw new RuntimeException("Email đã được xác thực.");
+            throw new RuntimeException("Email is already verified.");
         }
         verificationService.sendCode(user, VerificationPurpose.EMAIL_VERIFY);
     }
@@ -150,7 +150,7 @@ public class UserService {
     @Transactional
     public String sendPasswordReset(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản với email này"));
+                .orElseThrow(() -> new RuntimeException("Account with this email was not found"));
         verificationService.sendCode(user, VerificationPurpose.PASSWORD_RESET);
         return verificationService.maskEmail(user.getEmail());
     }
@@ -158,10 +158,10 @@ public class UserService {
     @Transactional
     public void resetPassword(String email, String code, String newPassword) {
         if (newPassword == null || newPassword.length() < 6) {
-            throw new IllegalArgumentException("Mật khẩu mới phải có ít nhất 6 ký tự");
+            throw new IllegalArgumentException("New password must be at least 6 characters");
         }
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản với email này"));
+                .orElseThrow(() -> new RuntimeException("Account with this email was not found"));
         verificationService.verifyOrThrow(user, code, VerificationPurpose.PASSWORD_RESET);
         user.setPasswordHash(passwordEncoder.encode(newPassword));
         user.setIsEmailVerified(true);

@@ -5,7 +5,7 @@
   <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>My Recommendations – MovieRec</title>
+  <title th:text="#{recommendations.title} + ' – MovieRec'">My Recommendations – MovieRec</title>
   <link rel="icon" type="image/svg+xml" sizes="any" th:href="@{/favicon.svg(v=2)}"/>
   <link rel="stylesheet" th:href="@{/css/style.css}"/>
 </head>
@@ -18,9 +18,10 @@
   <!-- Page header -->
   <div style="text-align:center;padding:var(--space-5) 0 var(--space-4)">
     <h1 style="font-size:clamp(1.8rem,4vw,2.8rem);font-weight:800;letter-spacing:-.02em">
-      <i class="ph-fill ph-sparkle" style="color:var(--gold);margin-right:8px;vertical-align:-2px"></i> Your Personalized <span style="color:var(--red)">Picks</span>
+      <i class="ph-fill ph-sparkle" style="color:var(--gold);margin-right:8px;vertical-align:-2px"></i> <span th:text="#{recommendations.title}">Your Personalized Picks</span>
     </h1>
-    <p style="color:var(--text-secondary);margin-top:12px;max-width:500px;margin-left:auto;margin-right:auto;font-size:.95rem">
+    <p style="color:var(--text-secondary);margin-top:12px;max-width:500px;margin-left:auto;margin-right:auto;font-size:.95rem"
+       th:text="#{recommendations.subtitle}">
       Powered by your watch history, ratings, and users with similar taste.
     </p>
   </div>
@@ -54,7 +55,7 @@
   <!-- Personalized picks -->
   <div th:if="${recommendations != null and !#lists.isEmpty(recommendations)}">
     <div class="section-header">
-      <h2 class="section-title"><i class="ph-fill ph-sparkle" style="margin-right:8px;color:var(--red);vertical-align:-3px"></i> Recommended <span>For You</span></h2>
+      <h2 class="section-title"><i class="ph-fill ph-sparkle" style="margin-right:8px;color:var(--red);vertical-align:-3px"></i> <span th:text="#{nav.forYou}">Recommended For You</span></h2>
       <span style="color:var(--text-muted);font-size:.8rem;font-weight:500"
             th:text="${#lists.size(recommendations)} + ' picks'"></span>
     </div>
@@ -64,9 +65,9 @@
         <div th:replace="~{fragments :: movieCard(${movie})}"></div>
         <div class="rec-explanation" th:if="${movie.recommendationReason != null}" style="margin-top: 8px; text-align: center;">
           <span class="explanation-trigger">
-            <i class="ph-bold ph-info" style="vertical-align: middle;"></i> Vì sao gợi ý?
+            <i class="ph-bold ph-info" style="vertical-align: middle;"></i> <span th:text="#{movie.whyRecommended}">Why recommended?</span>
           </span>
-          <div class="explanation-tooltip" th:text="${movie.recommendationReason}">Lý do gợi ý</div>
+          <div class="explanation-tooltip" th:text="${movie.recommendationReason}">Recommendation reason</div>
         </div>
       </div>
     </div>
@@ -77,15 +78,15 @@
        style="background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-lg);
               padding:var(--space-6);text-align:center;margin-bottom:var(--space-5)">
     <div style="font-size:3rem;margin-bottom:16px"><i class="ph-fill ph-film-strip"></i></div>
-    <h3 style="font-size:1.25rem;font-weight:700;margin-bottom:10px">Not enough data yet!</h3>
-    <p style="color:var(--text-secondary);margin-bottom:24px;font-size:.9rem">Watch and rate at least 5 movies to unlock personalized recommendations.</p>
-    <a href="/movies" class="btn btn-primary">Start Watching</a>
+    <h3 style="font-size:1.25rem;font-weight:700;margin-bottom:10px" th:text="#{history.empty}">Not enough data yet!</h3>
+    <p style="color:var(--text-secondary);margin-bottom:24px;font-size:.9rem" th:text="#{watchlist.empty}">Watch and rate at least 5 movies to unlock personalized recommendations.</p>
+    <a href="/movies" class="btn btn-primary" th:text="#{nav.movies}">Start Watching</a>
   </div>
 
   <!-- Genre-based -->
   <div class="reveal" style="margin-top:var(--space-5)" th:if="${genrePicks != null and !#lists.isEmpty(genrePicks)}">
     <div class="section-header">
-      <h2 class="section-title"><i class="ph-fill ph-mask-happy" style="margin-right:8px;color:var(--text-secondary);vertical-align:-3px"></i> Based on Your <span>Favorite Genres</span></h2>
+      <h2 class="section-title"><i class="ph-fill ph-mask-happy" style="margin-right:8px;color:var(--text-secondary);vertical-align:-3px"></i> Based on Your <span th:text="#{profile.favGenres}">Favorite Genres</span></h2>
     </div>
     <div class="movies-row">
       <th:block th:each="movie : ${genrePicks}">
@@ -98,7 +99,7 @@
   <div class="reveal" style="margin-top:var(--space-5);padding-bottom:var(--space-5)"
        th:if="${trending != null and !#lists.isEmpty(trending)}">
     <div class="section-header">
-      <h2 class="section-title"><i class="ph-fill ph-fire" style="margin-right:8px;color:#f97316;vertical-align:-3px"></i> <span>Trending</span> This Week</h2>
+      <h2 class="section-title"><i class="ph-fill ph-fire" style="margin-right:8px;color:#f97316;vertical-align:-3px"></i> <span th:text="#{history.title}">Trending</span></h2>
     </div>
     <div class="movies-row">
       <th:block th:each="movie : ${trending}">

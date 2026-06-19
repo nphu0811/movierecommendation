@@ -118,7 +118,8 @@ public class UserController {
         try {
             User user = userService.getCurrentUser(userDetails.getUsername());
             userService.sendEmailVerification(user.getUserId());
-            response.put("message", "Đã gửi mã xác thực đến " + user.getEmail());
+            boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
+            response.put("message", isVi ? "Đã gửi mã xác thực đến " + user.getEmail() : "Verification code sent to " + user.getEmail());
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             response.put("error", e.getMessage());
@@ -133,7 +134,8 @@ public class UserController {
         try {
             User user = userService.getCurrentUser(userDetails.getUsername());
             userService.confirmEmail(user.getUserId(), code);
-            redirect.addFlashAttribute("success", "Email đã được xác thực!");
+            boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
+            redirect.addFlashAttribute("success", isVi ? "Email đã được xác thực!" : "Email verified successfully!");
         } catch (Exception e) {
             redirect.addFlashAttribute("error", e.getMessage());
         }
@@ -147,7 +149,8 @@ public class UserController {
         try {
             User user = userService.getCurrentUser(userDetails.getUsername());
             userService.sendPasswordChangeCode(user.getUserId());
-            response.put("message", "Mã xác thực đổi mật khẩu đã được gửi tới email của bạn.");
+            boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
+            response.put("message", isVi ? "Mã xác thực đổi mật khẩu đã được gửi tới email của bạn." : "Verification code for password change has been sent to your email.");
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             response.put("error", e.getMessage());
@@ -237,9 +240,11 @@ public class UserController {
 
             recommendationService.evictRecommendationsCache(user.getUserId());
 
-            redirect.addFlashAttribute("success", "Cập nhật sở thích cá nhân thành công!");
+            boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
+            redirect.addFlashAttribute("success", isVi ? "Cập nhật sở thích cá nhân thành công!" : "Personal preferences updated successfully!");
         } catch (Exception e) {
-            redirect.addFlashAttribute("error", "Lỗi cập nhật sở thích: " + e.getMessage());
+            boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
+            redirect.addFlashAttribute("error", isVi ? "Lỗi cập nhật sở thích: " + e.getMessage() : "Error updating preferences: " + e.getMessage());
         }
         return "redirect:/user/profile?tab=preferences";
     }

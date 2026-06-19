@@ -44,9 +44,11 @@ public class AdminCommentController {
     public String hideComment(@PathVariable("id") Integer id, RedirectAttributes redirect) {
         try {
             interactionService.softDeleteComment(id);
-            redirect.addFlashAttribute("success", "Ẩn bình luận thành công.");
+            boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
+            redirect.addFlashAttribute("success", isVi ? "Ẩn bình luận thành công." : "Comment hidden successfully.");
         } catch (Exception e) {
-            redirect.addFlashAttribute("error", "Lỗi: " + e.getMessage());
+            boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
+            redirect.addFlashAttribute("error", (isVi ? "Lỗi: " : "Error: ") + e.getMessage());
         }
         return "redirect:/admin/comments";
     }
@@ -55,9 +57,11 @@ public class AdminCommentController {
     public String restoreComment(@PathVariable("id") Integer id, RedirectAttributes redirect) {
         try {
             interactionService.restoreComment(id);
-            redirect.addFlashAttribute("success", "Khôi phục bình luận thành công.");
+            boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
+            redirect.addFlashAttribute("success", isVi ? "Khôi phục bình luận thành công." : "Comment restored successfully.");
         } catch (Exception e) {
-            redirect.addFlashAttribute("error", "Lỗi: " + e.getMessage());
+            boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
+            redirect.addFlashAttribute("error", (isVi ? "Lỗi: " : "Error: ") + e.getMessage());
         }
         return "redirect:/admin/comments";
     }

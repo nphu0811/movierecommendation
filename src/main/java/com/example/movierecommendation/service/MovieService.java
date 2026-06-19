@@ -416,13 +416,24 @@ public class MovieService {
             String genres = movie.getGenres() != null ? movie.getGenres().stream().map(Genre::getGenreName).collect(Collectors.joining(", ")) : "N/A";
             String desc = movie.getDescription();
             String descSnippet = (desc != null && desc.length() > 150) ? desc.substring(0, 147) + "..." : desc;
-            summary = String.format("Phim '%s' (%d) thuộc thể loại %s. %s Phim có điểm đánh giá trung bình %.1f/5 với %d lượt đánh giá.", 
-                movie.getTitle(), 
-                movie.getReleaseYear() != null ? movie.getReleaseYear() : 2026,
-                genres, 
-                descSnippet != null ? descSnippet : "",
-                movie.getAverageRating(),
-                movie.getRatingCount());
+            boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
+            if (isVi) {
+                summary = String.format("Phim '%s' (%d) thuộc thể loại %s. %s Phim có điểm đánh giá trung bình %.1f/5 với %d lượt đánh giá.", 
+                    movie.getTitle(), 
+                    movie.getReleaseYear() != null ? movie.getReleaseYear() : 2026,
+                    genres, 
+                    descSnippet != null ? descSnippet : "",
+                    movie.getAverageRating(),
+                    movie.getRatingCount());
+            } else {
+                summary = String.format("The movie '%s' (%d) is in the %s genre(s). %s The movie has an average rating of %.1f/5 from %d reviews.", 
+                    movie.getTitle(), 
+                    movie.getReleaseYear() != null ? movie.getReleaseYear() : 2026,
+                    genres, 
+                    descSnippet != null ? descSnippet : "",
+                    movie.getAverageRating(),
+                    movie.getRatingCount());
+            }
         }
         
         movie.setAiSummary(summary);

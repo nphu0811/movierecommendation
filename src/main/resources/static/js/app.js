@@ -1137,3 +1137,12 @@ document.addEventListener('click', function(e) {
     }
   }
 }, true);
+
+// -- Language Toggle Function ---------------------------------
+function toggleLanguage(btn) {
+  var currentLang = btn.getAttribute('data-current-lang') || 'en';
+  var targetLang = currentLang === 'vi' ? 'en' : 'vi';
+  var url = new URL(window.location.href);
+  url.searchParams.set('lang', targetLang);
+  window.location.href = url.toString();
+}

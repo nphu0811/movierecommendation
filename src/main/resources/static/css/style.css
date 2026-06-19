@@ -4937,4 +4937,33 @@ body.auth-page {
   }
 }
 
+/* -- Language Toggle Button -- */
+.lang-toggle-btn {
+  background: transparent;
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all var(--t-fast) var(--ease);
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: var(--space-3);
+  letter-spacing: 0.05em;
+}
+.lang-toggle-btn:hover {
+  color: var(--white);
+  border-color: var(--red);
+  background: rgba(229, 9, 20, 0.1);
+  transform: translateY(-1px);
+}
+.lang-toggle-btn:active {
+  transform: scale(0.95);
+}
+
+
 

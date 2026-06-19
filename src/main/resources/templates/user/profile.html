@@ -5,7 +5,7 @@
   <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>My Profile - MovieRec</title>
+  <title th:text="#{nav.profile} + ' - MovieRec'">My Profile - MovieRec</title>
   <link rel="icon" type="image/svg+xml" sizes="any" th:href="@{/favicon.svg(v=2)}"/>
   <link rel="stylesheet" th:href="@{/css/style.css}"/>
   <style>
@@ -120,21 +120,21 @@
       <i class="ph-fill ph-user" aria-hidden="true"></i>
     </div>
     <div class="profile-identity">
-      <p class="profile-kicker">MovieRec profile</p>
+      <p class="profile-kicker" th:text="#{profile.kicker}">MovieRec profile</p>
       <h1 th:text="${currentUser.username}">Username</h1>
       <p class="profile-email" th:text="${currentUser.email}">email@example.com</p>
       <p class="profile-member">
-        Member since <span th:text="${#temporals.format(currentUser.createdAt, 'MMMM yyyy')}">Jan 2024</span>
+        <span th:text="#{profile.memberSince(${#temporals.format(currentUser.createdAt, 'MMMM yyyy')})}">Member since Jan 2024</span>
       </p>
     </div>
     <div class="profile-stats" aria-label="Profile stats">
       <div class="profile-stat">
         <strong th:text="${watchHistory != null ? watchHistory.size() : 0}">0</strong>
-        <span>Watched</span>
+        <span th:text="#{profile.watchedCount}">Watched</span>
       </div>
       <div class="profile-stat">
         <strong th:text="${watchlist != null ? watchlist.size() : 0}">0</strong>
-        <span>Watchlist</span>
+        <span th:text="#{profile.watchlistCount}">Watchlist</span>
       </div>
     </div>
   </section>
@@ -144,22 +144,22 @@
       <button type="button" class="tab-btn active" role="tab" aria-selected="true"
               onclick="switchTab('edit-profile', this)">
         <i class="ph-bold ph-pencil-simple" aria-hidden="true"></i>
-        Edit Profile
+        <span th:text="#{profile.tabEditProfile}">Edit Profile</span>
       </button>
       <button type="button" class="tab-btn" role="tab" aria-selected="false"
               onclick="switchTab('change-password', this)">
         <i class="ph-bold ph-lock-key" aria-hidden="true"></i>
-        Password
+        <span th:text="#{profile.tabPassword}">Password</span>
       </button>
       <button type="button" class="tab-btn" role="tab" aria-selected="false"
               onclick="switchTab('user-preferences', this)">
         <i class="ph-bold ph-sliders" aria-hidden="true"></i>
-        Preferences
+        <span th:text="#{profile.tabPreferences}">Preferences</span>
       </button>
       <button type="button" class="tab-btn" role="tab" aria-selected="false"
               onclick="switchTab('search-history', this)">
         <i class="ph-bold ph-magnifying-glass" aria-hidden="true"></i>
-        Search History
+        <span th:text="#{profile.tabSearchHistory}">Search History</span>
       </button>
     </div>
 
@@ -168,8 +168,8 @@
       <div class="profile-panel-card">
         <div class="profile-panel-header">
           <div>
-            <p class="profile-kicker">Account details</p>
-            <h2>Edit Profile</h2>
+            <p class="profile-kicker" th:text="#{profile.accountDetailsKicker}">Account details</p>
+            <h2 th:text="#{profile.editProfileTitle}">Edit Profile</h2>
           </div>
           <i class="ph-fill ph-identification-card" aria-hidden="true"></i>
         </div>
@@ -177,37 +177,37 @@
         <form th:action="@{/user/profile/update}" method="post" class="profile-form">
           <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
           <div class="form-group">
-            <label class="form-label">Username</label>
+            <label class="form-label" th:text="#{profile.usernameLabel}">Username</label>
             <input type="text" name="username" class="form-control" th:value="${currentUser.username}" required/>
           </div>
           <div class="form-group">
-            <label class="form-label">Email</label>
+            <label class="form-label" th:text="#{profile.emailLabel}">Email</label>
             <input type="email" name="email" class="form-control" th:value="${currentUser.email}" required/>
-            <small class="form-note">Changing email will require verification again.</small>
+            <small class="form-note" th:text="#{profile.emailChangeNote}">Changing email will require verification again.</small>
           </div>
-          <button type="submit" class="btn btn-primary">Save Changes</button>
+          <button type="submit" class="btn btn-primary" th:text="#{profile.saveChangesBtn}">Save Changes</button>
         </form>
 
         <div class="verification-card">
           <div class="verification-topline">
             <div class="verification-status"
                  th:classappend="${currentUser.isEmailVerified} ? ' verified' : ' pending'"
-                 th:text="${currentUser.isEmailVerified} ? 'Verified' : 'Not verified'">Status</div>
+                 th:text="${currentUser.isEmailVerified} ? #{profile.statusVerified} : #{profile.statusPending}">Status</div>
             <div class="verification-email" th:text="${currentUser.email}">you@example.com</div>
             <form th:if="${!currentUser.isEmailVerified}" class="verification-action">
               <button id="sendEmailBtn" class="btn btn-secondary" type="button"
-                      onclick="handleSendCode('sendEmailBtn', '/user/email/send-code')">Send 6-digit code</button>
+                      onclick="handleSendCode('sendEmailBtn', '/user/email/send-code')" th:text="#{profile.sendCodeBtn}">Send 6-digit code</button>
             </form>
           </div>
-          <p class="form-note">Your account stays unverified until the 6-digit email code is confirmed.</p>
+          <p class="form-note" th:text="#{profile.verifyNote}">Your account stays unverified until the 6-digit email code is confirmed.</p>
           <div th:if="${!currentUser.isEmailVerified}" class="verification-code">
             <form th:action="@{/user/email/confirm}" method="post" class="profile-code-form">
               <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
               <div class="form-group">
-                <label class="form-label">Verification code</label>
+                <label class="form-label" th:text="#{profile.verifyCodeLabel}">Verification code</label>
                 <input type="text" name="code" pattern="[0-9]{6}" maxlength="6" class="form-control" placeholder="123456" required/>
               </div>
-              <button type="submit" class="btn btn-primary">Confirm email</button>
+              <button type="submit" class="btn btn-primary" th:text="#{profile.confirmEmailBtn}">Confirm email</button>
             </form>
           </div>
         </div>
@@ -219,18 +219,18 @@
       <div class="profile-panel-card">
         <div class="profile-panel-header">
           <div>
-            <p class="profile-kicker">Security</p>
-            <h2>Change Password</h2>
+            <p class="profile-kicker" th:text="#{profile.securityKicker}">Security</p>
+            <h2 th:text="#{profile.changePasswordTitle}">Change Password</h2>
           </div>
           <button id="sendPassBtn" type="button" class="btn btn-secondary"
-                  onclick="handleSendCode('sendPassBtn', '/user/profile/password/send-code')">Send verification code</button>
+                  onclick="handleSendCode('sendPassBtn', '/user/profile/password/send-code')" th:text="#{profile.sendPassCodeBtn}">Send verification code</button>
         </div>
-        <p class="form-note">Enter the 6-digit code sent to your email before updating your password.</p>
+        <p class="form-note" th:text="#{profile.changePassNote}">Enter the 6-digit code sent to your email before updating your password.</p>
 
         <form th:action="@{/user/profile/change-password}" method="post" class="profile-form">
           <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
           <div class="form-group">
-            <label class="form-label">Current Password</label>
+            <label class="form-label" th:text="#{profile.currentPasswordLabel}">Current Password</label>
             <div class="password-field">
               <input type="password" name="currentPassword" class="form-control" required autocomplete="current-password"/>
               <button type="button" class="password-toggle" aria-label="Show password" aria-pressed="false">
@@ -239,7 +239,7 @@
             </div>
           </div>
           <div class="form-group">
-            <label class="form-label">New Password</label>
+            <label class="form-label" th:text="#{profile.newPasswordLabel}">New Password</label>
             <div class="password-field">
               <input type="password" name="newPassword" class="form-control" required minlength="6" autocomplete="new-password"/>
               <button type="button" class="password-toggle" aria-label="Show password" aria-pressed="false">
@@ -248,10 +248,10 @@
             </div>
           </div>
           <div class="form-group">
-            <label class="form-label">Email verification code</label>
+            <label class="form-label" th:text="#{profile.emailPassCodeLabel}">Email verification code</label>
             <input type="text" name="verificationCode" class="form-control" pattern="[0-9]{6}" maxlength="6" placeholder="123456" required/>
           </div>
-          <button type="submit" class="btn btn-primary">Update Password</button>
+          <button type="submit" class="btn btn-primary" th:text="#{profile.updatePasswordBtn}">Update Password</button>
         </form>
       </div>
     </section>
@@ -261,8 +261,8 @@
       <div class="profile-panel-card">
         <div class="profile-panel-header">
           <div>
-            <p class="profile-kicker">Cá nhân hóa</p>
-            <h2>Sở thích của tôi</h2>
+            <p class="profile-kicker" th:text="#{profile.personalization}">Personalization</p>
+            <h2 th:text="#{profile.myTaste}">My Preferences</h2>
           </div>
           <i class="ph-fill ph-sliders-horizontal" aria-hidden="true"></i>
         </div>
@@ -271,7 +271,7 @@
           <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
           
           <div class="form-group">
-            <label class="form-label">Thể loại yêu thích</label>
+            <label class="form-label" th:text="#{profile.favGenres}">Favorite Genres</label>
             <div class="genre-grid">
               <label th:each="genre : ${allGenres}" class="genre-checkbox-label">
                 <input type="checkbox" name="preferredGenres" th:value="${genre.genreName}"
@@ -282,7 +282,7 @@
           </div>
 
           <div class="form-group">
-            <label class="form-label">Thể loại không thích</label>
+            <label class="form-label" th:text="#{profile.dislikedGenres}">Disliked Genres</label>
             <div class="genre-grid">
               <label th:each="genre : ${allGenres}" class="genre-checkbox-label">
                 <input type="checkbox" name="dislikedGenres" th:value="${genre.genreName}"
@@ -293,25 +293,25 @@
           </div>
 
           <div class="form-group">
-            <label class="form-label">Điểm đánh giá tối thiểu thường xem (1-5)</label>
-            <input type="number" step="0.1" name="minRating" class="form-control" th:value="${preferences.minRating}" placeholder="Ví dụ: 4.0" min="1" max="5"/>
+            <label class="form-label" th:text="#{profile.minRating}">Minimum Rating (1-5)</label>
+            <input type="number" step="0.1" name="minRating" class="form-control" th:value="${preferences.minRating}" th:placeholder="#{profile.minRatingPlaceholder}" min="1" max="5"/>
           </div>
 
           <div class="checkbox-group">
             <label>
               <input type="checkbox" name="preferNewReleases" value="true" th:checked="${preferences.preferNewReleases}"/>
-              Ưu tiên phim mới phát hành
+              <span th:text="#{profile.preferNew}">Prefer new releases</span>
             </label>
           </div>
 
           <div class="checkbox-group">
             <label>
               <input type="checkbox" name="preferTopRated" value="true" th:checked="${preferences.preferTopRated}"/>
-              Ưu tiên phim được đánh giá cao
+              <span th:text="#{profile.preferHighlyRated}">Prefer highly rated movies</span>
             </label>
           </div>
 
-          <button type="submit" class="btn btn-primary">Lưu sở thích</button>
+          <button type="submit" class="btn btn-primary" th:text="#{profile.savePreferences}">Save Preferences</button>
         </form>
       </div>
     </section>
@@ -321,17 +321,17 @@
       <div class="profile-panel-card">
         <div class="profile-panel-header">
           <div>
-            <p class="profile-kicker">Quyền riêng tư</p>
-            <h2>Lịch sử tìm kiếm</h2>
+            <p class="profile-kicker" th:text="#{profile.privacy}">Privacy</p>
+            <h2 th:text="#{profile.searchHistory}">Search History</h2>
           </div>
           <button type="button" class="btn btn-secondary" onclick="clearSearchHistory()">
-            <i class="ph-bold ph-trash" style="margin-right:4px"></i> Xóa tất cả
+            <i class="ph-bold ph-trash" style="margin-right:4px"></i> <span th:text="#{history.clearAll}">Clear All</span>
           </button>
         </div>
-        <p class="form-note">Dưới đây là danh sách các từ khóa bạn đã tìm kiếm gần đây. Bạn có thể xóa từng mục hoặc xóa toàn bộ lịch sử.</p>
+        <p class="form-note" th:text="#{profile.searchHistoryNote}">This is a list of your recently searched keywords. You can delete individual items or clear the entire history.</p>
 
         <div th:if="${searchHistory == null or searchHistory.isEmpty()}" class="empty-state">
-          <p>Lịch sử tìm kiếm trống.</p>
+          <p th:text="#{profile.searchHistoryEmpty}">Search history is empty.</p>
         </div>
 
         <ul class="history-list" th:if="${searchHistory != null and !searchHistory.isEmpty()}">
@@ -340,7 +340,7 @@
               <span class="history-keyword" th:text="${sh.searchQuery}">Keyword</span>
               <span class="history-date" th:text="${#temporals.format(sh.createdAt, 'dd/MM/yyyy HH:mm')}">Date</span>
             </div>
-            <button class="delete-btn" th:data-id="${sh.searchId}" onclick="deleteSearchHistory(this.getAttribute('data-id'))" aria-label="Xóa">
+            <button class="delete-btn" th:data-id="${sh.searchId}" onclick="deleteSearchHistory(this.getAttribute('data-id'))" th:aria-label="#{history.clearAll}">
               <i class="ph-bold ph-trash"></i>
             </button>
           </li>
@@ -351,8 +351,8 @@
 
   <section class="profile-section">
     <div class="section-header">
-      <h3 class="section-title"><i class="ph-fill ph-clock-counter-clockwise" aria-hidden="true"></i> Recent <span>History</span></h3>
-      <a href="/user/history" class="view-all">View all -></a>
+      <h3 class="section-title"><i class="ph-fill ph-clock-counter-clockwise" aria-hidden="true"></i> <span th:text="#{profile.recentHistoryHeader}">Recent History</span></h3>
+      <a href="/user/history" class="view-all" th:text="#{profile.viewAllLink}">View all -></a>
     </div>
     <div class="movies-row" th:if="${watchHistory != null and !watchHistory.isEmpty()}">
       <th:block th:each="wh, iterWh : ${watchHistory}">
@@ -361,14 +361,14 @@
     </div>
     <div class="empty-state" th:if="${watchHistory == null or watchHistory.isEmpty()}">
       <div class="icon"><i class="ph-fill ph-film-strip"></i></div>
-      <p>No watch history yet. Start watching!</p>
+      <p th:text="#{profile.recentHistoryEmpty}">No watch history yet. Start watching!</p>
     </div>
   </section>
 
   <section class="profile-section profile-section--last">
     <div class="section-header">
-      <h3 class="section-title"><i class="ph-fill ph-heart profile-heart" aria-hidden="true"></i> My <span>Watchlist</span></h3>
-      <a href="/user/watchlist" class="view-all">View all -></a>
+      <h3 class="section-title"><i class="ph-fill ph-heart profile-heart" aria-hidden="true"></i> <span th:text="#{profile.myWatchlistHeader}">My Watchlist</span></h3>
+      <a href="/user/watchlist" class="view-all" th:text="#{profile.viewAllLink}">View all -></a>
     </div>
     <div class="movies-row" th:if="${watchlist != null and !watchlist.isEmpty()}">
       <th:block th:each="wl, iterWl : ${watchlist}">
@@ -377,7 +377,7 @@
     </div>
     <div class="empty-state" th:if="${watchlist == null or watchlist.isEmpty()}">
       <div class="icon"><i class="ph-fill ph-heart profile-heart"></i></div>
-      <p>Your watchlist is empty. Add some movies!</p>
+      <p th:text="#{profile.myWatchlistEmpty}">Your watchlist is empty. Add some movies!</p>
     </div>
   </section>
 </main>
@@ -414,7 +414,7 @@ function manageCountdown(btnId, forceStart) {
   if (!btn) return;
 
   const key = 'countdown_' + btnId;
-  const originalText = (btnId === 'sendEmailBtn') ? 'Send 6-digit code' : 'Send verification code';
+  const originalText = (btnId === 'sendEmailBtn') ? (/*[[#{profile.countdownSendCode}]]*/ '') : (/*[[#{profile.countdownSendPassCode}]]*/ '');
 
   if (forceStart) {
     localStorage.setItem(key, Date.now() + 60000);
@@ -427,7 +427,7 @@ function manageCountdown(btnId, forceStart) {
       if (remaining > 0) {
         btn.disabled = true;
         btn.style.opacity = '0.6';
-        btn.innerText = `Send again in (${remaining}s)`;
+        btn.innerText = (/*[[#{profile.countdownSendAgain}]]*/ '').replace('{0}', remaining);
         setTimeout(updateBtn, 1000);
       } else {
         btn.disabled = false;
@@ -451,21 +451,21 @@ async function handleSendCode(btnId, url) {
     const res = await postFetch(url);
     const data = await res.json();
     if (res.ok) {
-      showToast(data.message || 'Code sent successfully!', 'success');
+      showToast(data.message || (/*[[#{profile.toastCodeSent}]]*/ ''), 'success');
     } else {
-      showToast(data.error || 'Could not send code', 'error');
+      showToast(data.error || (/*[[#{profile.toastCodeSendError}]]*/ ''), 'error');
       localStorage.removeItem('countdown_' + btnId);
       manageCountdown(btnId);
     }
   } catch (e) {
-    showToast('Server connection error or timeout', 'error');
+    showToast(/*[[#{profile.toastConnectionError}]]*/ '', 'error');
     localStorage.removeItem('countdown_' + btnId);
     manageCountdown(btnId);
   }
 }
 
 async function deleteSearchHistory(id) {
-  if (!confirm('Bạn có chắc chắn muốn xóa lịch sử tìm kiếm này?')) return;
+  if (!confirm(/*[[#{profile.toastDeleteSearchHistoryConfirm}]]*/ '')) return;
   try {
     const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
     const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
@@ -478,17 +478,17 @@ async function deleteSearchHistory(id) {
     if (res.ok) {
       const el = document.getElementById(`search-item-${id}`);
       if (el) el.remove();
-      showToast('Xóa thành công!', 'success');
+      showToast(/*[[#{history.toastDeleteSuccess}]]*/ '', 'success');
     } else {
-      showToast('Không thể xóa mục này', 'error');
+      showToast(/*[[#{profile.toastDeleteSearchError}]]*/ '', 'error');
     }
   } catch (e) {
-    showToast('Lỗi kết nối server', 'error');
+    showToast(/*[[#{history.toastConnectionError}]]*/ '', 'error');
   }
 }
 
 async function clearSearchHistory() {
-  if (!confirm('Bạn có chắc chắn muốn xóa toàn bộ lịch sử tìm kiếm?')) return;
+  if (!confirm(/*[[#{profile.toastDeleteAllSearchHistoryConfirm}]]*/ '')) return;
   try {
     const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
     const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
@@ -501,13 +501,13 @@ async function clearSearchHistory() {
     if (res.ok) {
       const items = document.querySelectorAll('.history-item');
       items.forEach(el => el.remove());
-      showToast('Đã xóa toàn bộ lịch sử tìm kiếm!', 'success');
+      showToast(/*[[#{profile.toastDeleteAllSearchHistorySuccess}]]*/ '', 'success');
       window.location.reload();
     } else {
-      showToast('Lỗi khi xóa lịch sử', 'error');
+      showToast(/*[[#{profile.toastDeleteAllSearchHistoryError}]]*/ '', 'error');
     }
   } catch (e) {
-    showToast('Lỗi kết nối server', 'error');
+    showToast(/*[[#{history.toastConnectionError}]]*/ '', 'error');
   }
 }
 

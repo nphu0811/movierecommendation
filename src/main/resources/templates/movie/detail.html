@@ -56,13 +56,13 @@
                 th:if="${movie.trailerKey != null and !#strings.isEmpty(movie.trailerKey)}"
                 th:data-trailer-key="${movie.trailerKey}"
                 onclick="openTrailer(this.dataset.trailerKey)">
-          <i class="ph-fill ph-play-circle" style="margin-right:6px"></i> Watch Trailer
+          <i class="ph-fill ph-play-circle" style="margin-right:6px"></i> <span th:text="#{detail.watchTrailer}">Watch Trailer</span>
         </button>
         <th:block th:if="${currentUser != null}">
           <a class="watch-btn trailer"
            th:if="${movieLink != null and ((movieLink.imdbId != null and !#strings.isEmpty(movieLink.imdbId)) or (movieLink.tmdbId != null))}"
            th:href="@{/movies/{id}/play(id=${movie.movieId})}">
-          <i class="ph-fill ph-play-circle" style="margin-right:6px"></i> Play </a>
+          <i class="ph-fill ph-play-circle" style="margin-right:6px"></i> <span th:text="#{detail.play}">Play</span> </a>
           <a class="watch-btn netflix"
              th:href="|https://www.netflix.com/search?q=${movie.title}|"
              target="_blank" rel="noopener"><i class="ph-fill ph-play-circle" style="margin-right:6px"></i> Netflix</a>
@@ -80,20 +80,20 @@
                   th:data-movie-id="${movie.movieId}"
                   onclick="toggleWatchlist(this.getAttribute('data-movie-id'), this)">
             <th:block th:if="${inWatchlist}">
-              <i class="ph-fill ph-heart" style="margin-right:6px"></i> In Watchlist
+              <i class="ph-fill ph-heart" style="margin-right:6px"></i> <span th:text="#{detail.inWatchlist}">In Watchlist</span>
             </th:block>
             <th:block th:unless="${inWatchlist}">
-              <i class="ph ph-heart" style="margin-right:6px"></i> Add to Watchlist
+              <i class="ph ph-heart" style="margin-right:6px"></i> <span th:text="#{detail.addToWatchlist}">Add to Watchlist</span>
             </th:block>
           </button>
           <button class="btn btn-outline" onclick="openReportModal()">
-            <i class="ph-bold ph-warning-octagon" style="margin-right:6px; vertical-align: middle;"></i> Báo lỗi phim
+            <i class="ph-bold ph-warning-octagon" style="margin-right:6px; vertical-align: middle;"></i> <span th:text="#{detail.reportError}">Report Error</span>
           </button>
         </th:block>
         <th:block th:if="${currentUser == null}">
-          <a href="/auth/login" class="btn btn-primary">Login to interact</a>
+          <a href="/auth/login" class="btn btn-primary" th:text="#{detail.loginToInteract}">Login to interact</a>
         </th:block>
-        <a href="/movies" class="btn btn-ghost">← Back</a>
+        <a href="/movies" class="btn btn-ghost" th:text="#{detail.back}">← Back</a>
       </div>
     </div>
   </div>
@@ -131,11 +131,11 @@
     <div class="ai-summary-detail-card" th:id="|aiSummaryCard-${movie.movieId}|">
       <div class="ai-summary-detail-title">
         <i class="ph-fill ph-sparkle"></i>
-        <span>Bản tóm tắt phim do AI tạo</span>
+        <span th:text="#{detail.aiSummaryTitle}">AI Movie Summary</span>
       </div>
       <div class="ai-summary-detail-text loading" th:id="|aiSummaryDetailText-${movie.movieId}|">
         <i class="ph-bold ph-circle-notch ph-spin" style="margin-right: 6px;"></i>
-        Đang tải bản tóm tắt từ AI...
+        <span th:text="#{detail.aiSummaryLoading}">Loading AI summary...</span>
       </div>
     </div>
 
@@ -148,13 +148,13 @@
 
     <!-- Cast & Crew -->
     <div class="detail-card" th:if="${(movie.actorsText != null and !#strings.isEmpty(movie.actorsText)) or (movie.directorsText != null and !#strings.isEmpty(movie.directorsText))}">
-      <h3><i class="ph-bold ph-users" style="margin-right:6px;vertical-align:-3px;color:var(--text-secondary)"></i> Diễn viên &amp; Đạo diễn</h3>
+      <h3><i class="ph-bold ph-users" style="margin-right:6px;vertical-align:-3px;color:var(--text-secondary)"></i> <span th:text="#{detail.castAndCrew}">Cast &amp; Crew</span></h3>
       <div style="margin-bottom: 12px;" th:if="${movie.directorsText != null and !#strings.isEmpty(movie.directorsText)}">
-        <strong style="color: var(--white); font-size: 0.95rem;">Đạo diễn:</strong>
+        <strong style="color: var(--white); font-size: 0.95rem;" th:text="#{detail.director}">Director:</strong>
         <span style="color: var(--text-secondary); font-size: 0.95rem; margin-left: 6px;" th:text="${movie.directorsText}">Director Name</span>
       </div>
       <div th:if="${movie.actorsText != null and !#strings.isEmpty(movie.actorsText)}">
-        <strong style="color: var(--white); font-size: 0.95rem;">Diễn viên chính:</strong>
+        <strong style="color: var(--white); font-size: 0.95rem;" th:text="#{detail.actors}">Lead Actors:</strong>
         <span style="color: var(--text-secondary); font-size: 0.95rem; margin-left: 6px;" th:text="${movie.actorsText}">Actor Names</span>
       </div>
     </div>
@@ -199,9 +199,9 @@
 
     <!-- Tags -->
     <div class="detail-card">
-      <h3><i class="ph-fill ph-tag" style="margin-right:6px;vertical-align:-3px;color:var(--text-secondary)"></i> Tags
+      <h3><i class="ph-fill ph-tag" style="margin-right:6px;vertical-align:-3px;color:var(--text-secondary)"></i> <span th:text="#{detail.tags}">Tags</span>
         <span style="color:#606060;font-size:.8rem;font-weight:400;text-transform:none;letter-spacing:0"
-              th:text="${#lists.isEmpty(topTags)} ? '' : '(' + ${#lists.size(topTags)} + ' nhãn)'"></span>
+              th:text="${#lists.isEmpty(topTags)} ? '' : #{detail.tagsCount(${#lists.size(topTags)})}"></span>
       </h3>
 
       <!-- Top tags display -->
@@ -211,15 +211,15 @@
           <span th:text="${row[0]}">tag</span>
           <span class="tag-count" th:text="'×' + ${row[1]}">×1</span>
         </div>
-        <div th:if="${#lists.isEmpty(topTags)}" class="empty-comments-state" style="font-size:.9rem;padding:8px 0">
-          Chưa có tag nào. Hãy là người đầu tiên!
+        <div th:if="${#lists.isEmpty(topTags)}" class="empty-comments-state" style="font-size:.9rem;padding:8px 0" th:text="#{detail.noTags}">
+          No tags yet. Be the first!
         </div>
       </div>
 
       <!-- Add tag form (logged-in users only) -->
       <div th:if="${currentUser != null}" style="display:flex;gap:8px;align-items:center">
         <input id="tag-input" class="form-control" type="text"
-               placeholder="Nhập tag (VD: hay, buồn, hành động)" maxlength="50"
+               th:placeholder="#{detail.addTagPlaceholder}" maxlength="50"
                style="flex:1;padding:8px 12px"/>
         <button class="btn btn-primary btn-sm" onclick="submitTag()">＋ Add</button>
       </div>
@@ -297,7 +297,7 @@
         })
         .catch(err => {
           detailsSummaryText.classList.remove('loading');
-          detailsSummaryText.innerHTML = 'Không thể tải bản tóm tắt tại thời điểm này.';
+          detailsSummaryText.innerHTML = /*[[#{detail.aiSummaryError}]]*/ '';
         });
     }
   });
@@ -376,9 +376,9 @@
              </div>`);
         }
         input.value = '';
-        showToast('Tag đã thêm!', 'success');
+        showToast(/*[[#{detail.toastTagAdded}]]*/ '', 'success');
       })
-      .catch(() => showToast('Lỗi thêm tag', 'error'));
+      .catch(() => showToast(/*[[#{detail.toastTagError}]]*/ '', 'error'));
   }
 
   function openReportModal() {
@@ -398,10 +398,10 @@
     const msgInput = document.getElementById('reportMessage');
     if (type === 'OTHER') {
       msgInput.required = true;
-      msgInput.placeholder = "BẮT BUỘC: Hãy mô tả chi tiết lỗi khác tại đây...";
+      msgInput.placeholder = /*[[#{detail.reportPlaceholderOther}]]*/ '';
     } else {
       msgInput.required = false;
-      msgInput.placeholder = "Nhập chi tiết lỗi gặp phải tại đây...";
+      msgInput.placeholder = /*[[#{detail.reportPlaceholderDetail}]]*/ '';
     }
   }
   function submitReportForm(event) {
@@ -415,7 +415,7 @@
     const csrfHeader = document.querySelector('meta[name="_csrf_header"]');
     if (csrfMeta) headers[csrfHeader.content] = csrfMeta.content;
 
-    btn.disabled = true; btn.textContent = 'Đang gửi…';
+    btn.disabled = true; btn.textContent = /*[[#{detail.reportSubmitting}]]*/ '';
     fetch(`/api/movies/${MOVIE_ID}/report`, {
       method: 'POST',
       headers: headers,
@@ -429,11 +429,11 @@
         showToast(data.message, 'success');
         closeReportModal();
       }
-      btn.disabled = false; btn.textContent = 'Gửi báo lỗi';
+      btn.disabled = false; btn.textContent = /*[[#{detail.reportSubmit}]]*/ '';
     })
     .catch(() => {
-      btn.disabled = false; btn.textContent = 'Gửi báo lỗi';
-      showToast('Có lỗi xảy ra khi gửi báo lỗi.', 'error');
+      btn.disabled = false; btn.textContent = /*[[#{detail.reportSubmit}]]*/ '';
+      showToast(/*[[#{detail.toastReportError}]]*/ '', 'error');
     });
   }
 </script>
@@ -444,28 +444,28 @@
 <div class="resume-modal" id="reportModal" onclick="closeReportOnBg(event)">
   <div class="resume-content" style="max-width: 500px; text-align: left;">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
-      <h3 style="margin:0; font-size:1.25rem;"><i class="ph-fill ph-warning-octagon" style="color:var(--red); margin-right:6px; vertical-align: middle;"></i> Báo lỗi phim</h3>
+      <h3 style="margin:0; font-size:1.25rem;"><i class="ph-fill ph-warning-octagon" style="color:var(--red); margin-right:6px; vertical-align: middle;"></i> <span th:text="#{detail.reportTitle}">Report Movie Error</span></h3>
       <button onclick="closeReportModal()" style="background:none; border:none; color:var(--text-muted); font-size:1.2rem; cursor:pointer;">✕</button>
     </div>
     <form id="reportForm" onsubmit="submitReportForm(event)">
       <div style="margin-bottom: 16px;">
-        <label for="reportType" style="display:block; font-size:0.85rem; color:var(--text-secondary); margin-bottom: 6px;">Loại lỗi</label>
+        <label for="reportType" style="display:block; font-size:0.85rem; color:var(--text-secondary); margin-bottom: 6px;" th:text="#{detail.reportLabelType}">Error Type</label>
         <select id="reportType" class="form-control" style="width:100%; padding:10px; border-radius:8px;" required onchange="onReportTypeChange()">
-          <option value="WRONG_INFO">Thông tin sai (năm chiếu, diễn viên, tiêu đề)</option>
-          <option value="BROKEN_TRAILER">Trailer hỏng / không xem được</option>
-          <option value="BROKEN_POSTER">Poster / ảnh nền hỏng</option>
-          <option value="DUPLICATE_MOVIE">Trùng lặp phim</option>
-          <option value="WRONG_GENRE">Sai thể loại phim</option>
-          <option value="OTHER">Lỗi khác (Yêu cầu ghi chi tiết bên dưới)</option>
+          <option value="WRONG_INFO" th:text="#{detail.reportTypeWrongInfo}">Incorrect information (year, cast, title)</option>
+          <option value="BROKEN_TRAILER" th:text="#{detail.reportTypeBrokenTrailer}">Broken trailer</option>
+          <option value="BROKEN_POSTER" th:text="#{detail.reportTypeBrokenPoster}">Broken poster / backdrop</option>
+          <option value="DUPLICATE_MOVIE" th:text="#{detail.reportTypeDuplicate}">Duplicate movie</option>
+          <option value="WRONG_GENRE" th:text="#{detail.reportTypeWrongGenre}">Incorrect genre</option>
+          <option value="OTHER" th:text="#{detail.reportTypeOther}">Other error (description required below)</option>
         </select>
       </div>
       <div style="margin-bottom: 20px;">
-        <label for="reportMessage" style="display:block; font-size:0.85rem; color:var(--text-secondary); margin-bottom: 6px;">Mô tả chi tiết</label>
-        <textarea id="reportMessage" class="form-control" rows="4" placeholder="Nhập chi tiết lỗi gặp phải tại đây..." style="width:100%; padding:10px; border-radius:8px; resize:none;"></textarea>
+        <label for="reportMessage" style="display:block; font-size:0.85rem; color:var(--text-secondary); margin-bottom: 6px;" th:text="#{detail.reportLabelDetail}">Detailed Description</label>
+        <textarea id="reportMessage" class="form-control" rows="4" th:placeholder="#{detail.reportPlaceholderDetail}" style="width:100%; padding:10px; border-radius:8px; resize:none;"></textarea>
       </div>
       <div style="display:flex; gap:12px; justify-content:flex-end;">
-        <button type="button" class="btn btn-ghost" onclick="closeReportModal()">Hủy</button>
-        <button type="submit" class="btn btn-primary" id="btnSubmitReport">Gửi báo lỗi</button>
+        <button type="button" class="btn btn-ghost" onclick="closeReportModal()" th:text="#{detail.reportCancel}">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="btnSubmitReport" th:text="#{detail.reportSubmit}">Submit</button>
       </div>
     </form>
   </div>

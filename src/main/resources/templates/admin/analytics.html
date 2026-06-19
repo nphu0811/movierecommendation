@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Thống kê & Phân tích – Admin</title>
+  <title>Analytics & Stats – Admin</title>
   <link rel="icon" type="image/svg+xml" sizes="any" th:href="@{/favicon.svg(v=2)}"/>
   <link rel="stylesheet" th:href="@{/css/style.css}"/>
 </head>
@@ -13,8 +13,8 @@
 
   <main class="admin-main">
     <div class="admin-header" style="margin-bottom: 24px;">
-      <h1>Thống kê & Phân tích hệ thống</h1>
-      <p style="color:#6c757d;font-size:.875rem">Dữ liệu về lịch sử tìm kiếm, hành vi người dùng và nhật ký thuật toán gợi ý.</p>
+      <h1>System Analytics & Stats</h1>
+      <p style="color:#6c757d;font-size:.875rem">Data on search history, user behavior, and recommendation algorithm logs.</p>
     </div>
 
     <!-- Overview Stats Cards -->
@@ -23,14 +23,14 @@
         <div class="stat-icon"><i class="ph-fill ph-magnifying-glass" aria-hidden="true"></i></div>
         <div>
           <div class="stat-value" th:text="${totalSearches}">0</div>
-          <div class="stat-label">Tổng lượt tìm kiếm</div>
+          <div class="stat-label">Total Searches</div>
         </div>
       </article>
       <article class="stat-card">
         <div class="stat-icon"><i class="ph-fill ph-clock" aria-hidden="true"></i></div>
         <div>
           <div class="stat-value" th:text="${#numbers.formatDecimal(avgSearchLatency, 1, 1)} + ' ms'">0 ms</div>
-          <div class="stat-label">Độ trễ tìm kiếm TB</div>
+          <div class="stat-label">Avg Search Latency</div>
         </div>
       </article>
     </section>
@@ -43,7 +43,7 @@
         <div class="admin-panel-header" style="margin-bottom: 16px;">
           <div>
             <p class="admin-eyebrow">Search Behavior</p>
-            <h2>Từ khóa tìm kiếm phổ biến (30 ngày)</h2>
+            <h2>Popular Search Keywords (30 Days)</h2>
           </div>
           <i class="ph-fill ph-magnifying-glass" aria-hidden="true" style="font-size: 1.5rem; color: var(--red);"></i>
         </div>
@@ -53,10 +53,10 @@
               <span class="admin-rank" th:text="${iter.index + 1}" style="width:24px; text-align:center; font-weight:bold; color:var(--red);">1</span>
               <span th:text="${trend.query}" style="font-weight: 500;">keyword</span>
             </div>
-            <span class="admin-score" th:text="${trend.count} + ' lượt'" style="background:rgba(255,255,255,0.05); padding:4px 8px; border-radius:12px; font-size:0.8rem; color:var(--text-secondary);">10</span>
+            <span class="admin-score" th:text="${trend.count} + ' search(es)'" style="background:rgba(255,255,255,0.05); padding:4px 8px; border-radius:12px; font-size:0.8rem; color:var(--text-secondary);">10</span>
           </div>
         </div>
-        <div class="admin-empty-line" th:if="${topSearches == null or #lists.isEmpty(topSearches)}" style="text-align:center; padding: 20px; color:var(--text-muted);">Không có dữ liệu tìm kiếm.</div>
+        <div class="admin-empty-line" th:if="${topSearches == null or #lists.isEmpty(topSearches)}" style="text-align:center; padding: 20px; color:var(--text-muted);">No search data available.</div>
       </article>
 
       <!-- Search zero results queries -->
@@ -64,7 +64,7 @@
         <div class="admin-panel-header" style="margin-bottom: 16px;">
           <div>
             <p class="admin-eyebrow">Search Failures</p>
-            <h2>Tìm kiếm không có kết quả</h2>
+            <h2>Searches with Zero Results</h2>
           </div>
           <i class="ph-fill ph-warning" aria-hidden="true" style="font-size: 1.5rem; color: var(--gold);"></i>
         </div>
@@ -74,10 +74,10 @@
               <span class="admin-rank" th:text="${iter.index + 1}" style="width:24px; text-align:center; font-weight:bold; color:var(--gold);">1</span>
               <span th:text="${row[0]}" style="font-weight: 500;">query</span>
             </div>
-            <span class="admin-score" th:text="${row[1]} + ' lần'" style="background:rgba(255,255,255,0.05); padding:4px 8px; border-radius:12px; font-size:0.8rem; color:var(--text-secondary);">10</span>
+            <span class="admin-score" th:text="${row[1]} + ' time(s)'" style="background:rgba(255,255,255,0.05); padding:4px 8px; border-radius:12px; font-size:0.8rem; color:var(--text-secondary);">10</span>
           </div>
         </div>
-        <div class="admin-empty-line" th:if="${zeroResultQueries == null or #lists.isEmpty(zeroResultQueries)}" style="text-align:center; padding: 20px; color:var(--text-muted);">Không có dữ liệu.</div>
+        <div class="admin-empty-line" th:if="${zeroResultQueries == null or #lists.isEmpty(zeroResultQueries)}" style="text-align:center; padding: 20px; color:var(--text-muted);">No data available.</div>
       </article>
 
       <!-- Top Clicked Movies from search -->
@@ -85,7 +85,7 @@
         <div class="admin-panel-header" style="margin-bottom: 16px;">
           <div>
             <p class="admin-eyebrow">Click Tracking</p>
-            <h2>Phim được click nhiều từ Tìm kiếm</h2>
+            <h2>Most Clicked Movies from Search</h2>
           </div>
           <i class="ph-fill ph-cursor-click" aria-hidden="true" style="font-size: 1.5rem; color: #22c55e;"></i>
         </div>
@@ -95,10 +95,10 @@
               <span class="admin-rank" th:text="${iter.index + 1}" style="width:24px; text-align:center; font-weight:bold; color:#22c55e;">1</span>
               <span th:text="${row[0]}" style="font-weight: 500;">movie title</span>
             </div>
-            <span class="admin-score" th:text="${row[1]} + ' click'" style="background:rgba(255,255,255,0.05); padding:4px 8px; border-radius:12px; font-size:0.8rem; color:var(--text-secondary);">10</span>
+            <span class="admin-score" th:text="${row[1]} + ' click(s)'" style="background:rgba(255,255,255,0.05); padding:4px 8px; border-radius:12px; font-size:0.8rem; color:var(--text-secondary);">10</span>
           </div>
         </div>
-        <div class="admin-empty-line" th:if="${topClickedMovies == null or #lists.isEmpty(topClickedMovies)}" style="text-align:center; padding: 20px; color:var(--text-muted);">Không có dữ liệu.</div>
+        <div class="admin-empty-line" th:if="${topClickedMovies == null or #lists.isEmpty(topClickedMovies)}" style="text-align:center; padding: 20px; color:var(--text-muted);">No data available.</div>
       </article>
 
       <!-- Algorithm Distribution -->
@@ -106,7 +106,7 @@
         <div class="admin-panel-header" style="margin-bottom: 16px;">
           <div>
             <p class="admin-eyebrow">Recommendation Metrics</p>
-            <h2>Phân bố thuật toán sử dụng</h2>
+            <h2>Recommendation Algorithm Distribution</h2>
           </div>
           <i class="ph-fill ph-chart-pie-slice" aria-hidden="true" style="font-size: 1.5rem; color: #38bdf8;"></i>
         </div>
@@ -116,10 +116,10 @@
               <span class="admin-rank" th:text="${iter.index + 1}" style="width:24px; text-align:center; font-weight:bold; color:#38bdf8;">1</span>
               <span th:text="${row[0]}" style="font-weight: 500;">Algorithm</span>
             </div>
-            <span class="admin-score" th:text="${row[1]} + ' gợi ý'" style="background:rgba(255,255,255,0.05); padding:4px 8px; border-radius:12px; font-size:0.8rem; color:var(--text-secondary);">10</span>
+            <span class="admin-score" th:text="${row[1]} + ' recommendation(s)'" style="background:rgba(255,255,255,0.05); padding:4px 8px; border-radius:12px; font-size:0.8rem; color:var(--text-secondary);">10</span>
           </div>
         </div>
-        <div class="admin-empty-line" th:if="${algorithmDistribution == null or #lists.isEmpty(algorithmDistribution)}" style="text-align:center; padding: 20px; color:var(--text-muted);">Không có dữ liệu thuật toán gợi ý.</div>
+        <div class="admin-empty-line" th:if="${algorithmDistribution == null or #lists.isEmpty(algorithmDistribution)}" style="text-align:center; padding: 20px; color:var(--text-muted);">No algorithm distribution data available.</div>
       </article>
 
       <!-- Top Recommended Movies -->
@@ -127,7 +127,7 @@
         <div class="admin-panel-header" style="margin-bottom: 16px;">
           <div>
             <p class="admin-eyebrow">Recommendation Exposure</p>
-            <h2>Phim được gợi ý nhiều nhất hệ thống</h2>
+            <h2>Most Recommended Movies</h2>
           </div>
           <i class="ph-fill ph-sparkles" aria-hidden="true" style="font-size: 1.5rem; color: #ec4899;"></i>
         </div>
@@ -137,10 +137,10 @@
               <span class="admin-rank" th:text="${iter.index + 1}" style="width:24px; text-align:center; font-weight:bold; color:#ec4899;">1</span>
               <span th:text="${row[0]}" style="font-weight: 500;">Movie Title</span>
             </div>
-            <span class="admin-score" th:text="${row[1]} + ' lượt xuất hiện'" style="background:rgba(255,255,255,0.05); padding:4px 8px; border-radius:12px; font-size:0.8rem; color:var(--text-secondary);">10</span>
+            <span class="admin-score" th:text="${row[1]} + ' appearance(s)'" style="background:rgba(255,255,255,0.05); padding:4px 8px; border-radius:12px; font-size:0.8rem; color:var(--text-secondary);">10</span>
           </div>
         </div>
-        <div class="admin-empty-line" th:if="${topRecommended == null or #lists.isEmpty(topRecommended)}" style="text-align:center; padding: 20px; color:var(--text-muted);">Không có dữ liệu gợi ý.</div>
+        <div class="admin-empty-line" th:if="${topRecommended == null or #lists.isEmpty(topRecommended)}" style="text-align:center; padding: 20px; color:var(--text-muted);">No recommendation data available.</div>
       </article>
 
     </div>
@@ -150,7 +150,7 @@
       <div class="admin-panel-header" style="margin-bottom: 16px;">
         <div>
           <p class="admin-eyebrow">System Logs</p>
-          <h2>Nhật ký chạy thuật toán gợi ý gần đây</h2>
+          <h2>Recent Recommendation Logs</h2>
         </div>
         <i class="ph-fill ph-scroll" aria-hidden="true" style="font-size: 1.5rem; color: var(--text-secondary);"></i>
       </div>
@@ -160,12 +160,12 @@
           <thead>
             <tr>
               <th>ID</th>
-              <th>Thời gian chạy</th>
-              <th>Thuật toán</th>
-              <th>Số phim gợi ý</th>
-              <th>Số user (Page)</th>
-              <th>Thời gian xử lý</th>
-              <th>Ghi chú</th>
+              <th>Run Time</th>
+              <th>Algorithm</th>
+              <th>Recommended Count</th>
+              <th>User Count (Page)</th>
+              <th>Execution Time</th>
+              <th>Notes</th>
             </tr>
           </thead>
           <tbody>
@@ -182,7 +182,7 @@
               <td th:text="${log.notes}" style="color:#808080; font-size:0.85rem;">Notes</td>
             </tr>
             <tr th:if="${latestLogs.isEmpty()}">
-              <td colspan="7" style="text-align:center; padding: 20px; color:var(--text-muted);">Không có log chạy thuật toán.</td>
+              <td colspan="7" style="text-align:center; padding: 20px; color:var(--text-muted);">No algorithm run logs found.</td>
             </tr>
           </tbody>
         </table>
@@ -194,7 +194,7 @@
       <div class="admin-panel-header" style="margin-bottom: 16px;">
         <div>
           <p class="admin-eyebrow">Authentication Metrics</p>
-          <h2>Nhật ký Mã xác thực Email (Email Verification Tokens) gần đây</h2>
+          <h2>Recent Email Verification Tokens</h2>
         </div>
         <i class="ph-fill ph-envelope" aria-hidden="true" style="font-size: 1.5rem; color: #f43f5e;"></i>
       </div>
@@ -204,11 +204,11 @@
           <thead>
             <tr>
               <th>ID</th>
-              <th>Người dùng</th>
-              <th>Mục đích</th>
-              <th>Hết hạn vào</th>
-              <th>Trạng thái</th>
-              <th>Ngày tạo</th>
+              <th>User</th>
+              <th>Purpose</th>
+              <th>Expires At</th>
+              <th>Status</th>
+              <th>Created At</th>
             </tr>
           </thead>
           <tbody>
@@ -225,12 +225,12 @@
               <td th:text="${token.expiresAt != null ? #temporals.format(token.expiresAt, 'dd/MM/yyyy HH:mm:ss') : '-'}" style="color:#b3b3b3">Expires At</td>
               <td>
                 <span class="badge" th:classappend="${token.used} ? 'badge-success' : 'badge-danger'"
-                      th:text="${token.used} ? 'Đã dùng' : 'Chưa dùng'">Chưa dùng</span>
+                      th:text="${token.used} ? 'Used' : 'Unused'">Unused</span>
               </td>
               <td th:text="${token.createdAt != null ? #temporals.format(token.createdAt, 'dd/MM/yyyy HH:mm:ss') : '-'}" style="color:#b3b3b3">Created At</td>
             </tr>
             <tr th:if="${latestTokens.isEmpty()}">
-              <td colspan="6" style="text-align:center; padding: 20px; color:var(--text-muted);">Không có mã xác thực nào được tạo.</td>
+              <td colspan="6" style="text-align:center; padding: 20px; color:var(--text-muted);">No verification tokens found.</td>
             </tr>
           </tbody>
         </table>

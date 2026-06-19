@@ -101,17 +101,17 @@
   <!-- ── FILTER SIDEBAR ── -->
   <aside class="list-filters">
     <form method="get" action="/movies" class="filter-form">
-      <h3><i class="ph-fill ph-funnel" style="margin-right:8px;vertical-align:-2px;color:var(--text-secondary)"></i> Bộ lọc nâng cao</h3>
+      <h3><i class="ph-fill ph-funnel" style="margin-right:8px;vertical-align:-2px;color:var(--text-secondary)"></i> <span th:text="#{list.filterTitle}">Advanced Filters</span></h3>
       
       <div class="filter-group">
-        <label>Tìm kiếm</label>
-        <input type="text" name="q" th:value="${q}" placeholder="Từ khóa...">
+        <label th:text="#{list.searchLabel}">Search</label>
+        <input type="text" name="q" th:value="${q}" th:placeholder="#{list.searchPlaceholder}">
       </div>
       
       <div class="filter-group">
-        <label>Thể loại</label>
+        <label th:text="#{list.genreLabel}">Genre</label>
         <select name="genreId">
-          <option value="">Tất cả thể loại</option>
+          <option value="" th:text="#{list.allGenres}">All Genres</option>
           <option th:each="genre : ${allGenres}" 
                   th:value="${genre.genreId}" 
                   th:text="${genre.genreName}" 
@@ -120,29 +120,29 @@
       </div>
 
       <div class="filter-group">
-        <label>Năm phát hành</label>
-        <input type="number" name="year" th:value="${year}" placeholder="Ví dụ: 2024" min="1900" max="2100">
+        <label th:text="#{list.yearLabel}">Release Year</label>
+        <input type="number" name="year" th:value="${year}" th:placeholder="#{list.yearPlaceholder}" min="1900" max="2100">
       </div>
 
       <div class="filter-group">
-        <label>Đánh giá tối thiểu</label>
-        <input type="number" step="0.1" name="minRating" th:value="${minRating}" placeholder="Ví dụ: 4.0" min="0" max="5">
+        <label th:text="#{list.minRatingLabel}">Min Rating</label>
+        <input type="number" step="0.1" name="minRating" th:value="${minRating}" th:placeholder="#{list.minRatingPlaceholder}" min="0" max="5">
       </div>
 
       <div class="filter-group">
-        <label>Sắp xếp theo</label>
+        <label th:text="#{list.sortByLabel}">Sort By</label>
         <select name="sortBy">
-          <option value="newest" th:selected="${sortBy == 'newest'}">Mới nhất</option>
-          <option value="top_rated" th:selected="${sortBy == 'top_rated'}">Đánh giá cao nhất</option>
-          <option value="most_watched" th:selected="${sortBy == 'most_watched'}">Xem nhiều nhất</option>
-          <option value="title_az" th:selected="${sortBy == 'title_az'}">Tên phim A-Z</option>
-          <option value="release_year" th:selected="${sortBy == 'release_year'}">Năm phát hành</option>
+          <option value="newest" th:selected="${sortBy == 'newest'}" th:text="#{list.sortNewest}">Newest</option>
+          <option value="top_rated" th:selected="${sortBy == 'top_rated'}" th:text="#{list.sortTopRated}">Top Rated</option>
+          <option value="most_watched" th:selected="${sortBy == 'most_watched'}" th:text="#{list.sortMostWatched}">Most Watched</option>
+          <option value="title_az" th:selected="${sortBy == 'title_az'}" th:text="#{list.sortTitleAZ}">Title A-Z</option>
+          <option value="release_year" th:selected="${sortBy == 'release_year'}" th:text="#{list.sortReleaseYear}">Release Year</option>
         </select>
       </div>
 
       <div class="filter-actions">
-        <button type="submit" class="btn-primary">Áp dụng</button>
-        <a href="/movies" class="btn-secondary">Xóa bộ lọc</a>
+        <button type="submit" class="btn-primary" th:text="#{list.applyFilter}">Apply</button>
+        <a href="/movies" class="btn-secondary" th:text="#{list.clearFilter}">Clear Filters</a>
       </div>
     </form>
   </aside>

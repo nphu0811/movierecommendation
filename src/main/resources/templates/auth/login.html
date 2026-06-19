@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Login - MovieRec</title>
+  <title th:text="#{auth.loginTitle} + ' - MovieRec'">Login - MovieRec</title>
   <link rel="icon" type="image/svg+xml" sizes="any" th:href="@{/favicon.svg(v=2)}"/>
   <link rel="stylesheet" th:href="@{/css/style.css}"/>
 </head>
@@ -19,22 +19,22 @@
     <aside class="auth-showcase" aria-hidden="true">
       <div class="auth-kicker">
         <i class="ph-fill ph-sparkle"></i>
-        Personal cinema
+        <span th:text="#{auth.showcaseLoginKicker}">Personal cinema</span>
       </div>
-      <h1>Find the next movie that actually fits your taste.</h1>
-      <p>Sign in to continue recommendations, watch history, and your saved list without losing context.</p>
+      <h1 th:text="#{auth.showcaseLoginTitle}">Find the next movie that actually fits your taste.</h1>
+      <p th:text="#{auth.showcaseLoginDesc}">Sign in to continue recommendations, watch history, and your saved list without losing context.</p>
       <div class="auth-feature-list">
         <div class="auth-feature-card">
           <i class="ph-fill ph-brain"></i>
-          <span>Smarter picks</span>
+          <span th:text="#{auth.showcaseFeaturePicks}">Smarter picks</span>
         </div>
         <div class="auth-feature-card">
           <i class="ph-fill ph-clock-counter-clockwise"></i>
-          <span>Resume history</span>
+          <span th:text="#{auth.showcaseFeatureHistory}">Resume history</span>
         </div>
         <div class="auth-feature-card">
           <i class="ph-fill ph-heart"></i>
-          <span>Saved watchlist</span>
+          <span th:text="#{auth.showcaseFeatureWatchlist}">Saved watchlist</span>
         </div>
       </div>
     </aside>
@@ -42,7 +42,7 @@
     <div class="auth-card auth-card--login">
       <div class="auth-logo">
         <div class="auth-logo-mark">Movie<span>Rec</span></div>
-        <p>Sign in to your account</p>
+        <p th:text="#{auth.loginTitle}">Sign in to your account</p>
       </div>
 
       <div class="alert alert-danger" th:if="${error}" th:text="${error}"></div>
@@ -53,19 +53,19 @@
         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
 
         <div class="form-group">
-          <label class="form-label" for="email">Email Address</label>
+          <label class="form-label" for="email" th:text="#{auth.emailLabel}">Email Address</label>
           <input type="email" id="email" name="email" class="form-control"
                  placeholder="you@example.com" required autofocus autocomplete="email"/>
         </div>
 
         <div class="form-group">
           <label class="form-label auth-label-row" for="password">
-            <span>Password</span>
-            <a href="/auth/forgot-password" class="auth-link">Forgot password?</a>
+            <span th:text="#{auth.passwordLabel}">Password</span>
+            <a href="/auth/forgot-password" class="auth-link" th:text="#{auth.forgotPasswordLink}">Forgot password?</a>
           </label>
           <div class="password-field">
             <input type="password" id="password" name="password" class="form-control"
-                   placeholder="Password" required autocomplete="current-password"/>
+                   th:placeholder="#{auth.passwordLabel}" required autocomplete="current-password"/>
             <button type="button" class="password-toggle" aria-label="Show password" aria-pressed="false">
               <i class="ph-bold ph-eye" aria-hidden="true"></i>
             </button>
@@ -74,17 +74,17 @@
 
         <div class="auth-remember">
           <input type="checkbox" name="remember-me" id="remember"/>
-          <label for="remember">Remember me for 7 days</label>
+          <label for="remember" th:text="#{auth.rememberMe}">Remember me</label>
         </div>
 
-        <button type="submit" class="btn btn-primary auth-submit">
+        <button type="submit" class="btn btn-primary auth-submit" th:text="#{auth.signInBtn}">
           Sign In
         </button>
       </form>
 
       <div class="auth-alt-action">
-        Don't have an account?
-        <a href="/auth/register">Sign up free</a>
+        <span th:text="#{auth.noAccount}">Don't have an account?</span>
+        <a href="/auth/register" th:text="#{auth.registerLink}">Sign up free</a>
       </div>
     </div>
   </div>

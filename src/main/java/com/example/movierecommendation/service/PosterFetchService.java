@@ -46,7 +46,7 @@ public class PosterFetchService {
         }
         running = true; done = 0;
         try {
-            // Lấy phim cần fetch: chưa có poster HOẶC poster sai format HOẶC chưa có description/trailer
+            // Get movies to fetch: missing poster OR wrong poster format OR missing description/trailer
             List<Movie> toFix = movieRepository.findAllWithExternalLinks().stream()
                 .filter(m -> m.getPosterUrl() == null
                           || (m.getPosterUrl() != null && m.getPosterUrl().matches(".*\\/\\d+\\.jpg"))
@@ -60,7 +60,7 @@ public class PosterFetchService {
 
             for (Movie movie : toFix) {
                 try {
-                    // 1) Extract tmdbId từ poster_url cũ (format: .../123.jpg)
+                    // 1) Extract tmdbId from old poster_url (format: .../123.jpg)
                     String tmdbId = null;
                     // links.tmdb_id is the authoritative mapping. The numeric
                     // legacy poster URL is only a fallback for old seed rows.
@@ -71,7 +71,7 @@ public class PosterFetchService {
                         String u = movie.getPosterUrl();
                         tmdbId = u.substring(u.lastIndexOf('/') + 1, u.lastIndexOf('.'));
                     }
-                    // 2) Nếu không có → tra bảng links (phim mới import từ CSV)
+                    // 2) If not present -> look up links table (newly imported movies from CSV)
                     if (tmdbId == null) { done++; continue; }
 
                     // Fetch movie details
@@ -113,7 +113,7 @@ public class PosterFetchService {
                                     }
                                 }
                             }
-                            // Fallback: lấy Teaser nếu không có Trailer
+                            // Fallback: get Teaser if no Trailer is found
                             if (movie.getTrailerKey() == null) {
                                 for (Object r : results) {
                                     if (r instanceof Map v) {
@@ -126,7 +126,7 @@ public class PosterFetchService {
                             }
                         }
                     } catch (Exception e) {
-                        // video fetch thất bại không sao
+                        // video fetch failure is fine
                     }
 
                     batch.add(movie);
@@ -140,7 +140,7 @@ public class PosterFetchService {
                     Thread.sleep(260); // ~3.8 req/sec
 
                 } catch (Exception e) {
-                    // 404 = phim không có trên TMDB, bỏ qua không log
+                    // 404 = movie not on TMDB, skip without logging
                     done++;
                 }
             }

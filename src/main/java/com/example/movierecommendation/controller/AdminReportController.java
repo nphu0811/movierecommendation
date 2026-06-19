@@ -68,9 +68,11 @@ public class AdminReportController {
         try {
             MovieReportStatus status = MovieReportStatus.valueOf(statusStr);
             reportService.updateReportStatus(id, status, adminNote);
-            redirect.addFlashAttribute("success", "Cập nhật trạng thái báo cáo thành công.");
+            boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
+            redirect.addFlashAttribute("success", isVi ? "Cập nhật trạng thái báo cáo thành công." : "Report status updated successfully.");
         } catch (Exception e) {
-            redirect.addFlashAttribute("error", "Lỗi: " + e.getMessage());
+            boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
+            redirect.addFlashAttribute("error", (isVi ? "Lỗi: " : "Error: ") + e.getMessage());
         }
         return "redirect:/admin/reports";
     }

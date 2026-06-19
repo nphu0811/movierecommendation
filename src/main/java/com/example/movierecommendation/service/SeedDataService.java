@@ -59,24 +59,24 @@ public class SeedDataService {
         running = true; done = 0; ratingsAdded = 0; commentsAdded = 0;
 
         try {
-            // Lấy admin user để gán rating/comment
+            // Retrieve admin user to assign ratings/comments
             User adminUser = userRepository.findByEmail("admin@movierec.com").orElse(null);
             if (adminUser == null) { log.error("Admin user not found"); return; }
 
-            // Lấy các phim có poster (đã fetch TMDB) và chưa có rating
+            // Retrieve movies with posters (fetched from TMDB) that do not have ratings yet
             List<Movie> movies = movieRepository.findAll().stream()
                 .filter(m -> m.getPosterUrl() != null
                           && m.getPosterUrl().contains("/p/w342/")
                           && !m.getPosterUrl().matches(".*\\/\\d+\\.jpg"))
                 .filter(m -> ratingRepository.findByUserUserIdAndMovieMovieId(
                     adminUser.getUserId(), m.getMovieId()).isEmpty())
-                .limit(500) // seed 500 phim phổ biến nhất
+                .limit(500) // seed the 500 most popular movies
                 .toList();
 
             total = movies.size();
             log.info("Seeding ratings+comments for {} movies", total);
 
-            // Tạo thêm 5 fake users để có nhiều ratings đa dạng
+            // Create 5 additional fake users to generate diverse ratings
             List<User> seedUsers = getOrCreateSeedUsers();
 
             List<Rating>  ratingBatch  = new ArrayList<>();
@@ -84,10 +84,10 @@ public class SeedDataService {
 
             for (Movie movie : movies) {
                 try {
-                    // Extract tmdbId từ poster URL: .../w342/xyzABC.jpg
+                    // Extract tmdbId from poster URL: .../w342/xyzABC.jpg
                     String posterUrl = movie.getPosterUrl();
                     String posterFile = posterUrl.substring(posterUrl.lastIndexOf('/') + 1);
-                    // Không có tmdbId trực tiếp nữa - search bằng tên
+                    // No direct tmdbId anymore - search by title
                     String searchUrl = url("/search/movie") + "&query="
                         + java.net.URLEncoder.encode(movie.getTitle(), "UTF-8")
                         + (movie.getReleaseYear() != null ? "&year=" + movie.getReleaseYear() : "");
@@ -117,21 +117,21 @@ public class SeedDataService {
 
                     String tmdbId = tmdbIdObj.toString();
 
-                    // Lấy vote_average từ TMDB (thang 10) -> convert sang thang 5
+                    // Get vote_average from TMDB (scale of 10) -> convert to scale of 5
                     double voteAvg = 0;
                     Object va = tmdbMovie.get("vote_average");
                     if (va instanceof Number) voteAvg = ((Number) va).doubleValue();
 
-                    // Seed ratings từ fake users dựa trên TMDB score
+                    // Seed ratings from fake users based on TMDB score
                     if (voteAvg > 0) {
                         int baseRating = (int) Math.round(voteAvg / 2.0); // 10->5 scale
                         baseRating = Math.max(1, Math.min(5, baseRating));
 
                         for (User u : seedUsers) {
-                            // Chỉ thêm nếu chưa có
+                            // Only add if not exists
                             if (ratingRepository.findByUserUserIdAndMovieMovieId(
                                     u.getUserId(), movie.getMovieId()).isEmpty()) {
-                                // Thêm variance ±1
+                                // Add variance +-1
                                 int r = baseRating + (new Random().nextInt(3) - 1);
                                 r = Math.max(1, Math.min(5, r));
                                 Rating rating = new Rating();
@@ -146,21 +146,21 @@ public class SeedDataService {
                         }
                     }
 
-                    // Fetch reviews từ TMDB
+                    // Fetch reviews from TMDB
                     try {
                         Map reviewsResp = rest.getForObject(url("/movie/" + tmdbId + "/reviews"), Map.class);
                         if (reviewsResp != null && reviewsResp.get("results") instanceof List reviews) {
                             int count = 0;
                             for (Object r : reviews) {
-                                if (count >= 3) break; // Tối đa 3 comment mỗi phim
+                                if (count >= 3) break; // Maximum of 3 comments per movie
                                 if (r instanceof Map review) {
                                     String content = (String) review.get("content");
                                     String author  = (String) review.get("author");
                                     if (content != null && !content.isBlank()) {
-                                        // Truncate nếu quá dài
+                                        // Truncate if too long
                                         if (content.length() > 500) content = content.substring(0, 497) + "...";
 
-                                        // Tìm hoặc tạo user với tên reviewer
+                                        // Find or create user with reviewer name
                                         User commentUser = getOrCreateReviewUser(author, seedUsers);
 
                                         Comment comment = new Comment();
@@ -177,12 +177,12 @@ public class SeedDataService {
                             }
                         }
                     } catch (Exception e) {
-                        // reviews thất bại không sao
+                        // reviews failing is okay
                     }
 
                     done++;
 
-                    // Save batch mỗi 20 phim
+                    // Save batch every 20 movies
                     if (ratingBatch.size() >= 100) {
                         ratingRepository.saveAll(ratingBatch);
                         ratingBatch.clear();
@@ -197,7 +197,7 @@ public class SeedDataService {
                             done, total, ratingsAdded, commentsAdded);
                     }
 
-                    Thread.sleep(300); // 2 API calls/phim -> ~6.6 req/sec
+                    Thread.sleep(300); // 2 API calls/movie -> ~6.6 req/sec
 
                 } catch (Exception e) {
                     done++;
@@ -253,7 +253,7 @@ public class SeedDataService {
                 if (u.getUsername().isBlank()) u.setUsername("reviewer_" + System.currentTimeMillis() % 10000);
                 u.setPasswordHash("$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy");
                 u.setRole("USER");
-                u.setIsActive(false); // inactive - chỉ để hiện comment
+                u.setIsActive(false); // inactive - only to display comments
                 return userRepository.save(u);
             } catch (Exception e) {
                 return fallback.get(new Random().nextInt(fallback.size()));

@@ -61,7 +61,7 @@ public class AiSummaryAndChatTest {
         assertNotNull(result);
         assertTrue(result.contains("Interstellar"));
         assertTrue(result.contains("2014"));
-        assertTrue(result.contains("đánh giá trung bình 4.8/5"));
+        assertTrue(result.contains("average rating of 4.8/5") || result.contains("đánh giá trung bình 4.8/5"));
     }
 
     @Test
@@ -75,7 +75,7 @@ public class AiSummaryAndChatTest {
         
         String response = chatService.chatAboutVideo(null, movie, "Hãy tóm tắt video này");
         assertNotNull(response);
-        assertTrue(response.contains("Dòng thời gian tóm tắt (ước lượng)"));
+        assertTrue(response.contains("Estimated summary timeline") || response.contains("Dòng thời gian tóm tắt (ước lượng)"));
         assertTrue(response.contains("The Matrix"));
         assertTrue(response.contains("[00:10]"));
     }
@@ -93,10 +93,10 @@ public class AiSummaryAndChatTest {
         movie.setTitle("The Matrix");
 
         String oosResponse = chatService.chatAboutVideo(null, movie, "cách nấu phở");
-        assertTrue(oosResponse.toLowerCase().contains("xin lỗi") || oosResponse.toLowerCase().contains("ngoài phạm vi"));
+        assertTrue(oosResponse.toLowerCase().contains("sorry") || oosResponse.toLowerCase().contains("out-of-scope") || oosResponse.toLowerCase().contains("xin lỗi") || oosResponse.toLowerCase().contains("ngoài phạm vi"));
 
         String greetResponse = chatService.chatAboutVideo(null, movie, "hello");
-        assertTrue(greetResponse.toLowerCase().contains("xin chào") || greetResponse.toLowerCase().contains("xin chao"));
+        assertTrue(greetResponse.toLowerCase().contains("hello") || greetResponse.toLowerCase().contains("xin chào") || greetResponse.toLowerCase().contains("xin chao"));
     }
 
     @Test
@@ -119,7 +119,7 @@ public class AiSummaryAndChatTest {
         ChatResponse response = chatService.recommendMovies(null, "tìm phim doraemon cho tôi");
         assertNotNull(response);
         assertEquals("TEXT", response.getType());
-        assertTrue(response.getMessage().contains("Rất tiếc"));
+        assertTrue(response.getMessage().toLowerCase().contains("sorry") || response.getMessage().contains("Rất tiếc"));
         assertTrue(response.getMessage().contains("doraemon"));
         assertTrue(response.getMovies().isEmpty());
     }

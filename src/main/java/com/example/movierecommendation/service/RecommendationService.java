@@ -147,8 +147,11 @@ public class RecommendationService {
                 continue;
             }
 
+            boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
             if (!hasHistory) {
-                m.setRecommendationReason("Vì phim này đang phổ biến và được đánh giá cao trên hệ thống.");
+                m.setRecommendationReason(isVi 
+                    ? "Vì phim này đang phổ biến và được đánh giá cao trên hệ thống."
+                    : "Because this movie is popular and highly rated on the platform.");
                 continue;
             }
 
@@ -163,9 +166,13 @@ public class RecommendationService {
             }
 
             if (!matchingGenres.isEmpty()) {
-                m.setRecommendationReason("Vì bạn đã xem/đánh giá cao nhiều phim thuộc thể loại " + String.join(", ", matchingGenres) + ".");
+                m.setRecommendationReason(isVi 
+                    ? "Vì bạn đã xem/đánh giá cao nhiều phim thuộc thể loại " + String.join(", ", matchingGenres) + "."
+                    : "Because you have watched/highly rated many movies in the " + String.join(", ", matchingGenres) + " genre(s).");
             } else {
-                m.setRecommendationReason("Vì những người dùng có gu giống bạn cũng đánh giá cao phim này.");
+                m.setRecommendationReason(isVi 
+                    ? "Vì những người dùng có gu giống bạn cũng đánh giá cao phim này."
+                    : "Because users with similar tastes also highly rated this movie.");
             }
         }
     }
@@ -217,7 +224,7 @@ public class RecommendationService {
         return engine.getTrendingMovies(10);
     }
 
-    /** Trending nhưng bỏ phim user đã xem / đã rate (khi đã đăng nhập). */
+    /** Trending but excludes movies the user has watched / rated (when logged in). */
     public List<Movie> getTrendingMoviesForUser(Integer userId) {
         return movieRepository.findMostWatchedMoviesExcludingUserInteractions(userId, PageRequest.of(0, 10));
     }

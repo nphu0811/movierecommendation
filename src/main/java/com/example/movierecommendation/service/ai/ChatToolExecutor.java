@@ -59,10 +59,10 @@ public class ChatToolExecutor {
                 case "GET_USER_PREFERENCES" -> userPreferences(user);
                 case "VIEW_MOVIE_DETAIL" -> viewMovieDetail(args, allowedMovies);
                 case "FILTER_MOVIES" -> filterMovies(args);
-                default -> failure(name, "Tool không được hỗ trợ.");
+                default -> failure(name, "Tool not supported.");
             };
         } catch (Exception e) {
-            return failure(name, "Không thể thực thi tool: " + safeMessage(e));
+            return failure(name, "Failed to execute tool: " + safeMessage(e));
         }
     }
 
@@ -79,8 +79,8 @@ public class ChatToolExecutor {
             }
         }
         if (selected.isEmpty()) selected.addAll(allowedMovies.values().stream().limit(5).toList());
-        if (selected.isEmpty()) return failure(name, "Không tìm thấy phim phù hợp trong cơ sở dữ liệu.");
-        return new ChatToolResult(name, true, "Đã lấy " + selected.size() + " phim từ cơ sở dữ liệu.", selected, null);
+        if (selected.isEmpty()) return failure(name, "No matching movies found in database.");
+        return new ChatToolResult(name, true, "Retrieved " + selected.size() + " movies from database.", selected, null);
     }
 
     private ChatToolResult searchMovies(JsonNode args, Map<Integer, Movie> allowedMovies) {
@@ -91,7 +91,7 @@ public class ChatToolExecutor {
                 List<Movie> valid = found.stream().filter(movie -> movie.getDeletedAt() == null).distinct().limit(5).toList();
                 if (!valid.isEmpty()) {
                     return new ChatToolResult("SEARCH_MOVIES", true,
-                        "Đã tìm thấy " + valid.size() + " phim trong cơ sở dữ liệu.", valid, null);
+                        "Found " + valid.size() + " movies in database.", valid, null);
                 }
             }
         }
@@ -100,55 +100,55 @@ public class ChatToolExecutor {
 
     private ChatToolResult movieDetail(JsonNode args, Map<Integer, Movie> allowedMovies) {
         Movie movie = resolveMovie(args, allowedMovies).orElse(null);
-        if (movie == null) return failure("GET_MOVIE_DETAIL", "Không tìm thấy phim hợp lệ trong cơ sở dữ liệu.");
-        String genres = movie.getGenres() == null ? "chưa cập nhật" : movie.getGenres().stream()
+        if (movie == null) return failure("GET_MOVIE_DETAIL", "Valid movie not found in database.");
+        String genres = movie.getGenres() == null ? "not updated" : movie.getGenres().stream()
             .map(genre -> genre.getGenreName()).collect(Collectors.joining(", "));
         String message = String.format("%s (%s), thể loại %s, rating %.1f/5. %s",
-            movie.getTitle(), movie.getReleaseYear() == null ? "chưa rõ năm" : movie.getReleaseYear(),
+            movie.getTitle(), movie.getReleaseYear() == null ? "unknown year" : movie.getReleaseYear(),
             genres, movie.getAverageRating(), movie.getDescription() == null ? "" : movie.getDescription());
         return new ChatToolResult("GET_MOVIE_DETAIL", true, message, List.of(movie), null);
     }
 
     private ChatToolResult addWatchlist(User user, JsonNode args, Map<Integer, Movie> allowedMovies) {
-        if (user == null) return failure("ADD_WATCHLIST", "Bạn cần đăng nhập để thêm phim vào Watchlist.");
+        if (user == null) return failure("ADD_WATCHLIST", "You need to log in to add movies to your Watchlist.");
         Movie movie = resolveMovie(args, allowedMovies).orElse(null);
-        if (movie == null) return failure("ADD_WATCHLIST", "Không tìm thấy phim hợp lệ để thêm vào Watchlist.");
+        if (movie == null) return failure("ADD_WATCHLIST", "Valid movie not found to add to Watchlist.");
         boolean added = interactionService.addToWatchlist(user.getUserId(), movie.getMovieId());
         String message = added
-            ? "Đã thêm " + movie.getTitle() + " vào Watchlist thành công."
-            : movie.getTitle() + " đã có sẵn trong Watchlist.";
+            ? "Successfully added " + movie.getTitle() + " to Watchlist."
+            : movie.getTitle() + " is already in Watchlist.";
         return new ChatToolResult("ADD_WATCHLIST", true, message, List.of(movie), null);
     }
 
     private ChatToolResult rateMovie(User user, JsonNode args, Map<Integer, Movie> allowedMovies) {
-        if (user == null) return failure("RATE_MOVIE", "Bạn cần đăng nhập để đánh giá phim.");
+        if (user == null) return failure("RATE_MOVIE", "You need to log in to rate movies.");
         Movie movie = resolveMovie(args, allowedMovies).orElse(null);
-        if (movie == null) return failure("RATE_MOVIE", "Không tìm thấy phim hợp lệ để đánh giá.");
+        if (movie == null) return failure("RATE_MOVIE", "Valid movie not found to rate.");
         double score = args.path("score").asDouble(-1);
         if (score < 0.5 || score > 5.0 || Math.round(score * 2) != score * 2) {
-            return failure("RATE_MOVIE", "Điểm đánh giá phải từ 0.5 đến 5.0 theo bước nửa sao.");
+            return failure("RATE_MOVIE", "Rating score must be between 0.5 and 5.0 in half-star increments.");
         }
         interactionService.rateMovie(user.getUserId(), movie.getMovieId(), score);
         return new ChatToolResult("RATE_MOVIE", true,
-            String.format("Đã đánh giá %s %.1f sao thành công.", movie.getTitle(), score), List.of(movie), null);
+            String.format("Successfully rated %s %.1f stars.", movie.getTitle(), score), List.of(movie), null);
     }
 
     private ChatToolResult userPreferences(User user) {
-        if (user == null) return failure("GET_USER_PREFERENCES", "Chưa có người dùng đăng nhập để cá nhân hóa.");
+        if (user == null) return failure("GET_USER_PREFERENCES", "No user logged in for personalization.");
         Optional<UserPreference> preference = userPreferenceRepository.findByUserUserId(user.getUserId());
-        if (preference.isEmpty()) return failure("GET_USER_PREFERENCES", "Người dùng chưa thiết lập sở thích phim.");
+        if (preference.isEmpty()) return failure("GET_USER_PREFERENCES", "User has not set movie preferences.");
         UserPreference value = preference.get();
-        String message = String.format("Thể loại thích: %s; không thích: %s; rating tối thiểu: %s.",
+        String message = String.format("Liked genres: %s; disliked: %s; minimum rating: %s.",
             textOrNone(value.getPreferredGenres()), textOrNone(value.getDislikedGenres()),
-            value.getMinRating() == null ? "chưa đặt" : value.getMinRating());
+            value.getMinRating() == null ? "not set" : value.getMinRating());
         return new ChatToolResult("GET_USER_PREFERENCES", true, message, Collections.emptyList(), null);
     }
 
     private ChatToolResult viewMovieDetail(JsonNode args, Map<Integer, Movie> allowedMovies) {
         Movie movie = resolveMovie(args, allowedMovies).orElse(null);
-        if (movie == null) return failure("VIEW_MOVIE_DETAIL", "Không tìm thấy phim hợp lệ để mở.");
+        if (movie == null) return failure("VIEW_MOVIE_DETAIL", "Valid movie not found to view.");
         Map<String, Object> action = Map.of("name", "VIEW_MOVIE_DETAIL", "params", Map.of("movieId", movie.getMovieId()));
-        return new ChatToolResult("VIEW_MOVIE_DETAIL", true, "Sẵn sàng mở trang chi tiết " + movie.getTitle() + ".",
+        return new ChatToolResult("VIEW_MOVIE_DETAIL", true, "Ready to open detail page for " + movie.getTitle() + ".",
             List.of(movie), action);
     }
 
@@ -159,7 +159,7 @@ public class ChatToolExecutor {
         copyDouble(args, params, "minRating");
         copyText(args, params, "sortBy");
         Map<String, Object> action = Map.of("name", "FILTER_MOVIES", "params", params);
-        return new ChatToolResult("FILTER_MOVIES", true, "Đã chuẩn bị bộ lọc phim theo yêu cầu.",
+        return new ChatToolResult("FILTER_MOVIES", true, "Prepared movie filters as requested.",
             Collections.emptyList(), action);
     }
 
@@ -199,10 +199,10 @@ public class ChatToolExecutor {
     }
 
     private String safeMessage(Exception e) {
-        return e.getMessage() == null || e.getMessage().isBlank() ? "lỗi dữ liệu" : e.getMessage();
+        return e.getMessage() == null || e.getMessage().isBlank() ? "data error" : e.getMessage();
     }
 
-    private String textOrNone(String value) { return value == null || value.isBlank() ? "chưa đặt" : value; }
+    private String textOrNone(String value) { return value == null || value.isBlank() ? "not set" : value; }
     private void copyText(JsonNode source, Map<String, Object> target, String key) {
         if (source.hasNonNull(key) && !source.path(key).asText().isBlank()) target.put(key, source.path(key).asText());
     }
