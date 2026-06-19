@@ -266,6 +266,20 @@ movierecommendation/
   * [OpenAI API Docs](https://platform.openai.com/docs)
 
 ---
+## 📄 License
+
+MIT License - Xem file [LICENSE](LICENSE) để chi tiết.
+
+---
+
+## 👨‍💻 Contributors
+
+| Role | Contact |
+|------|---------|
+| Team Lead & Backend |  [@Yuhnart-07](https://github.com/Yuhnart-07) |
+| FullStack |[@nphu0811](https://github.com/nphu0811) |
+
+---
 
 <div align="center">
 
