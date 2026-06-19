@@ -174,9 +174,12 @@ Các biến chính trên Railway:
 
 ```env
 SPRING_PROFILES_ACTIVE=prod
-SPRING_DATASOURCE_URL=jdbc:postgresql://host:5432/database
-PGUSER=database_user
-PGPASSWORD=database_password
+SPRING_DATASOURCE_URL=jdbc:postgresql://${{Postgres.PGHOST}}:${{Postgres.PGPORT}}/${{Postgres.PGDATABASE}}
+PGHOST=${{Postgres.PGHOST}}
+PGPORT=${{Postgres.PGPORT}}
+PGDATABASE=${{Postgres.PGDATABASE}}
+PGUSER=${{Postgres.PGUSER}}
+PGPASSWORD=${{Postgres.PGPASSWORD}}
 REMEMBER_ME_KEY=<random-secret-at-least-32-characters>
 TMDB_API_KEY=<optional>
 AI_API_KEY=<optional>
@@ -184,6 +187,9 @@ AI_BASE_URL=https://api.openai.com/v1
 AI_CHAT_MODEL=gpt-4o-mini
 DEMO_SEED_ENABLED=false
 ```
+
+Nếu dùng Railway private network, không đặt `JAVA_TOOL_OPTIONS=-Djava.net.preferIPv4Stack=true`;
+legacy environments có thể cần IPv6 để app kết nối được tới `*.railway.internal`.
 
 Build image:
 
