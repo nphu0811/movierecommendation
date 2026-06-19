@@ -337,9 +337,9 @@
       const player = document.getElementById('mainPlayer');
       if (player) {
           const currentSrc = player.src;
-          let cleanSrc = currentSrc.replace(/[\?&]start=\d+/, '');
+          let cleanSrc = currentSrc.replace(/[\?&#](?:start|t|time)=\d+(?:s)?/g, '');
           const connector = cleanSrc.includes('?') ? '&' : '?';
-          player.src = cleanSrc + connector + 'start=' + LAST_DURATION;
+          player.src = cleanSrc + connector + 't=' + LAST_DURATION + '&start=' + LAST_DURATION + '#t=' + LAST_DURATION;
           showToast(`Đang tải phim. Nếu phim không tự động tua, bạn hãy tự kéo thanh trượt đến ${formatTime(LAST_DURATION)}.`, 'info');
       }
   }
@@ -818,9 +818,9 @@
       const player = document.getElementById('mainPlayer');
       if (player) {
           let src = player.src;
-          src = src.replace(/[\?&]start=\d+/, '');
+          src = src.replace(/[\?&#](?:start|t|time)=\d+(?:s)?/g, '');
           const connector = src.includes('?') ? '&' : '?';
-          player.src = src + connector + 'start=' + seconds;
+          player.src = src + connector + 't=' + seconds + '&start=' + seconds + '#t=' + seconds;
           showToast(`Đã tua đến ${formatMinutesSeconds(seconds)}! 🎥`, 'success');
       }
   }
