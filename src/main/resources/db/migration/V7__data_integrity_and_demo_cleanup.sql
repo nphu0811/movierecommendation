@@ -68,6 +68,19 @@ WITH duplicates AS (
 UPDATE links l SET tmdb_id = NULL
 FROM duplicates d WHERE l.tmdb_id = d.tmdb_id;
 
+UPDATE links SET imdb_id = NULL
+WHERE imdb_id IS NOT NULL AND TRIM(imdb_id) = '';
+
+UPDATE links SET imdb_id = TRIM(imdb_id)
+WHERE imdb_id IS NOT NULL AND imdb_id <> TRIM(imdb_id);
+
+WITH duplicates AS (
+    SELECT imdb_id FROM links WHERE imdb_id IS NOT NULL
+    GROUP BY imdb_id HAVING COUNT(*) > 1
+)
+UPDATE links l SET imdb_id = NULL
+FROM duplicates d WHERE l.imdb_id = d.imdb_id;
+
 CREATE UNIQUE INDEX IF NOT EXISTS uq_links_tmdb_id
     ON links (tmdb_id) WHERE tmdb_id IS NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_links_imdb_id
