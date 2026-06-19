@@ -38,12 +38,6 @@
       <div class="player-actions-row">
         <div class="server-switcher">
           <button th:if="${server1 != null}" class="server-pill active" data-server="1" th:data-src="${server1}" onclick="switchServer(this)">Server 1</button>
-          <button th:if="${server2 != null}" class="server-pill" data-server="2" th:data-src="${server2}" onclick="switchServer(this)">Server 2</button>
-          <button th:if="${movie.trailerKey != null and !#strings.isEmpty(movie.trailerKey)}"
-                  class="server-pill" data-server="trailer"
-                  th:classappend="${server1 == null} ? 'active'"
-                  th:data-src="'https://www.youtube.com/embed/' + ${movie.trailerKey} + '?enablejsapi=1'"
-                  onclick="switchServer(this)">Trailer (AI Chat)</button>
         </div>
         
         <button id="lightsOutBtn" class="lights-out-btn" onclick="toggleLightsOut()">
@@ -761,15 +755,7 @@
   };
   
   function seekToSeconds(seconds) {
-      const trailerPill = document.querySelector('.server-pill[data-server="trailer"]');
-      const activePill = document.querySelector('.server-pill.active');
-      
-      if (trailerPill && activePill !== trailerPill) {
-          pendingSeekSeconds = seconds;
-          switchServer(trailerPill);
-      } else {
-          performSeek(seconds);
-      }
+      performSeek(seconds);
   }
   
   function performSeek(seconds) {

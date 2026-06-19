@@ -4,7 +4,6 @@ import com.example.movierecommendation.entity.Movie;
 import com.example.movierecommendation.entity.User;
 import com.example.movierecommendation.repository.MovieRepository;
 import com.example.movierecommendation.repository.UserPreferenceRepository;
-import com.example.movierecommendation.repository.VideoTimelineRepository;
 import com.example.movierecommendation.service.AIChatService;
 import com.example.movierecommendation.service.ChatHelpService;
 import com.example.movierecommendation.service.ChatIntentClassifier;
@@ -24,7 +23,6 @@ import static org.mockito.Mockito.*;
 class ChatAgentOrchestrationTest {
     private MovieRepository movieRepository;
     private InteractionService interactionService;
-    private VideoTimelineRepository videoTimelineRepository;
     private UserPreferenceRepository userPreferenceRepository;
     private ChatToolExecutor executor;
     private Movie movie;
@@ -33,10 +31,9 @@ class ChatAgentOrchestrationTest {
     void setUp() {
         movieRepository = mock(MovieRepository.class);
         interactionService = mock(InteractionService.class);
-        videoTimelineRepository = mock(VideoTimelineRepository.class);
         userPreferenceRepository = mock(UserPreferenceRepository.class);
         executor = new ChatToolExecutor(movieRepository, interactionService,
-            videoTimelineRepository, userPreferenceRepository);
+            userPreferenceRepository);
 
         movie = new Movie();
         movie.setMovieId(42);
@@ -82,19 +79,6 @@ class ChatAgentOrchestrationTest {
 
         assertTrue(result.isSuccess());
         verify(interactionService).addToWatchlist(7, 42);
-    }
-
-    @Test
-    void timelineToolNeverInventsTimestampsWhenDatabaseIsEmpty() {
-        when(videoTimelineRepository.findByMovieMovieIdOrderByTimestampSecondsAsc(42))
-            .thenReturn(Collections.emptyList());
-
-        ChatToolResult result = executor.execute(null,
-            plan("GET_VIDEO_TIMELINE", "{\"movieId\":42}"), List.of(movie)).getFirst();
-
-        assertFalse(result.isSuccess());
-        assertTrue(result.getMessage().contains("chưa có dữ liệu timeline/transcript chính xác"));
-        assertFalse(result.getMessage().matches(".*\\[\\d{2}:\\d{2}].*"));
     }
 
     @Test
@@ -157,7 +141,7 @@ class ChatAgentOrchestrationTest {
     }
 
     @Test
-    void fallbackRouterSendsTimelineQuestionsToVerifiedTimelineTool() {
+    void fallbackRouterSendsTimelineQuestionsToMovieDetailTool() {
         AIChatService chatService = new AIChatService();
         ReflectionTestUtils.setField(chatService, "intentClassifier", new ChatIntentClassifier());
         ReflectionTestUtils.setField(chatService, "chatHelpService", new ChatHelpService());
@@ -167,7 +151,7 @@ class ChatAgentOrchestrationTest {
 
         assertNotNull(plan);
         assertEquals("VIDEO_QA", plan.getIntent());
-        assertEquals("GET_VIDEO_TIMELINE", plan.getToolCalls().getFirst().getName());
+        assertEquals("GET_MOVIE_DETAIL", plan.getToolCalls().getFirst().getName());
         assertTrue(plan.getToolCalls().getFirst().getArguments().contains("Interstellar"));
     }
 

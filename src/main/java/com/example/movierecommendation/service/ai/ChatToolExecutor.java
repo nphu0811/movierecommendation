@@ -3,10 +3,8 @@ package com.example.movierecommendation.service.ai;
 import com.example.movierecommendation.entity.Movie;
 import com.example.movierecommendation.entity.User;
 import com.example.movierecommendation.entity.UserPreference;
-import com.example.movierecommendation.entity.VideoTimeline;
 import com.example.movierecommendation.repository.MovieRepository;
 import com.example.movierecommendation.repository.UserPreferenceRepository;
-import com.example.movierecommendation.repository.VideoTimelineRepository;
 import com.example.movierecommendation.service.InteractionService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,15 +24,12 @@ public class ChatToolExecutor {
 
     private final MovieRepository movieRepository;
     private final InteractionService interactionService;
-    private final VideoTimelineRepository videoTimelineRepository;
     private final UserPreferenceRepository userPreferenceRepository;
 
     public ChatToolExecutor(MovieRepository movieRepository, InteractionService interactionService,
-                            VideoTimelineRepository videoTimelineRepository,
                             UserPreferenceRepository userPreferenceRepository) {
         this.movieRepository = movieRepository;
         this.interactionService = interactionService;
-        this.videoTimelineRepository = videoTimelineRepository;
         this.userPreferenceRepository = userPreferenceRepository;
     }
 
@@ -61,7 +56,6 @@ public class ChatToolExecutor {
                 case "GET_MOVIE_DETAIL" -> movieDetail(args, allowedMovies);
                 case "ADD_WATCHLIST" -> addWatchlist(user, args, allowedMovies);
                 case "RATE_MOVIE" -> rateMovie(user, args, allowedMovies);
-                case "GET_VIDEO_TIMELINE" -> videoTimeline(args, allowedMovies);
                 case "GET_USER_PREFERENCES" -> userPreferences(user);
                 case "VIEW_MOVIE_DETAIL" -> viewMovieDetail(args, allowedMovies);
                 case "FILTER_MOVIES" -> filterMovies(args);
@@ -137,21 +131,6 @@ public class ChatToolExecutor {
         interactionService.rateMovie(user.getUserId(), movie.getMovieId(), score);
         return new ChatToolResult("RATE_MOVIE", true,
             String.format("Đã đánh giá %s %.1f sao thành công.", movie.getTitle(), score), List.of(movie), null);
-    }
-
-    private ChatToolResult videoTimeline(JsonNode args, Map<Integer, Movie> allowedMovies) {
-        Movie movie = resolveMovie(args, allowedMovies).orElse(null);
-        if (movie == null) return failure("GET_VIDEO_TIMELINE", "Không tìm thấy phim hợp lệ.");
-        List<VideoTimeline> timelines = videoTimelineRepository
-            .findByMovieMovieIdOrderByTimestampSecondsAsc(movie.getMovieId());
-        if (timelines == null || timelines.isEmpty()) {
-            return failure("GET_VIDEO_TIMELINE",
-                "Hệ thống chưa có dữ liệu timeline/transcript chính xác cho " + movie.getTitle() + ".");
-        }
-        String timeline = timelines.stream().map(item -> String.format("[%02d:%02d] %s",
-            item.getTimestampSeconds() / 60, item.getTimestampSeconds() % 60, item.getEventDescription()))
-            .collect(Collectors.joining("; "));
-        return new ChatToolResult("GET_VIDEO_TIMELINE", true, timeline, List.of(movie), null);
     }
 
     private ChatToolResult userPreferences(User user) {

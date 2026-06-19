@@ -6,7 +6,7 @@ import static org.mockito.Mockito.*;
 import com.example.movierecommendation.entity.*;
 import com.example.movierecommendation.repository.MovieRepository;
 import com.example.movierecommendation.repository.GenreRepository;
-import com.example.movierecommendation.repository.VideoTimelineRepository;
+
 import com.example.movierecommendation.dto.ChatResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -67,8 +67,6 @@ public class AiSummaryAndChatTest {
     @Test
     public void testChatAboutVideo_SummaryRequestFallback() {
         AIChatService chatService = new AIChatService();
-        VideoTimelineRepository videoTimelineRepository = mock(VideoTimelineRepository.class);
-        org.springframework.test.util.ReflectionTestUtils.setField(chatService, "videoTimelineRepository", videoTimelineRepository);
         
         Movie movie = new Movie();
         movie.setTitle("The Matrix");
@@ -77,9 +75,9 @@ public class AiSummaryAndChatTest {
         
         String response = chatService.chatAboutVideo(null, movie, "Hãy tóm tắt video này");
         assertNotNull(response);
-        assertTrue(response.contains("chưa có dữ liệu transcript"));
+        assertTrue(response.contains("Dòng thời gian tóm tắt (ước lượng)"));
         assertTrue(response.contains("The Matrix"));
-        assertTrue(response.contains("Neo learns the truth"));
+        assertTrue(response.contains("[00:10]"));
     }
 
     @Test
@@ -87,11 +85,9 @@ public class AiSummaryAndChatTest {
         AIChatService chatService = new AIChatService();
         ChatIntentClassifier classifier = new ChatIntentClassifier();
         ChatHelpService helpService = new ChatHelpService();
-        VideoTimelineRepository videoTimelineRepository = mock(VideoTimelineRepository.class);
         
         org.springframework.test.util.ReflectionTestUtils.setField(chatService, "intentClassifier", classifier);
         org.springframework.test.util.ReflectionTestUtils.setField(chatService, "chatHelpService", helpService);
-        org.springframework.test.util.ReflectionTestUtils.setField(chatService, "videoTimelineRepository", videoTimelineRepository);
 
         Movie movie = new Movie();
         movie.setTitle("The Matrix");
