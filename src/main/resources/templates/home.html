@@ -571,6 +571,7 @@
   const chatWindow = document.querySelector('.chatbot-window');
   const chatPopover = document.getElementById('chatPopover');
   const welcomeText = 'Xin chào! Mình là Trợ lý AI gợi ý phim. Bạn cần tìm phim gì tối nay? Hãy chọn gợi ý hoặc nhập tin nhắn bên dưới nhé:';
+  let welcomeRendered = false;
   
   /**
    * Types out the text contents of the given element DOM tree, word-by-word,
@@ -617,8 +618,9 @@
         
         // Auto-scroll the closest scrollable container
         let parent = element.parentElement;
-        while (parent) {
-          if (parent.scrollHeight > parent.clientHeight) {
+        while (parent && parent !== document.body && parent !== document.documentElement) {
+          const overflowY = window.getComputedStyle(parent).overflowY;
+          if ((overflowY === 'auto' || overflowY === 'scroll') && parent.scrollHeight > parent.clientHeight) {
             parent.scrollTop = parent.scrollHeight;
             break;
           }
@@ -687,7 +689,13 @@
       }
       if (chatInput) chatInput.focus();
       dismissPopover();
-      scrollToBottom();
+      
+      if (!welcomeRendered) {
+        renderWelcomeMessage();
+        welcomeRendered = true;
+      } else {
+        scrollToBottom();
+      }
     } else {
       if (toggleIcon) {
         toggleIcon.className = 'ph-fill ph-robot';
@@ -956,8 +964,6 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     if (chatBody) {
-      renderWelcomeMessage();
-      
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.get('chat') === '1' || urlParams.get('chat') === 'true') {
         setTimeout(() => {

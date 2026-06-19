@@ -542,8 +542,9 @@
         
         // Auto-scroll the closest scrollable container
         let parent = element.parentElement;
-        while (parent) {
-          if (parent.scrollHeight > parent.clientHeight) {
+        while (parent && parent !== document.body && parent !== document.documentElement) {
+          const overflowY = window.getComputedStyle(parent).overflowY;
+          if ((overflowY === 'auto' || overflowY === 'scroll') && parent.scrollHeight > parent.clientHeight) {
             parent.scrollTop = parent.scrollHeight;
             break;
           }
