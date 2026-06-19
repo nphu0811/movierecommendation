@@ -40,3 +40,7 @@ skills-lock.json
 task.md
 implementation_plan.md
 walkthrough.md
+
+# Generated test reports and local evidence
+docs/
+outputs/
