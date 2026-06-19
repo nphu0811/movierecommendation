@@ -124,6 +124,18 @@ public class AIChatService {
         String normalized = removeAccent(userMessage.toLowerCase(Locale.ROOT));
         String movieQuery = extractMovieQuery(userMessage, candidates);
 
+        if (normalized.contains("timeline") || normalized.contains("timestamp")
+                || normalized.contains("transcript") || normalized.contains("moc thoi gian")) {
+            plan.setIntent("VIDEO_QA");
+            if (movieQuery.isBlank()) {
+                plan.setMissingInfo("tên phim bạn muốn kiểm tra timeline");
+            } else {
+                plan.getToolCalls().add(new ChatAgentPlan.ToolCall("GET_VIDEO_TIMELINE",
+                    jsonArguments(Map.of("query", movieQuery))));
+            }
+            return plan;
+        }
+
         if (intent == ChatIntent.WATCHLIST_HELP && (normalized.contains("luu phim")
                 || normalized.contains("them phim") || normalized.contains("add watchlist"))) {
             plan.setIntent("USER_ACTION");

@@ -156,6 +156,21 @@ class ChatAgentOrchestrationTest {
         assertTrue(plan.getToolCalls().getFirst().getArguments().contains("Interstellar"));
     }
 
+    @Test
+    void fallbackRouterSendsTimelineQuestionsToVerifiedTimelineTool() {
+        AIChatService chatService = new AIChatService();
+        ReflectionTestUtils.setField(chatService, "intentClassifier", new ChatIntentClassifier());
+        ReflectionTestUtils.setField(chatService, "chatHelpService", new ChatHelpService());
+
+        ChatAgentPlan plan = ReflectionTestUtils.invokeMethod(chatService, "buildDeterministicAgentPlan",
+            "Timeline phim Interstellar", Collections.emptyList());
+
+        assertNotNull(plan);
+        assertEquals("VIDEO_QA", plan.getIntent());
+        assertEquals("GET_VIDEO_TIMELINE", plan.getToolCalls().getFirst().getName());
+        assertTrue(plan.getToolCalls().getFirst().getArguments().contains("Interstellar"));
+    }
+
     private ChatAgentPlan plan(String tool, String arguments) {
         ChatAgentPlan plan = new ChatAgentPlan();
         plan.setIntent("USER_ACTION");
