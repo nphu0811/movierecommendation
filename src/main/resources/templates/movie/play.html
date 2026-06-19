@@ -248,9 +248,19 @@
 <script th:inline="javascript">
   const MOVIE_ID = /*[[${movie.movieId}]]*/ 0;
   const LAST_DURATION = /*[[${lastDuration}]]*/ 0;
-  let startTime = Date.now();
-  let totalWatchedSeconds = LAST_DURATION || 0;
-  let sessionSeconds = 0;
+  let ytPlayer = null;
+  let pendingSeekSeconds = 0;
+
+  let activeSeconds = 0;
+  let isTabActive = true;
+  document.addEventListener('visibilitychange', () => {
+    isTabActive = !document.hidden;
+  });
+  setInterval(() => {
+    if (isTabActive) {
+      activeSeconds++;
+    }
+  }, 1000);
 
   // Format seconds to HH:MM:SS
   function formatTime(seconds) {
@@ -262,8 +272,22 @@
 
   // Progress Tracking
   function updateProgress() {
-    sessionSeconds = Math.floor((Date.now() - startTime) / 1000);
-    const total = (LAST_DURATION || 0) + sessionSeconds;
+    let total = LAST_DURATION || 0;
+
+    if (ytPlayer && typeof ytPlayer.getCurrentTime === 'function' && typeof ytPlayer.getPlayerState === 'function') {
+        try {
+            const ytState = ytPlayer.getPlayerState();
+            if (ytState === 1 || ytState === 2) { // 1 = playing, 2 = paused
+                total = Math.floor(ytPlayer.getCurrentTime());
+            } else {
+                total += activeSeconds;
+            }
+        } catch (e) {
+            total += activeSeconds;
+        }
+    } else {
+        total += activeSeconds;
+    }
     
     // Estimate progress (assume 100 mins = 6000s for recommendation purposes if real duration is unknown)
     const estimatedDuration = 6000;
@@ -292,14 +316,32 @@
 
   // Resume Logic
   function resumeFromLast() {
-    const player = document.getElementById('mainPlayer');
-    if (player && LAST_DURATION > 0) {
-      const currentSrc = player.src;
-      // Append start parameter (works for 2Embed and SuperEmbed)
-      const connector = currentSrc.includes('?') ? '&' : '?';
-      player.src = currentSrc + connector + 'start=' + LAST_DURATION;
+    if (LAST_DURATION > 0) {
+      const isYouTube = (ytPlayer !== null);
+      if (isYouTube) {
+          try {
+              ytPlayer.seekTo(LAST_DURATION, true);
+              ytPlayer.playVideo();
+              showToast(`Đã tua đến ${formatTime(LAST_DURATION)}! 🎥`, 'success');
+          } catch (e) {
+              pendingSeekSeconds = LAST_DURATION;
+          }
+      } else {
+          fallbackResume();
+      }
     }
     closeResumeModal();
+  }
+
+  function fallbackResume() {
+      const player = document.getElementById('mainPlayer');
+      if (player) {
+          const currentSrc = player.src;
+          let cleanSrc = currentSrc.replace(/[\?&]start=\d+/, '');
+          const connector = cleanSrc.includes('?') ? '&' : '?';
+          player.src = cleanSrc + connector + 'start=' + LAST_DURATION;
+          showToast(`Đang tải phim. Nếu phim không tự động tua, bạn hãy tự kéo thanh trượt đến ${formatTime(LAST_DURATION)}.`, 'info');
+      }
   }
 
   function closeResumeModal() {
