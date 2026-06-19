@@ -161,6 +161,24 @@ public class InteractionService {
         }
     }
 
+    /**
+     * Idempotent variant used by AI tools. Unlike toggleWatchlist, retrying this
+     * operation can never remove an item that was just added.
+     */
+    @Transactional
+    public boolean addToWatchlist(Integer userId, Integer movieId) {
+        if (watchlistRepository.existsByUserUserIdAndMovieMovieId(userId, movieId)) {
+            return false;
+        }
+        User user = userRepository.findById(userId).orElseThrow();
+        Movie movie = movieRepository.findById(movieId).orElseThrow();
+        Watchlist watchlist = new Watchlist();
+        watchlist.setUser(user);
+        watchlist.setMovie(movie);
+        watchlistRepository.save(watchlist);
+        return true;
+    }
+
     public List<Watchlist> getWatchlist(Integer userId) {
         return watchlistRepository.findByUserUserIdOrderByAddedAtAsc(userId);
     }

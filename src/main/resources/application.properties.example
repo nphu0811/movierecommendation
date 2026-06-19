@@ -34,4 +34,10 @@ openai.api.key=YOUR_OPENAI_KEY_HERE
 tmdb.api.key=YOUR_TMDB_KEY_HERE
 app.remember-me-key=ANY_RANDOM_STRING_MIN_32_CHARS
 
+# AI provider (OpenAI-compatible: OpenAI, Ollama, or LM Studio)
+ai.base-url=https://api.openai.com/v1
+ai.api-key=YOUR_OPENAI_KEY_HERE
+ai.chat-model=gpt-4o-mini
+ai.timeout-seconds=8
+
 logging.level.com.example.movierecommendation=INFO

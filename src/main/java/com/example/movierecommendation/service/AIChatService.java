@@ -20,6 +20,12 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 import com.example.movierecommendation.dto.*;
+import com.example.movierecommendation.service.ai.ChatAgentPlan;
+import com.example.movierecommendation.service.ai.ChatAgentPlanner;
+import com.example.movierecommendation.service.ai.ChatAgentResponder;
+import com.example.movierecommendation.service.ai.ChatModelClient;
+import com.example.movierecommendation.service.ai.ChatToolExecutor;
+import com.example.movierecommendation.service.ai.ChatToolResult;
 
 @Service
 public class AIChatService {
@@ -41,6 +47,10 @@ public class AIChatService {
     @Autowired private ChatHelpService chatHelpService;
     @Autowired private MovieEmbeddingService movieEmbeddingService;
     @Autowired private VideoTimelineRepository videoTimelineRepository;
+    @Autowired(required = false) private ChatAgentPlanner chatAgentPlanner;
+    @Autowired(required = false) private ChatToolExecutor chatToolExecutor;
+    @Autowired(required = false) private ChatAgentResponder chatAgentResponder;
+    @Autowired(required = false) private ChatModelClient chatModelClient;
     @Autowired @org.springframework.context.annotation.Lazy private AIChatService self;
 
     private WebClient webClient;
@@ -58,11 +68,60 @@ public class AIChatService {
     }
 
     public boolean isEnabled() {
+        if (chatModelClient != null) return chatModelClient.isEnabled();
         String cleanKey = apiKey != null ? apiKey.replace("\"", "").trim() : "";
         return !cleanKey.isEmpty();
     }
 
     public ChatResponse recommendMovies(User user, String userMessage) {
+        if (chatAgentPlanner == null || chatToolExecutor == null || chatAgentResponder == null
+                || !chatAgentPlanner.isEnabled()) {
+            return recommendMoviesLegacy(user, userMessage);
+        }
+
+        List<Movie> candidates = findCandidates(userMessage);
+        if (candidates.isEmpty()) {
+            candidates = movieRepository.findTopMoviesByRatingCount(PageRequest.of(0, 25));
+        }
+        candidates = candidates.stream().filter(movie -> movie.getDeletedAt() == null).distinct().limit(30).toList();
+
+        String userContext = buildAgentUserContext(user);
+        String candidateCatalog = buildAgentCandidateCatalog(candidates);
+        List<Map<String, Object>> recentConversation = loadRecentConversation(user);
+
+        Optional<ChatAgentPlan> planned = chatAgentPlanner.plan(
+            userMessage, userContext, candidateCatalog, recentConversation);
+        if (planned.isEmpty()) {
+            log.info("Agent planner unavailable, using deterministic fallback");
+            return recommendMoviesLegacy(user, userMessage);
+        }
+
+        ChatAgentPlan plan = planned.get();
+        ensureRetrievalToolForMovieIntent(plan, candidates);
+        List<ChatToolResult> toolResults = chatToolExecutor.execute(user, plan, candidates);
+
+        List<MovieCardDto> movieCards = assembleMovieCards(toolResults, userContext);
+        List<Map<String, Object>> clientActions = toolResults.stream()
+            .map(ChatToolResult::getClientAction)
+            .filter(Objects::nonNull)
+            .toList();
+        String reply = chatAgentResponder.respond(userMessage, userContext, plan, toolResults);
+        String type = movieCards.isEmpty() ? "TEXT" : "MOVIE_CARDS";
+
+        Map<Integer, Movie> candidateMap = candidates.stream().collect(Collectors.toMap(
+            Movie::getMovieId, movie -> movie, (first, ignored) -> first, LinkedHashMap::new));
+        toolResults.stream().flatMap(result -> result.getMovies().stream())
+            .filter(movie -> movie != null && movie.getMovieId() != null)
+            .forEach(movie -> candidateMap.putIfAbsent(movie.getMovieId(), movie));
+        if (self != null) {
+            self.saveChatLogAndRecommendations(user, userMessage, reply, movieCards, candidateMap);
+        } else {
+            saveChatLogAndRecommendations(user, userMessage, reply, movieCards, candidateMap);
+        }
+        return new ChatResponse(type, reply, movieCards, clientActions);
+    }
+
+    private ChatResponse recommendMoviesLegacy(User user, String userMessage) {
         ChatIntent intent = intentClassifier.classify(userMessage);
         
         if (intent == ChatIntent.OUT_OF_SCOPE) {
@@ -349,6 +408,83 @@ public class AIChatService {
         return new ChatResponse(responseType, reply, recommendedMovies, actions);
     }
 
+    private void ensureRetrievalToolForMovieIntent(ChatAgentPlan plan, List<Movie> candidates) {
+        if (plan == null || candidates.isEmpty() || plan.getToolCalls() == null || !plan.getToolCalls().isEmpty()) return;
+        String intent = plan.getIntent() == null ? "" : plan.getIntent();
+        if (!"MOVIE_SEARCH".equals(intent) && !"MOVIE_RECOMMENDATION".equals(intent)) return;
+        String ids = candidates.stream().limit(5).map(movie -> String.valueOf(movie.getMovieId()))
+            .collect(Collectors.joining(","));
+        String tool = "MOVIE_SEARCH".equals(intent) ? "SEARCH_MOVIES" : "RECOMMEND_MOVIES";
+        plan.getToolCalls().add(new ChatAgentPlan.ToolCall(tool, "{\"movieIds\":[" + ids + "]}"));
+    }
+
+    private String buildAgentUserContext(User user) {
+        if (user == null) return "Khách chưa đăng nhập; không được thực hiện thao tác thay đổi dữ liệu.";
+        List<Rating> ratings = ratingRepository.findByUserUserId(user.getUserId());
+        List<String> liked = ratings.stream().filter(rating -> rating.getRating() >= 4 && rating.getMovie() != null)
+            .limit(5).map(rating -> rating.getMovie().getTitle() + " (" + rating.getRating() + " sao)").toList();
+        List<String> disliked = ratings.stream().filter(rating -> rating.getRating() <= 2 && rating.getMovie() != null)
+            .limit(3).map(rating -> rating.getMovie().getTitle()).toList();
+        List<String> history = watchHistoryRepository.findByUserUserIdOrderByWatchedAtDesc(user.getUserId()).stream()
+            .filter(item -> item.getMovie() != null).limit(5).map(item -> item.getMovie().getTitle()).toList();
+        String preferences = userPreferenceRepository.findByUserUserId(user.getUserId())
+            .map(value -> "thích=" + value.getPreferredGenres() + ", không thích=" + value.getDislikedGenres()
+                + ", rating tối thiểu=" + value.getMinRating())
+            .orElse("chưa thiết lập");
+        return "User đã đăng nhập (id=" + user.getUserId() + "). Phim thích: "
+            + (liked.isEmpty() ? "chưa có" : String.join(", ", liked))
+            + ". Phim không thích: " + (disliked.isEmpty() ? "chưa có" : String.join(", ", disliked))
+            + ". Xem gần đây: " + (history.isEmpty() ? "chưa có" : String.join(", ", history))
+            + ". Preferences: " + preferences + ".";
+    }
+
+    private String buildAgentCandidateCatalog(List<Movie> candidates) {
+        if (candidates == null || candidates.isEmpty()) return "Không có phim phù hợp trong database.";
+        return candidates.stream().map(movie -> {
+            String genres = movie.getGenres() == null ? "N/A" : movie.getGenres().stream()
+                .map(Genre::getGenreName).collect(Collectors.joining(", "));
+            String description = movie.getDescription() == null ? "N/A" : movie.getDescription().replaceAll("\\s+", " ");
+            if (description.length() > 180) description = description.substring(0, 177) + "...";
+            return String.format("ID=%d | %s | year=%s | genres=%s | rating=%.1f | description=%s",
+                movie.getMovieId(), movie.getTitle(), movie.getReleaseYear() == null ? "N/A" : movie.getReleaseYear(),
+                genres, movie.getAverageRating(), description);
+        }).collect(Collectors.joining("\n"));
+    }
+
+    private List<Map<String, Object>> loadRecentConversation(User user) {
+        if (user == null) return Collections.emptyList();
+        List<AIChatLog> history = aiChatLogRepository.findByUserUserIdOrderByCreatedAtDesc(user.getUserId());
+        if (history == null || history.isEmpty()) return Collections.emptyList();
+        List<AIChatLog> recent = new ArrayList<>(history.stream().limit(5).toList());
+        Collections.reverse(recent);
+        List<Map<String, Object>> messages = new ArrayList<>();
+        for (AIChatLog entry : recent) {
+            if (entry.getMessage() != null) messages.add(Map.of("role", "user", "content", entry.getMessage()));
+            if (entry.getResponseSummary() != null) messages.add(Map.of("role", "assistant", "content", entry.getResponseSummary()));
+        }
+        return messages;
+    }
+
+    private List<MovieCardDto> assembleMovieCards(List<ChatToolResult> results, String userContext) {
+        Map<Integer, MovieCardDto> cards = new LinkedHashMap<>();
+        if (results == null) return Collections.emptyList();
+        for (ChatToolResult result : results) {
+            if (!result.isSuccess()) continue;
+            for (Movie movie : result.getMovies()) {
+                if (movie == null || movie.getMovieId() == null || cards.size() >= 5) continue;
+                List<String> genres = movie.getGenres() == null ? Collections.emptyList()
+                    : movie.getGenres().stream().map(Genre::getGenreName).toList();
+                String genreText = genres.isEmpty() ? "nội dung" : String.join(", ", genres.stream().limit(2).toList());
+                String reason = userContext.startsWith("Khách")
+                    ? String.format("Phim %s trong database, rating %.1f/5.", genreText, movie.getAverageRating())
+                    : String.format("Phù hợp với ngữ cảnh và sở thích của bạn; thuộc nhóm %s, rating %.1f/5.", genreText, movie.getAverageRating());
+                cards.putIfAbsent(movie.getMovieId(), new MovieCardDto(movie.getMovieId(), movie.getTitle(),
+                    movie.getPosterUrl(), movie.getReleaseYear(), genres, movie.getAverageRating(), reason));
+            }
+        }
+        return new ArrayList<>(cards.values());
+    }
+
     private List<Movie> findCandidates(String message) {
         String msgLower = message.toLowerCase();
         Set<Genre> matchedGenres = new HashSet<>();
@@ -492,6 +628,13 @@ public class AIChatService {
             responseFormat.put("json_schema", jsonSchema);
             body.put("response_format", responseFormat);
 
+            if (chatModelClient != null) {
+                List<Map<String, Object>> providerMessages = messages.stream()
+                    .map(message -> (Map<String, Object>) new LinkedHashMap<String, Object>(message))
+                    .toList();
+                return chatModelClient.complete(providerMessages, responseFormat, 800, 0.7);
+            }
+
             String response = getWebClient().post()
                 .uri("/chat/completions")
                 .bodyValue(body)
@@ -573,27 +716,29 @@ public class AIChatService {
                     timelineText.toString()
                 );
 
-                Map<String, Object> body = new HashMap<>();
-                body.put("model", "gpt-4o-mini");
-                body.put("max_tokens", 500);
-                body.put("temperature", 0.7);
-                body.put("messages", List.of(
-                    Map.of("role", "user", "content", systemPrompt)
-                ));
+                if (chatModelClient != null) {
+                    String content = chatModelClient.complete(
+                        List.of(Map.of("role", "user", "content", systemPrompt)), null, 500, 0.7);
+                    if (content != null && !content.isEmpty()) return content;
+                } else {
+                    Map<String, Object> body = new HashMap<>();
+                    body.put("model", "gpt-4o-mini");
+                    body.put("max_tokens", 500);
+                    body.put("temperature", 0.7);
+                    body.put("messages", List.of(Map.of("role", "user", "content", systemPrompt)));
 
-                String response = getWebClient().post()
-                    .uri("/chat/completions")
-                    .bodyValue(body)
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .timeout(Duration.ofSeconds(6))
-                    .block();
+                    String response = getWebClient().post()
+                        .uri("/chat/completions")
+                        .bodyValue(body)
+                        .retrieve()
+                        .bodyToMono(String.class)
+                        .timeout(Duration.ofSeconds(6))
+                        .block();
 
-                if (response != null) {
-                    JsonNode root = mapper.readTree(response);
-                    String content = root.at("/choices/0/message/content").asText("").trim();
-                    if (!content.isEmpty()) {
-                        return content;
+                    if (response != null) {
+                        JsonNode root = mapper.readTree(response);
+                        String content = root.at("/choices/0/message/content").asText("").trim();
+                        if (!content.isEmpty()) return content;
                     }
                 }
             } catch (Exception e) {
@@ -694,9 +839,8 @@ public class AIChatService {
                 return sb.toString();
             } else {
                 return String.format(
-                    "Trong trailer/video phim **%s**:\n\n" +
-                    "- Phân cảnh hành động/combat kịch tính và hấp dẫn nhất bắt đầu từ khoảng **[01:15]** đến **[02:10]**.\n\n" +
-                    "Bạn có thể click vào mốc thời gian **[01:15]** ở trên để đầu phát tự động tua đến đoạn hành động này nhé!",
+                    "Hệ thống chưa có dữ liệu timeline/transcript chính xác cho video của phim **%s**. " +
+                    "Mình không thể cung cấp mốc thời gian khi chưa có dữ liệu thực.",
                     title
                 );
             }
@@ -733,13 +877,11 @@ public class AIChatService {
 
         // Default movie QA fallback
         return String.format(
-            "Chào bạn! Bộ phim **%s** là một tác phẩm thuộc thể loại *%s*. \n\n" +
-            "Dựa trên thông tin của phim, đây là một số điểm nổi bật trong video:\n" +
-            "- Từ **[00:00]** đến **[00:50]**: Thích hợp để xem giới thiệu tổng quan nhân vật.\n" +
-            "- Tại **[01:20]**: Bắt đầu giai đoạn kịch tính nhất của trailer phim.\n" +
-            "- Ở **[02:30]**: Cao trào bộ phim mở ra trước khi kết thúc trailer.\n\n" +
-            "Nếu bạn muốn mình tóm tắt chi tiết hơn hoặc có câu hỏi cụ thể nào khác về nội dung phim, hãy cứ hỏi nhé!",
-            title, genres
+            "Chào bạn! Bộ phim **%s** thuộc thể loại *%s*. %s\n\n" +
+            "Hệ thống chưa có timeline/transcript chính xác, nên mình sẽ không tự tạo các mốc thời gian. " +
+            "Bạn có thể hỏi mình về mô tả, năm phát hành, thể loại hoặc rating có trong database.",
+            title, genres,
+            movie.getDescription() == null ? "Thông tin mô tả chưa được cập nhật." : movie.getDescription()
         );
     }
 
