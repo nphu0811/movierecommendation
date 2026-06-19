@@ -121,9 +121,10 @@
   <!-- Left Poster -->
   <a th:href="@{/movies/{id}(id=${movie.movieId})}">
     <img th:if="${movie.posterUrl != null and !#strings.isEmpty(movie.posterUrl)}" th:src="${movie.posterUrl}" class="search-result-poster" alt="Poster"/>
-    <div th:unless="${movie.posterUrl != null and !#strings.isEmpty(movie.posterUrl)}" class="search-result-poster movie-poster-placeholder" style="width: 160px; height: 240px; font-size: 2.5rem; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.03);">
-      <i class="ph-bold ph-film-strip"></i>
-    </div>
+    <div th:unless="${movie.posterUrl != null and !#strings.isEmpty(movie.posterUrl)}"
+         class="search-result-poster"
+         style="width:160px;height:240px;background:rgba(255,255,255,0.03)"
+         aria-hidden="true"></div>
   </a>
   
   <!-- Right Info -->
