@@ -1,8 +1,10 @@
 package com.example.movierecommendation.controller;
 
 import com.example.movierecommendation.entity.User;
+import com.example.movierecommendation.repository.EmailVerificationTokenRepository;
 import com.example.movierecommendation.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
@@ -22,6 +24,9 @@ public class AdminAnalyticsController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private EmailVerificationTokenRepository emailVerificationTokenRepository;
 
     private void addCurrentUser(UserDetails ud, Model model) {
         if (ud != null) {
@@ -45,6 +50,9 @@ public class AdminAnalyticsController {
         model.addAttribute("latestLogs", recommendationService.getLatestRecommendationLogs(10));
         model.addAttribute("topRecommended", recommendationService.getTopRecommendedMovies(10));
         model.addAttribute("algorithmDistribution", recommendationService.getAlgorithmDistribution());
+
+        // Email Verification Tokens
+        model.addAttribute("latestTokens", emailVerificationTokenRepository.findLatest(PageRequest.of(0, 15)));
 
         return "admin/analytics";
     }

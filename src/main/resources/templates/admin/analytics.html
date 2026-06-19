@@ -188,6 +188,54 @@
         </table>
       </div>
     </article>
+
+    <!-- Email Verification Tokens panel -->
+    <article class="admin-list-panel" style="margin-bottom: 30px; padding: 20px;">
+      <div class="admin-panel-header" style="margin-bottom: 16px;">
+        <div>
+          <p class="admin-eyebrow">Authentication Metrics</p>
+          <h2>Nhật ký Mã xác thực Email (Email Verification Tokens) gần đây</h2>
+        </div>
+        <i class="ph-fill ph-envelope" aria-hidden="true" style="font-size: 1.5rem; color: #f43f5e;"></i>
+      </div>
+      
+      <div style="overflow-x:auto;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Người dùng</th>
+              <th>Mục đích</th>
+              <th>Hết hạn vào</th>
+              <th>Trạng thái</th>
+              <th>Ngày tạo</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="token : ${latestTokens}">
+              <td th:text="${token.id}" style="color:#6c757d">1</td>
+              <td>
+                <strong th:text="${token.user != null ? token.user.username : '-'}">Username</strong>
+              </td>
+              <td>
+                <span class="badge" 
+                      th:classappend="${token.purpose == 'REGISTRATION'} ? 'badge-info' : 'badge-warn'"
+                      th:text="${token.purpose}">PURPOSE</span>
+              </td>
+              <td th:text="${token.expiresAt != null ? #temporals.format(token.expiresAt, 'dd/MM/yyyy HH:mm:ss') : '-'}" style="color:#b3b3b3">Expires At</td>
+              <td>
+                <span class="badge" th:classappend="${token.used} ? 'badge-success' : 'badge-danger'"
+                      th:text="${token.used} ? 'Đã dùng' : 'Chưa dùng'">Chưa dùng</span>
+              </td>
+              <td th:text="${token.createdAt != null ? #temporals.format(token.createdAt, 'dd/MM/yyyy HH:mm:ss') : '-'}" style="color:#b3b3b3">Created At</td>
+            </tr>
+            <tr th:if="${latestTokens.isEmpty()}">
+              <td colspan="6" style="text-align:center; padding: 20px; color:var(--text-muted);">Không có mã xác thực nào được tạo.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
   </main>
 </div>
 
