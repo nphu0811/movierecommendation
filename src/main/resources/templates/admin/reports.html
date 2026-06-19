@@ -79,7 +79,11 @@
             <td style="max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
                 th:text="${report.adminNote != null ? report.adminNote : '-'}" th:title="${report.adminNote}">-</td>
             <td>
-              <button class="btn btn-sm btn-outline" th:onclick="|openProcessModal(${report.reportId}, '${report.status}', '${report.adminNote != null ? #strings.escapeJavaScript(report.adminNote) : ''}')|">
+              <button class="btn btn-sm btn-outline"
+                      th:data-id="${report.reportId}"
+                      th:data-status="${report.status}"
+                      th:data-note="${report.adminNote}"
+                      onclick="openProcessModal(this)">
                 Xử lý
               </button>
             </td>
@@ -136,7 +140,11 @@
   const statusParam = [[${selectedStatus != null ? selectedStatus : ''}]];
   initPagination('pagination-container', '/admin/reports' + (statusParam ? '?status=' + statusParam : ''));
 
-  function openProcessModal(reportId, currentStatus, currentNote) {
+  function openProcessModal(button) {
+    const reportId = button.getAttribute('data-id');
+    const currentStatus = button.getAttribute('data-status');
+    const currentNote = button.getAttribute('data-note') || '';
+    
     const form = document.getElementById('processForm');
     form.action = '/admin/reports/' + reportId + '/resolve';
     

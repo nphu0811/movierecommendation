@@ -83,7 +83,8 @@
         <th:block th:if="${currentUser != null}">
           <button class="action-btn-pill watchlist-btn-pill"
                   th:classappend="${inWatchlist} ? 'active'"
-                  th:onclick="|toggleWatchlistPill(${movie.movieId}, this)|">
+                  th:data-movie-id="${movie.movieId}"
+                  onclick="toggleWatchlistPill(this.getAttribute('data-movie-id'), this)">
             <i th:class="${inWatchlist} ? 'ph-fill ph-heart' : 'ph ph-heart'" style="color: var(--red);"></i>
             <span th:text="${inWatchlist} ? 'Đã yêu thích' : 'Yêu thích'">Yêu thích</span>
           </button>
@@ -94,7 +95,7 @@
           <div class="action-btn-pill" style="gap: var(--space-3);">
             <span>Đánh giá:</span>
             <div class="pill-rating-stars" th:id="|ratingStarsPill|">
-              <i class="ph-bold ph-star" th:each="i : ${#numbers.sequence(1,5)}" th:data-val="${i}" th:onclick="|rateMoviePill(${movie.movieId}, ${i})|"></i>
+              <i class="ph-bold ph-star" th:each="i : ${#numbers.sequence(1,5)}" th:data-val="${i}" th:data-movie-id="${movie.movieId}" onclick="rateMoviePill(this.getAttribute('data-movie-id'), this.getAttribute('data-val'))"></i>
             </div>
           </div>
         </th:block>

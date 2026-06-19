@@ -148,7 +148,7 @@
     
     <!-- AI Summary Accordion -->
     <div class="ai-summary-wrapper">
-      <button type="button" class="ai-summary-toggle-btn" th:onclick="|toggleAiSummary(this, ${movie.movieId})|">
+      <button type="button" class="ai-summary-toggle-btn" th:data-movie-id="${movie.movieId}" onclick="toggleAiSummary(this, this.getAttribute('data-movie-id'))">
         <i class="ph-fill ph-sparkle"></i>
         <span>Tóm tắt</span>
         <i class="ph-bold ph-caret-down"></i>

@@ -340,7 +340,7 @@
               <span class="history-keyword" th:text="${sh.searchQuery}">Keyword</span>
               <span class="history-date" th:text="${#temporals.format(sh.createdAt, 'dd/MM/yyyy HH:mm')}">Date</span>
             </div>
-            <button class="delete-btn" th:onclick="'deleteSearchHistory(' + ${sh.searchId} + ')'" aria-label="Xóa">
+            <button class="delete-btn" th:data-id="${sh.searchId}" onclick="deleteSearchHistory(this.getAttribute('data-id'))" aria-label="Xóa">
               <i class="ph-bold ph-trash"></i>
             </button>
           </li>

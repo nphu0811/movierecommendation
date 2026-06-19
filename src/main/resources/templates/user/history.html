@@ -60,7 +60,7 @@
       </div>
       <div style="display:flex; align-items:center; gap:8px">
         <a th:href="@{/movies/{id}(id=${wh.movie.movieId})}" class="btn btn-outline btn-sm">View →</a>
-        <button type="button" class="btn btn-secondary btn-sm" th:onclick="'deleteWatchHistory(' + ${wh.historyId} + ')'" style="padding: 8px; color: var(--red); border-color: rgba(229, 9, 20, 0.2)">
+        <button type="button" class="btn btn-secondary btn-sm" th:data-id="${wh.historyId}" onclick="deleteWatchHistory(this.getAttribute('data-id'))" style="padding: 8px; color: var(--red); border-color: rgba(229, 9, 20, 0.2)">
           <i class="ph-bold ph-trash"></i>
         </button>
       </div>
