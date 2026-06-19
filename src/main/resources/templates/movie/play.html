@@ -113,43 +113,9 @@
           <span>Đặt câu hỏi</span>
         </button>
       </div>
-    </div>
-    
-    <!-- AI Video Chat Sidebar -->
-    <div class="player-column-sidebar" id="videoChatSidebar">
-      <div class="chat-sidebar-header">
-        <h3><i class="ph-fill ph-sparkle"></i> Hỏi về video này</h3>
-        <button class="close-btn" onclick="toggleVideoChatSidebar()">✕</button>
-      </div>
-      
-      <div class="chat-sidebar-messages" id="chatSidebarMessages">
-        <div class="chat-msg chat-msg-ai">
-          <p>Xin chào! Bạn có thắc mắc về nội dung đang xem? Tôi sẵn sàng giúp bạn.</p>
-          <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Bạn chưa biết nên hỏi gì? Hãy thử hỏi về:</p>
-        </div>
-      </div>
-      
-      <div class="chat-sidebar-suggestions">
-        <button class="chat-suggestion-pill" onclick="sendSuggestion('Tóm tắt video này')">Tóm tắt video này</button>
-        <button class="chat-suggestion-pill" onclick="sendSuggestion('Đề xuất nội dung có liên quan')">Đề xuất nội dung có liên quan</button>
-      </div>
-      
-      <div class="chat-sidebar-input-row">
-        <input type="text" id="chatSidebarInput" placeholder="Đặt câu hỏi..." onkeydown="handleChatInputKey(event)"/>
-        <button class="send-btn" onclick="sendChatMessage()">
-          <i class="ph-bold ph-paper-plane-right"></i>
-        </button>
-      </div>
-      <div class="chat-disclaimer">AI có thể mắc sai sót, vì vậy, hãy xác minh thông tin.</div>
-    </div>
-  </div>
 
-  <!-- Player Info & Meta - Reorganized into detail-grid -->
-  <div class="detail-grid" style="margin-top: var(--space-6); padding-top: 0;">
-    <!-- LEFT COLUMN -->
-    <div class="detail-left">
-      <!-- Description Card -->
-      <div class="detail-card">
+      <!-- Description Card (Overview) -->
+      <div class="detail-card" style="margin-top: var(--space-6);">
         <h3><i class="ph-bold ph-book-open" style="margin-right:6px;vertical-align:-3px;color:var(--text-secondary)"></i> Overview</h3>
         <div class="genre-tags" style="margin-bottom:16px">
           <span class="genre-tag" th:each="g : ${movie.genres}" th:text="${g.genreName}">Genre</span>
@@ -157,8 +123,8 @@
         <p class="text-secondary-md" style="line-height:1.6;color:rgba(255,255,255,0.7)" th:text="${movie.description}">Description</p>
       </div>
 
-      <!-- Comments Section moved into left column -->
-      <section class="play-comments-section" style="margin-top: 0; border-top: none; padding-top: 0;">
+      <!-- Comments Section -->
+      <section class="play-comments-section" style="margin-top: var(--space-7); border-top: 1px solid var(--border); padding-top: var(--space-7);">
         <div class="play-comments-header">
           <i class="ph-fill ph-chat-circle-text" style="font-size:1.5rem;color:var(--red)"></i>
           <h2>Discussion <span class="text-muted-sm" th:text="'(' + ${#lists.size(comments)} + ')'"></span></h2>
@@ -200,10 +166,39 @@
         </div>
       </section>
     </div>
+    
+    <!-- Sidebar Column -->
+    <div class="player-column-sidebar">
+      
+      <!-- AI Video Chat Sidebar (starts collapsed) -->
+      <div class="chat-sidebar-container" id="videoChatSidebar">
+        <div class="chat-sidebar-header">
+          <h3><i class="ph-fill ph-sparkle"></i> Hỏi về video này</h3>
+          <button class="close-btn" onclick="toggleVideoChatSidebar()">✕</button>
+        </div>
+        
+        <div class="chat-sidebar-messages" id="chatSidebarMessages">
+          <div class="chat-msg chat-msg-ai">
+            <p>Xin chào! Bạn có thắc mắc về nội dung đang xem? Tôi sẵn sàng giúp bạn.</p>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Bạn chưa biết nên hỏi gì? Hãy thử hỏi về:</p>
+          </div>
+        </div>
+        
+        <div class="chat-sidebar-suggestions">
+          <button class="chat-suggestion-pill" onclick="sendSuggestion('Tóm tắt video này')">Tóm tắt video này</button>
+          <button class="chat-suggestion-pill" onclick="sendSuggestion('Đề xuất nội dung có liên quan')">Đề xuất nội dung có liên quan</button>
+        </div>
+        
+        <div class="chat-sidebar-input-row">
+          <input type="text" id="chatSidebarInput" placeholder="Đặt câu hỏi..." onkeydown="handleChatInputKey(event)"/>
+          <button class="send-btn" onclick="sendChatMessage()">
+            <i class="ph-bold ph-paper-plane-right"></i>
+          </button>
+        </div>
+        <div class="chat-disclaimer">AI có thể mắc sai sót, vì vậy, hãy xác minh thông tin.</div>
+      </div>
 
-    <!-- RIGHT COLUMN (SIDEBAR) -->
-    <div class="detail-sidebar">
-      <!-- Meta Card -->
+      <!-- Meta Card (Details) -->
       <div class="detail-card" style="margin-bottom:20px; background:rgba(255,255,255,0.02)">
          <h3><i class="ph-bold ph-info" style="margin-right:8px"></i> Details</h3>
          <div style="display:flex;justify-content:space-between;margin-bottom:12px">
@@ -236,6 +231,7 @@
           </a>
         </div>
       </div>
+
     </div>
   </div>
 

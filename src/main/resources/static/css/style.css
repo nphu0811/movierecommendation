@@ -4252,20 +4252,31 @@ body.auth-page {
 }
 
 .player-column-sidebar {
-  width: 0;
+  width: 380px;
+  margin-left: var(--space-6);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+  border: none;
+  overflow: visible;
+  height: auto;
+}
+
+.chat-sidebar-container {
+  max-height: 0;
   opacity: 0;
   visibility: hidden;
-  transform: translateX(30px);
-  flex-shrink: 0;
+  transform: translateY(-20px);
   display: flex;
   flex-direction: column;
   background: rgba(12, 12, 12, 0.85);
   border: 1px solid rgba(255, 255, 255, 0);
   border-radius: 20px;
   overflow: hidden;
-  height: auto;
-  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-              margin-left 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+  margin-bottom: 0;
+  transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              margin-bottom 0.4s cubic-bezier(0.16, 1, 0.3, 1),
               opacity 0.4s ease,
               transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
               visibility 0.4s,
@@ -4273,12 +4284,12 @@ body.auth-page {
   backdrop-filter: blur(25px);
 }
 
-.player-column-sidebar.active {
-  width: 380px;
-  margin-left: var(--space-5);
+.chat-sidebar-container.active {
+  max-height: 540px;
+  margin-bottom: var(--space-5);
   opacity: 1;
   visibility: visible;
-  transform: translateX(0);
+  transform: translateY(0);
   border-color: rgba(255, 255, 255, 0.09);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
@@ -4528,6 +4539,10 @@ body.auth-page {
 }
 
 /* Responsive sidebar */
+.chat-sidebar-container {
+  transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
+}
+
 @media (max-width: 990px) {
   .player-layout-row {
     flex-direction: column;
@@ -4536,25 +4551,18 @@ body.auth-page {
   .player-column-sidebar {
     width: 100% !important;
     margin-left: 0 !important;
-    margin-top: 0;
+    margin-top: var(--space-5);
+  }
+  .chat-sidebar-container {
     max-height: 0;
     opacity: 0;
     visibility: hidden;
-    transform: translateY(30px);
-    transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-                margin-top 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-                opacity 0.4s ease,
-                transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-                visibility 0.4s,
-                border-color 0.4s;
+    overflow: hidden;
   }
-  .player-column-sidebar.active {
+  .chat-sidebar-container.active {
     max-height: 580px;
-    margin-top: var(--space-5);
     opacity: 1;
     visibility: visible;
-    transform: translateY(0);
-    border-color: rgba(255, 255, 255, 0.09);
   }
 }
 
