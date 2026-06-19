@@ -572,6 +572,70 @@
   const chatPopover = document.getElementById('chatPopover');
   const welcomeText = 'Xin chào! Mình là Trợ lý AI gợi ý phim. Bạn cần tìm phim gì tối nay? Hãy chọn gợi ý hoặc nhập tin nhắn bên dưới nhé:';
   
+  /**
+   * Types out the text contents of the given element DOM tree, word-by-word,
+   * preserving HTML tags, styling, and attributes.
+   */
+  function typeEffect(element, speed, onComplete) {
+    const textNodes = [];
+    
+    // Recursively collect all text nodes and their original text
+    function walk(node) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        textNodes.push({
+          node: node,
+          text: node.nodeValue
+        });
+        node.nodeValue = ''; // Clear text initially
+      } else {
+        for (let i = 0; i < node.childNodes.length; i++) {
+          walk(node.childNodes[i]);
+        }
+      }
+    }
+    walk(element);
+    
+    let nodeIndex = 0;
+    let wordIndex = 0;
+    let words = [];
+    
+    function type() {
+      if (nodeIndex >= textNodes.length) {
+        if (onComplete) onComplete();
+        return;
+      }
+      
+      const item = textNodes[nodeIndex];
+      if (words.length === 0 && item.text) {
+        // Split text into words (including spaces)
+        words = item.text.split(/(\s+)/).filter(w => w.length > 0);
+      }
+      
+      if (wordIndex < words.length) {
+        item.node.nodeValue += words[wordIndex];
+        wordIndex++;
+        
+        // Auto-scroll the closest scrollable container
+        let parent = element.parentElement;
+        while (parent) {
+          if (parent.scrollHeight > parent.clientHeight) {
+            parent.scrollTop = parent.scrollHeight;
+            break;
+          }
+          parent = parent.parentElement;
+        }
+        
+        setTimeout(type, speed || 30);
+      } else {
+        nodeIndex++;
+        wordIndex = 0;
+        words = [];
+        setTimeout(type, speed || 30);
+      }
+    }
+    type();
+  }
+
   function renderWelcomeMessage() {
     if (!chatBody) return;
     chatBody.innerHTML = '';
@@ -582,8 +646,8 @@
         <div style="width: 28px; height: 28px; border-radius: 50%; background: rgba(229, 9, 20, 0.1); color: var(--red); border: 1px solid rgba(229, 9, 20, 0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.8rem; margin-top: 4px;"><i class="ph-bold ph-robot"></i></div>
         <div style="flex: 1; overflow: hidden;">
           <div class="ai-bubble" style="background: rgba(30, 30, 30, 0.95); border: 1px solid rgba(255, 255, 255, 0.05); color: var(--white); padding: 0.85rem 1rem; border-radius: 18px 18px 18px 2px; font-size: 0.82rem; line-height: 1.45; word-break: break-word;">
-            ${welcomeText}
-            <div class="suggestion-pills" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+            <span class="typing-text">${welcomeText}</span>
+            <div class="suggestion-pills" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px; opacity: 0; transform: translateY(10px); transition: all 0.4s ease-out;">
               <div class="suggestion-pill" onclick="sendSuggestion(this.innerText)">Tôi muốn xem phim hành động vui, dễ xem.</div>
               <div class="suggestion-pill" onclick="sendSuggestion(this.innerText)">Gợi ý phim tình cảm nhẹ nhàng, điểm cao.</div>
               <div class="suggestion-pill" onclick="sendSuggestion(this.innerText)">Gợi ý phim viễn tưởng tương tự Interstellar.</div>
@@ -594,6 +658,16 @@
     `;
     chatBody.appendChild(row);
     scrollToBottom();
+    
+    const typingTextEl = row.querySelector('.typing-text');
+    const pillsEl = row.querySelector('.suggestion-pills');
+    typeEffect(typingTextEl, 30, () => {
+      if (pillsEl) {
+        pillsEl.style.opacity = '1';
+        pillsEl.style.transform = 'translateY(0)';
+        scrollToBottom();
+      }
+    });
   }
 
   function resetChat() {
@@ -657,7 +731,7 @@
     const shouldRenderMovies = (type === 'MOVIE_CARDS') || (!type && movies && movies.length > 0);
     
     if (shouldRenderMovies && movies && movies.length > 0) {
-      moviesHtml = `<div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px; width: 100%;">`;
+      moviesHtml = `<div class="chat-movies-container" style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px; width: 100%; opacity: 0; transform: translateY(10px); transition: all 0.4s ease-out;">`;
       movies.forEach(m => {
         const posterUrl = m.posterUrl || '/images/poster-placeholder.jpg';
         const rating = m.averageRating > 0 ? m.averageRating.toFixed(1) : 'NR';
@@ -690,7 +764,7 @@
         <div style="width: 28px; height: 28px; border-radius: 50%; background: rgba(229, 9, 20, 0.1); color: var(--red); border: 1px solid rgba(229, 9, 20, 0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.8rem; margin-top: 4px;"><i class="ph-bold ph-robot"></i></div>
         <div style="flex:1; overflow:hidden;">
           <div class="ai-bubble" style="background: rgba(30, 30, 30, 0.95); border: 1px solid rgba(255, 255, 255, 0.05); color: var(--white); padding: 0.85rem 1.1rem; border-radius: 18px 18px 18px 2px; font-size: 0.82rem; line-height: 1.45; display: inline-block; max-width: 85%; text-align: left; word-break: break-word;">
-            ${escapeHtml(reply)}
+            <span class="typing-text">${escapeHtml(reply)}</span>
           </div>
           ${moviesHtml}
         </div>
@@ -699,6 +773,17 @@
     
     chatBody.appendChild(row);
     scrollToBottom();
+    
+    const typingTextEl = row.querySelector('.typing-text');
+    const moviesContainer = row.querySelector('.chat-movies-container');
+    
+    typeEffect(typingTextEl, 30, () => {
+      if (moviesContainer) {
+        moviesContainer.style.opacity = '1';
+        moviesContainer.style.transform = 'translateY(0)';
+        scrollToBottom();
+      }
+    });
   }
   
   function showLoadingIndicator() {

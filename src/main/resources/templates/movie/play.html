@@ -178,10 +178,7 @@
         </div>
         
         <div class="chat-sidebar-messages" id="chatSidebarMessages">
-          <div class="chat-msg chat-msg-ai">
-            <p>Xin chào! Bạn có thắc mắc về nội dung đang xem? Tôi sẵn sàng giúp bạn.</p>
-            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Bạn chưa biết nên hỏi gì? Hãy thử hỏi về:</p>
-          </div>
+          <!-- Welcome message rendered dynamically via JS streaming -->
         </div>
         
         <div class="chat-sidebar-suggestions">
@@ -500,13 +497,109 @@
   // ============================================================
   // AI VIDEO CHAT SIDEBAR LOGIC
   // ============================================================
+  /**
+   * Types out the text contents of the given element DOM tree, word-by-word,
+   * preserving HTML tags, styling, and attributes.
+   */
+  function typeEffect(element, speed, onComplete) {
+    const textNodes = [];
+    
+    // Recursively collect all text nodes and their original text
+    function walk(node) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        textNodes.push({
+          node: node,
+          text: node.nodeValue
+        });
+        node.nodeValue = ''; // Clear text initially
+      } else {
+        for (let i = 0; i < node.childNodes.length; i++) {
+          walk(node.childNodes[i]);
+        }
+      }
+    }
+    walk(element);
+    
+    let nodeIndex = 0;
+    let wordIndex = 0;
+    let words = [];
+    
+    function type() {
+      if (nodeIndex >= textNodes.length) {
+        if (onComplete) onComplete();
+        return;
+      }
+      
+      const item = textNodes[nodeIndex];
+      if (words.length === 0 && item.text) {
+        // Split text into words (including spaces)
+        words = item.text.split(/(\s+)/).filter(w => w.length > 0);
+      }
+      
+      if (wordIndex < words.length) {
+        item.node.nodeValue += words[wordIndex];
+        wordIndex++;
+        
+        // Auto-scroll the closest scrollable container
+        let parent = element.parentElement;
+        while (parent) {
+          if (parent.scrollHeight > parent.clientHeight) {
+            parent.scrollTop = parent.scrollHeight;
+            break;
+          }
+          parent = parent.parentElement;
+        }
+        
+        setTimeout(type, speed || 30);
+      } else {
+        nodeIndex++;
+        wordIndex = 0;
+        words = [];
+        setTimeout(type, speed || 30);
+      }
+    }
+    type();
+  }
+
+  let welcomeRendered = false;
   function toggleVideoChatSidebar() {
       const sidebar = document.getElementById('videoChatSidebar');
       const btn = document.getElementById('askAiBtn');
       if (sidebar && btn) {
+          const isOpening = !sidebar.classList.contains('active');
           sidebar.classList.toggle('active');
           btn.classList.toggle('active');
+          
+          if (isOpening && !welcomeRendered) {
+              renderVideoChatWelcome();
+              welcomeRendered = true;
+          }
       }
+  }
+
+  function renderVideoChatWelcome() {
+      const messagesContainer = document.getElementById('chatSidebarMessages');
+      if (!messagesContainer) return;
+      
+      const welcomeHtml = `
+          <p class="welcome-line-1">Xin chào! Bạn có thắc mắc về nội dung đang xem? Tôi sẵn sàng giúp bạn.</p>
+          <p class="welcome-line-2" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; opacity: 0; transition: opacity 0.35s ease-out;">Bạn chưa biết nên hỏi gì? Hãy thử hỏi về:</p>
+      `;
+      
+      const msgDiv = document.createElement('div');
+      msgDiv.className = 'chat-msg chat-msg-ai';
+      msgDiv.innerHTML = welcomeHtml;
+      messagesContainer.appendChild(msgDiv);
+      
+      const line1 = msgDiv.querySelector('.welcome-line-1');
+      const line2 = msgDiv.querySelector('.welcome-line-2');
+      
+      typeEffect(line1, 30, () => {
+          if (line2) {
+              line2.style.opacity = '1';
+              messagesContainer.scrollTop = messagesContainer.scrollHeight;
+          }
+      });
   }
 
   function sendSuggestion(text) {
@@ -578,13 +671,19 @@
       }
       
       const msgClass = sender === 'user' ? 'chat-msg-user' : 'chat-msg-ai';
-      const html = `
-          <div class="chat-msg ${msgClass}">
-              ${formattedText}
-          </div>
-      `;
-      messagesContainer.insertAdjacentHTML('beforeend', html);
+      
+      const msgDiv = document.createElement('div');
+      msgDiv.className = `chat-msg ${msgClass}`;
+      msgDiv.innerHTML = formattedText;
+      
+      messagesContainer.appendChild(msgDiv);
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      
+      if (sender === 'ai') {
+          typeEffect(msgDiv, 30, () => {
+              messagesContainer.scrollTop = messagesContainer.scrollHeight;
+          });
+      }
   }
   
   function escapeHtml(text) {
