@@ -292,11 +292,7 @@
 
 // GSAP page choreography
 (function() {
-  var gsap = window.gsap;
-  if (!gsap) return;
-
-  var reduceMotion = window.matchMedia &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var GSAP_CDN = 'https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js';
 
   function ready(fn) {
     if (document.readyState === 'loading') {
@@ -305,6 +301,40 @@
     }
     fn();
   }
+
+  function loadGsap(callback) {
+    if (window.gsap) {
+      callback(window.gsap);
+      return;
+    }
+
+    var existingScript = document.querySelector('script[data-movierec-gsap]');
+    if (existingScript) {
+      document.addEventListener('movierec:gsap-ready', function() {
+        if (window.gsap) callback(window.gsap);
+      }, { once: true });
+      return;
+    }
+
+    var script = document.createElement('script');
+    script.src = GSAP_CDN;
+    script.defer = true;
+    script.dataset.movierecGsap = 'true';
+    script.onload = function() {
+      document.dispatchEvent(new Event('movierec:gsap-ready'));
+      if (window.gsap) callback(window.gsap);
+    };
+    script.onerror = function() {
+      document.documentElement.classList.add('gsap-unavailable');
+    };
+    document.head.appendChild(script);
+  }
+
+  function startGsapChoreography(gsap) {
+    if (!gsap) return;
+
+  var reduceMotion = window.matchMedia &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   function toArray(collection) {
     return Array.prototype.slice.call(collection || []);
@@ -317,6 +347,51 @@
   function isVisible(el) {
     return el && window.getComputedStyle(el).display !== 'none';
   }
+
+  function hasTargets(targets) {
+    return targets && targets.length;
+  }
+
+  function revealTargets(targets, options) {
+    targets = compact(toArray(targets)).filter(isVisible);
+    if (!hasTargets(targets)) return;
+
+    if (reduceMotion) {
+      gsap.set(targets, {
+        autoAlpha: 1,
+        x: 0,
+        y: 0,
+        scale: 1,
+        clearProps: 'transform,opacity,visibility'
+      });
+      return;
+    }
+
+    options = options || {};
+    gsap.fromTo(targets, {
+      autoAlpha: 0,
+      x: options.x || 0,
+      y: options.y == null ? 16 : options.y,
+      scale: options.scale || 1
+    }, {
+      autoAlpha: 1,
+      x: 0,
+      y: 0,
+      scale: 1,
+      duration: options.duration || 0.44,
+      delay: options.delay || 0,
+      stagger: options.stagger == null ? 0.055 : options.stagger,
+      ease: options.ease || 'power2.out',
+      overwrite: 'auto',
+      clearProps: options.clearProps || 'transform,opacity,visibility'
+    });
+  }
+
+  gsap.defaults({
+    ease: 'power2.out',
+    duration: 0.42,
+    overwrite: 'auto'
+  });
 
   function initAuthGsap() {
     var auth = document.querySelector('.auth-container');
@@ -511,8 +586,18 @@
   function initGsapFieldFocus() {
     if (reduceMotion) return;
 
-    toArray(document.querySelectorAll('.auth-card .form-control, .profile-panel .form-control')).forEach(function(input) {
-      var target = input.closest('.password-field') || input;
+    toArray(document.querySelectorAll([
+      '.auth-card .form-control',
+      '.profile-panel .form-control',
+      '.detail-card .form-control',
+      '.filter-group input',
+      '.filter-group select',
+      '.search-input-wrapper input',
+      '.chat-sidebar-input-row input'
+    ].join(','))).forEach(function(input) {
+      var target = input.closest('.password-field') ||
+        input.closest('.search-input-wrapper') ||
+        input;
 
       input.addEventListener('focus', function() {
         gsap.to(target, {
@@ -535,10 +620,273 @@
     });
   }
 
-  ready(function() {
+  function initSiteGsap() {
+    if (document.querySelector('.auth-container, .profile-page, .admin-layout')) return;
+
+    var hero = document.querySelector('.hero-section');
+    if (hero) {
+      revealTargets(toArray(hero.querySelectorAll([
+        '.hero-badge',
+        '.hero-title',
+        '.hero-description',
+        '.hero-actions',
+        '.hero-meta',
+        '.hero-card'
+      ].join(','))), {
+        y: 24,
+        duration: 0.58,
+        stagger: 0.075
+      });
+    }
+
+    var movieHero = document.querySelector('.movie-hero-content');
+    if (movieHero) {
+      revealTargets(compact([
+        movieHero.querySelector('.movie-poster-large, .movie-poster-placeholder')
+      ]), {
+        x: -22,
+        y: 0,
+        scale: 0.985,
+        duration: 0.52
+      });
+      revealTargets(toArray(movieHero.querySelectorAll([
+        '.genre-tags',
+        '.movie-title-large',
+        '.movie-meta-bar',
+        '.movie-description-main',
+        '.action-buttons-group'
+      ].join(','))).concat(toArray(movieHero.querySelectorAll('.action-buttons-group + div > *'))), {
+        x: 18,
+        y: 0,
+        duration: 0.5,
+        delay: 0.08,
+        stagger: 0.055
+      });
+    }
+
+    var listLayout = document.querySelector('.list-layout');
+    if (listLayout) {
+      revealTargets(compact([
+        listLayout.querySelector('.list-filters'),
+        listLayout.querySelector('.list-header')
+      ]), {
+        y: 18,
+        duration: 0.45,
+        stagger: 0.08
+      });
+    }
+
+    var playerLayout = document.querySelector('.player-layout-row');
+    if (playerLayout) {
+      revealTargets(toArray(playerLayout.children), {
+        y: 18,
+        duration: 0.5,
+        stagger: 0.08
+      });
+    }
+
+    var searchPage = document.querySelector('.search-page');
+    if (searchPage) {
+      revealTargets(compact([
+        searchPage.querySelector('.search-header-main'),
+        searchPage.querySelector('.search-input-group'),
+        searchPage.querySelector('.search-initial-trends')
+      ]), {
+        y: 18,
+        duration: 0.5,
+        stagger: 0.07
+      });
+    }
+
+    revealTargets(toArray(document.querySelectorAll([
+      '.error-shell',
+      '.section > .section-header',
+      '.section > .empty-state',
+      '.section > div[style*="text-align:center"]',
+      '.search-empty-state'
+    ].join(','))), {
+      y: 16,
+      duration: 0.42,
+      stagger: 0.06
+    });
+  }
+
+  function initAdminGsap() {
+    var layout = document.querySelector('.admin-layout');
+    if (!layout) return;
+
+    var sidebar = layout.querySelector('.admin-sidebar');
+    var sidebarItems = toArray(layout.querySelectorAll('.sidebar-nav a'));
+    var mainBlocks = toArray(layout.querySelectorAll([
+      '.admin-main > .admin-dashboard-hero',
+      '.admin-main > .admin-flash-stack',
+      '.admin-main > .admin-ops-grid',
+      '.admin-main > .stats-grid',
+      '.admin-main > .admin-content-grid',
+      '.admin-main > .admin-quick-links',
+      '.admin-main > .admin-panel',
+      '.admin-main > .admin-table-wrap',
+      '.admin-main > form'
+    ].join(',')));
+
+    revealTargets(compact([sidebar]), {
+      x: -18,
+      y: 0,
+      duration: 0.48
+    });
+    revealTargets(sidebarItems, {
+      x: -10,
+      y: 0,
+      duration: 0.3,
+      delay: 0.08,
+      stagger: 0.035
+    });
+    revealTargets(mainBlocks, {
+      y: 18,
+      duration: 0.46,
+      delay: 0.04,
+      stagger: 0.07
+    });
+    revealTargets(toArray(layout.querySelectorAll([
+      '.admin-job-card',
+      '.stat-card',
+      '.admin-list-panel',
+      '.admin-quick-link',
+      '.admin-ranked-item',
+      'tbody tr'
+    ].join(','))), {
+      y: 14,
+      duration: 0.36,
+      delay: 0.16,
+      stagger: 0.035
+    });
+
+    if (!reduceMotion) {
+      toArray(layout.querySelectorAll('.admin-progress-fill')).forEach(function(fill) {
+        gsap.fromTo(fill, {
+          scaleX: 0,
+          transformOrigin: 'left center'
+        }, {
+          scaleX: 1,
+          duration: 0.55,
+          delay: 0.26,
+          ease: 'power2.out',
+          clearProps: 'transform'
+        });
+      });
+    }
+  }
+
+  function initScrollRevealGsap() {
+    var targets = toArray(document.querySelectorAll([
+      '.detail-card',
+      '.similar-movie-link',
+      '.search-result-horizontal-card:not(.hidden-movie)',
+      '.footer-links-col',
+      '.footer-brand-section',
+      '.footer-bottom'
+    ].join(','))).filter(function(el) {
+      return isVisible(el) && el.dataset.gsapReveal !== '1';
+    });
+
+    if (!hasTargets(targets)) return;
+
+    if (reduceMotion || !('IntersectionObserver' in window)) {
+      revealTargets(targets, {
+        y: 16,
+        duration: reduceMotion ? 0 : 0.36,
+        stagger: 0.035
+      });
+      return;
+    }
+
+    gsap.set(targets, { autoAlpha: 0, y: 18 });
+
+    var observer = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (!entry.isIntersecting) return;
+        observer.unobserve(entry.target);
+        gsap.to(entry.target, {
+          autoAlpha: 1,
+          y: 0,
+          duration: 0.42,
+          ease: 'power2.out',
+          overwrite: 'auto',
+          clearProps: 'transform,opacity,visibility'
+        });
+      });
+    }, { rootMargin: '0px 0px -9% 0px', threshold: 0.12 });
+
+    targets.forEach(function(el) {
+      el.dataset.gsapReveal = '1';
+      observer.observe(el);
+    });
+  }
+
+  function initGsapPressFeedback() {
+    if (reduceMotion) return;
+
+    var selector = [
+      '.btn',
+      '.watch-btn',
+      '.movie-trailer-btn',
+      '.show-more-btn',
+      '.row-arrow',
+      '.mobile-nav-item',
+      '.admin-quick-link',
+      '.ai-summary-toggle-btn',
+      '.chat-suggestion-pill',
+      '.suggestion-pill'
+    ].join(',');
+
+    function interactiveTarget(event) {
+      if (!event.target || !event.target.closest) return null;
+      var el = event.target.closest(selector);
+      if (!el || el.disabled || el.getAttribute('aria-disabled') === 'true') return null;
+      return el;
+    }
+
+    document.addEventListener('pointerdown', function(event) {
+      var el = interactiveTarget(event);
+      if (!el) return;
+      gsap.to(el, {
+        scale: 0.975,
+        duration: 0.08,
+        ease: 'power1.out',
+        overwrite: 'auto'
+      });
+    });
+
+    ['pointerup', 'pointercancel', 'pointerout'].forEach(function(type) {
+      document.addEventListener(type, function(event) {
+        var el = interactiveTarget(event);
+        if (!el) return;
+        gsap.to(el, {
+          scale: 1,
+          duration: 0.16,
+          ease: 'power2.out',
+          overwrite: 'auto',
+          clearProps: 'transform'
+        });
+      });
+    });
+  }
+
+  function boot() {
     initAuthGsap();
     initProfileGsap();
+    initSiteGsap();
+    initAdminGsap();
+    initScrollRevealGsap();
     initGsapFieldFocus();
+    initGsapPressFeedback();
+  }
+
+  ready(boot);
+  }
+
+  ready(function() {
+    loadGsap(startGsapChoreography);
   });
 })();
 
