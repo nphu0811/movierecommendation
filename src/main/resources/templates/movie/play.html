@@ -252,6 +252,12 @@
   let ytPlayer = null;
   let pendingSeekSeconds = 0;
 
+  // Localized chat messages (defined outside template literals to avoid Thymeleaf/JS parsing issues)
+  const msgVideoChatWelcome1 = /*[[#{play.videoChatWelcome1}]]*/ 'Hello! Do you have any questions about the video you are watching? I am ready to help.';
+  const msgVideoChatWelcome2 = /*[[#{play.videoChatWelcome2}]]*/ 'Not sure what to ask? Try asking about:';
+  const msgAiAnalyzing = /*[[#{play.aiAnalyzing}]]*/ 'Analyzing video...';
+  const msgChatError = /*[[#{play.chatError}]]*/ 'An error occurred while talking to AI. Please try again later!';
+
   let activeSeconds = 0;
   let isTabActive = true;
   document.addEventListener('visibilitychange', () => {
@@ -621,8 +627,8 @@
       if (!messagesContainer) return;
       
       const welcomeHtml = `
-          <p class="welcome-line-1">${/*[[#{play.videoChatWelcome1}]]*/ ''}</p>
-          <p class="welcome-line-2" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; opacity: 0; transition: opacity 0.35s ease-out;">${/*[[#{play.videoChatWelcome2}]]*/ ''}</p>
+          <p class="welcome-line-1">${msgVideoChatWelcome1}</p>
+          <p class="welcome-line-2" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; opacity: 0; transition: opacity 0.35s ease-out;">${msgVideoChatWelcome2}</p>
       `;
       
       const msgDiv = document.createElement('div');
@@ -668,7 +674,7 @@
       const loadingId = 'ai-loading-' + Date.now();
       const loadingHtml = `
           <div class="chat-msg chat-msg-ai" id="${loadingId}">
-              <i class="ph-bold ph-circle-notch ph-spin"></i> ${/*[[#{play.aiAnalyzing}]]*/ ''}
+              <i class="ph-bold ph-circle-notch ph-spin"></i> ${msgAiAnalyzing}
           </div>
       `;
       messagesContainer.insertAdjacentHTML('beforeend', loadingHtml);
@@ -693,7 +699,7 @@
       .catch(err => {
           const loadingEl = document.getElementById(loadingId);
           if (loadingEl) loadingEl.remove();
-          appendChatMessage(/*[[#{play.chatError}]]*/ '', 'ai');
+          appendChatMessage(msgChatError, 'ai');
       });
   }
   
