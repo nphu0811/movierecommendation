@@ -123,8 +123,10 @@ public class MovieController {
         if (primaryId != null) {
             // Server 1 (Primary) - SuperEmbed
             model.addAttribute("server1", buildSuperEmbedUrl(primaryId));
-            // Server 2 (Secondary) - 2Embed
-            model.addAttribute("server2", "https://www.2embed.online/embed/movie/" + primaryId);
+        }
+        if (imdbId != null && !imdbId.isBlank()) {
+            // Server 2 (Secondary) - streamimdb.ru (only supports IMDb ID)
+            model.addAttribute("server2", "https://streamimdb.ru/embed/movie/" + imdbId.trim());
         }
 
         // Watch History / Progress
