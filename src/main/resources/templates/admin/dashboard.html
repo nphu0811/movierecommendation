@@ -37,7 +37,40 @@
       <div class="alert alert-danger" th:if="${error}" th:text="${error}"></div>
     </div>
 
+    <!-- User Preference Charts Section -->
+    <section class="admin-content-grid" style="margin-top: 24px; margin-bottom: 24px;">
+      <article class="admin-list-panel" style="padding: 20px;">
+        <div class="admin-panel-header" style="margin-bottom: 16px;">
+          <div>
+            <p class="admin-eyebrow" th:text="#{admin.preferredGenresEyebrow}">User Preferences</p>
+            <h2 th:text="#{admin.preferredGenresTitle}">Top 5 Loved Genres</h2>
+          </div>
+          <i class="ph-fill ph-heart" aria-hidden="true" style="font-size: 1.5rem; color: var(--red);"></i>
+        </div>
+        <div style="position: relative; height: 260px; width: 100%;">
+          <canvas id="prefGenresChart"></canvas>
+        </div>
+        <div id="prefEmptyMsg" class="admin-empty-line" style="display:none; text-align:center; padding:20px; color:var(--text-muted);">
+          No user preferences recorded yet.
+        </div>
+      </article>
 
+      <article class="admin-list-panel" style="padding: 20px;">
+        <div class="admin-panel-header" style="margin-bottom: 16px;">
+          <div>
+            <p class="admin-eyebrow" th:text="#{admin.dislikedGenresEyebrow}">User Preferences</p>
+            <h2 th:text="#{admin.dislikedGenresTitle}">Top 5 Avoided Genres</h2>
+          </div>
+          <i class="ph-fill ph-x-circle" aria-hidden="true" style="font-size: 1.5rem; color: #f59e0b;"></i>
+        </div>
+        <div style="position: relative; height: 260px; width: 100%;">
+          <canvas id="dislikedGenresChart"></canvas>
+        </div>
+        <div id="dislikeEmptyMsg" class="admin-empty-line" style="display:none; text-align:center; padding:20px; color:var(--text-muted);">
+          No user preferences recorded yet.
+        </div>
+      </article>
+    </section>
 
     <section class="stats-grid admin-stats-grid" aria-label="System statistics">
       <article class="stat-card">
@@ -127,40 +160,7 @@
       </article>
     </section>
 
-    <!-- User Preference Charts Section -->
-    <section class="admin-content-grid" style="margin-top: 24px;">
-      <article class="admin-list-panel" style="padding: 20px;">
-        <div class="admin-panel-header" style="margin-bottom: 16px;">
-          <div>
-            <p class="admin-eyebrow" th:text="#{admin.preferredGenresEyebrow}">User Preferences</p>
-            <h2 th:text="#{admin.preferredGenresTitle}">Top 5 Loved Genres</h2>
-          </div>
-          <i class="ph-fill ph-heart" aria-hidden="true" style="font-size: 1.5rem; color: var(--red);"></i>
-        </div>
-        <div style="position: relative; height: 260px; width: 100%;">
-          <canvas id="prefGenresChart"></canvas>
-        </div>
-        <div id="prefEmptyMsg" class="admin-empty-line" style="display:none; text-align:center; padding:20px; color:var(--text-muted);">
-          No user preferences recorded yet.
-        </div>
-      </article>
 
-      <article class="admin-list-panel" style="padding: 20px;">
-        <div class="admin-panel-header" style="margin-bottom: 16px;">
-          <div>
-            <p class="admin-eyebrow" th:text="#{admin.dislikedGenresEyebrow}">User Preferences</p>
-            <h2 th:text="#{admin.dislikedGenresTitle}">Top 5 Avoided Genres</h2>
-          </div>
-          <i class="ph-fill ph-x-circle" aria-hidden="true" style="font-size: 1.5rem; color: #f59e0b;"></i>
-        </div>
-        <div style="position: relative; height: 260px; width: 100%;">
-          <canvas id="dislikedGenresChart"></canvas>
-        </div>
-        <div id="dislikeEmptyMsg" class="admin-empty-line" style="display:none; text-align:center; padding:20px; color:var(--text-muted);">
-          No user preferences recorded yet.
-        </div>
-      </article>
-    </section>
 
   </main>
 </div>

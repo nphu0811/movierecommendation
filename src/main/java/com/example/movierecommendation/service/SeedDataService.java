@@ -29,7 +29,6 @@ public class SeedDataService {
     @Autowired private CommentRepository commentRepository;
     @Autowired private WatchHistoryRepository watchHistoryRepository;
     @Autowired private GenreRepository genreRepository;
-    @Autowired private UserPreferenceRepository userPreferenceRepository;
     @Autowired private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     @Value("${tmdb.api.key:}") private String apiKey;
@@ -482,69 +481,6 @@ public class SeedDataService {
 
         } catch (Exception e) {
             log.error("❌ Seeding demo data failed: {}", e.getMessage(), e);
-        }
-    }
-
-    @Transactional
-    @EventListener(ApplicationReadyEvent.class)
-    public void seedUserPreferencesOnStartup() {
-        log.info("Checking if existing users need default user preferences seeded...");
-        try {
-            List<User> users = userRepository.findAll();
-            List<Genre> genres = genreRepository.findAll();
-            if (genres.isEmpty()) {
-                log.warn("No genres found in database. Skipping user preferences seeding.");
-                return;
-            }
-
-            Random rand = new Random();
-            int seededCount = 0;
-
-            for (User user : users) {
-                // Check if preference already exists for this user
-                boolean hasPreference = userPreferenceRepository.findByUserUserId(user.getUserId()).isPresent();
-                if (!hasPreference) {
-                    UserPreference pref = new UserPreference();
-                    pref.setUser(user);
-
-                    // Shuffle genres to pick random ones
-                    List<Genre> shuffledGenres = new ArrayList<>(genres);
-                    Collections.shuffle(shuffledGenres);
-
-                    // Pick 1 to 3 preferred genres
-                    int numPreferred = 1 + rand.nextInt(3); // 1, 2, or 3
-                    List<String> preferredIds = new ArrayList<>();
-                    for (int i = 0; i < Math.min(numPreferred, shuffledGenres.size()); i++) {
-                        preferredIds.add(String.valueOf(shuffledGenres.get(i).getGenreId()));
-                    }
-                    pref.setPreferredGenres(String.join(",", preferredIds));
-
-                    // Pick 1 to 2 disliked genres from the remaining genres
-                    int numDisliked = 1 + rand.nextInt(2); // 1 or 2
-                    List<String> dislikedIds = new ArrayList<>();
-                    int startIndex = numPreferred;
-                    for (int i = startIndex; i < Math.min(startIndex + numDisliked, shuffledGenres.size()); i++) {
-                        dislikedIds.add(String.valueOf(shuffledGenres.get(i).getGenreId()));
-                    }
-                    pref.setDislikedGenres(String.join(",", dislikedIds));
-
-                    // Set other attributes
-                    pref.setMinRating(3.0 + (rand.nextInt(4) * 0.5)); // 3.0, 3.5, 4.0, or 4.5
-                    pref.setPreferNewReleases(rand.nextBoolean());
-                    pref.setPreferTopRated(rand.nextBoolean());
-
-                    userPreferenceRepository.save(pref);
-                    seededCount++;
-                }
-            }
-
-            if (seededCount > 0) {
-                log.info("✅ Successfully seeded user preferences for {} users.", seededCount);
-            } else {
-                log.info("All existing users already have user preferences set. No seeding needed.");
-            }
-        } catch (Exception e) {
-            log.error("Failed to seed user preferences: {}", e.getMessage(), e);
         }
     }
 }
