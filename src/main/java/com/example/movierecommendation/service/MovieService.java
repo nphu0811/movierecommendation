@@ -199,8 +199,8 @@ public class MovieService {
             return Collections.emptyList();
         }
         String translatedKeyword = translateGenreKeyword(keyword);
-        List<Movie> vectorResults = movieRepository.searchByDatabaseVector(translatedKeyword);
-        List<Movie> textResults = movieRepository.searchByTitleOrGenre(translatedKeyword);
+        List<Movie> vectorResults = movieRepository.searchByDatabaseVector(translatedKeyword, PageRequest.of(0, 50));
+        List<Movie> textResults = movieRepository.searchByTitleOrGenre(translatedKeyword, PageRequest.of(0, 50));
         Map<Integer, Movie> merged = new LinkedHashMap<>();
         for (Movie movie : vectorResults) {
             merged.put(movie.getMovieId(), movie);
@@ -219,14 +219,14 @@ public class MovieService {
         return movieRepository.searchByTitleOnly(keyword, PageRequest.of(0, 6));
     }
 
-    public List<Movie> searchMoviesDBVector(String keyword) {
+    public List<Movie> searchMoviesDBVector(String keyword, int page, int size) {
         if (keyword == null || keyword.trim().isEmpty()) {
             return Collections.emptyList();
         }
         String translatedKeyword = translateGenreKeyword(keyword);
-        List<Movie> dbVector = movieRepository.searchByDatabaseVector(translatedKeyword);
+        List<Movie> dbVector = movieRepository.searchByDatabaseVector(translatedKeyword, PageRequest.of(page, size));
         if (openAIService.isEnabled()) {
-            List<Movie> semantic = movieEmbeddingService.searchSemantic(keyword, 15);
+            List<Movie> semantic = movieEmbeddingService.searchSemantic(keyword, size);
             Map<Integer, Movie> merged = new LinkedHashMap<>();
             for (Movie m : semantic) {
                 merged.put(m.getMovieId(), m);
@@ -262,12 +262,12 @@ public class MovieService {
         return results;
     }
 
-    public List<Movie> searchMoviesTextOnly(String keyword) {
+    public List<Movie> searchMoviesTextOnly(String keyword, int page, int size) {
         if (keyword == null || keyword.trim().isEmpty()) {
             return Collections.emptyList();
         }
         String translatedKeyword = translateGenreKeyword(keyword);
-        List<Movie> results = movieRepository.searchByTitleOrGenre(translatedKeyword);
+        List<Movie> results = movieRepository.searchByTitleOrGenre(translatedKeyword, PageRequest.of(page, size));
         return results;
     }
 

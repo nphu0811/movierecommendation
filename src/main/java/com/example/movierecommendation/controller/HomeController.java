@@ -118,10 +118,12 @@ public class HomeController {
         // --- Run search queries sequentially to prevent connection pool starvation ---
         String keyword = q.trim();
         List<Movie> searchResults = new ArrayList<>();
+        int pageSize = 10;
+        int querySize = pageSize + 1;
         
         try {
             // Try vector search first (uses full-text indices)
-            searchResults = movieService.searchMoviesDBVector(keyword);
+            searchResults = movieService.searchMoviesDBVector(keyword, 0, querySize);
         } catch (Exception e) {
             log.error("Error retrieving database vector search results, falling back to text search: {}", e.getMessage(), e);
         }
@@ -129,7 +131,7 @@ public class HomeController {
         // If vector search failed or returned no results, fall back to simple text search
         if (searchResults == null || searchResults.isEmpty()) {
             try {
-                searchResults = movieService.searchMoviesTextOnly(keyword);
+                searchResults = movieService.searchMoviesTextOnly(keyword, 0, querySize);
             } catch (Exception e) {
                 log.error("Error retrieving text search results: {}", e.getMessage(), e);
                 searchResults = Collections.emptyList();
@@ -149,6 +151,17 @@ public class HomeController {
                 }
             }
         }
+
+        boolean hasMore = false;
+        if (movies.size() > pageSize) {
+            hasMore = true;
+            movies = movies.subList(0, pageSize);
+            seenIds.clear();
+            for (Movie m : movies) {
+                seenIds.add(m.getMovieId());
+            }
+        }
+        model.addAttribute("hasMore", hasMore);
 
         // Build "similar movies" from genres of top search results
         Set<Integer> genreIds = new LinkedHashSet<>();
@@ -203,6 +216,55 @@ public class HomeController {
         model.addAttribute("searchId", loggedSearchId);
 
         return "search/index";
+    }
+
+    @GetMapping("/search/fragment")
+    public String searchFragment(@RequestParam(name = "q") String q,
+                                 @RequestParam(name = "page", defaultValue = "0") int page,
+                                 jakarta.servlet.http.HttpServletResponse response,
+                                 Model model) {
+        String keyword = q.trim();
+        List<Movie> searchResults = new ArrayList<>();
+        int pageSize = 10;
+        int querySize = pageSize + 1;
+        
+        try {
+            searchResults = movieService.searchMoviesDBVector(keyword, page, querySize);
+        } catch (Exception e) {
+            log.error("Error retrieving database vector search results in fragment: {}", e.getMessage(), e);
+        }
+        
+        if (searchResults == null || searchResults.isEmpty()) {
+            try {
+                searchResults = movieService.searchMoviesTextOnly(keyword, page, querySize);
+            } catch (Exception e) {
+                log.error("Error retrieving text search results in fragment: {}", e.getMessage(), e);
+                searchResults = Collections.emptyList();
+            }
+        }
+        
+        // Deduplicate by ID and Title+Year
+        Set<Integer> seenIds = new HashSet<>();
+        Set<String> seenTitles = new HashSet<>();
+        List<Movie> movies = new ArrayList<>();
+        if (searchResults != null) {
+            for (Movie movie : searchResults) {
+                String key = (movie.getTitle() + "|" + movie.getReleaseYear()).toLowerCase();
+                if (seenIds.add(movie.getMovieId()) && seenTitles.add(key)) {
+                    movies.add(movie);
+                }
+            }
+        }
+        
+        boolean hasMore = false;
+        if (movies.size() > pageSize) {
+            hasMore = true;
+            movies = movies.subList(0, pageSize);
+        }
+        
+        response.setHeader("X-Has-More", String.valueOf(hasMore));
+        model.addAttribute("movies", movies);
+        return "search/index :: searchResultCards";
     }
 
     private void resolveRecommendations(Model model, CompletableFuture<List<Movie>> recFuture, User currentUser, Set<Integer> excludeIds) {

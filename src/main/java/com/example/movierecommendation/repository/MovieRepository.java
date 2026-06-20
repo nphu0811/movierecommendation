@@ -16,10 +16,28 @@ public interface MovieRepository extends JpaRepository<Movie, Integer> {
     @Query("SELECT DISTINCT m FROM Movie m LEFT JOIN m.genres g WHERE m.deletedAt IS NULL AND (" +
            "LOWER(m.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            "LOWER(g.genreName) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+    List<Movie> searchByTitleOrGenre(@Param("keyword") String keyword, Pageable pageable);
+
+    @Query("SELECT DISTINCT m FROM Movie m LEFT JOIN m.genres g WHERE m.deletedAt IS NULL AND (" +
+           "LOWER(m.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "LOWER(g.genreName) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     List<Movie> searchByTitleOrGenre(@Param("keyword") String keyword);
 
     @Query("SELECT m FROM Movie m WHERE m.deletedAt IS NULL AND LOWER(m.title) LIKE LOWER(CONCAT(:keyword, '%')) ORDER BY m.averageRating DESC")
     List<Movie> searchByTitleOnly(@Param("keyword") String keyword, Pageable pageable);
+
+    @Query(value = "SELECT m.* FROM movies m " +
+           "WHERE m.deleted_at IS NULL AND (" +
+           "m.search_vector @@ plainto_tsquery('english', :keyword) OR " +
+           "LOWER(m.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "EXISTS (" +
+           "    SELECT 1 FROM movie_genres mg " +
+           "    JOIN genres g ON g.genre_id = mg.genre_id " +
+           "    WHERE mg.movie_id = m.movie_id AND LOWER(g.genre_name) LIKE LOWER(CONCAT('%', :keyword, '%'))" +
+           ")) " +
+           "ORDER BY ts_rank(m.search_vector, plainto_tsquery('english', :keyword)) DESC, m.average_rating DESC",
+           nativeQuery = true)
+    List<Movie> searchByDatabaseVector(@Param("keyword") String keyword, Pageable pageable);
 
     @Query(value = "SELECT m.* FROM movies m " +
            "WHERE m.deleted_at IS NULL AND (" +

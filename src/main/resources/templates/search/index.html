@@ -112,16 +112,16 @@
                         </h2>
                     </div>
 
-                    <div class="search-results-list">
-                        <th:block th:each="movie, iter : ${movies}">
-                            <div th:replace="~{fragments :: movieHorizontalCard(${movie})}" th:with="isHidden=${iter.index >= 10}"></div>
+                    <div class="search-results-list" id="searchResultsList">
+                        <th:block th:fragment="searchResultCards">
+                            <div th:replace="~{fragments :: movieHorizontalCard(${movie})}" th:each="movie : ${movies}"></div>
                         </th:block>
                     </div>
 
                     <!-- Pagination - Show More -->
-                    <div class="show-more-container" id="showMoreContainer" th:if="${#lists.size(movies) > 10}">
+                    <div class="show-more-container" id="showMoreContainer" th:if="${hasMore}">
                         <div class="show-more-line"></div>
-                        <button type="button" class="show-more-btn" onclick="showMoreResults()">
+                        <button type="button" class="show-more-btn" id="showMoreBtn" onclick="loadNextPage()">
                             <span th:text="#{search.viewMore}">Show More</span>
                             <i class="ph-bold ph-caret-down"></i>
                         </button>
@@ -203,26 +203,44 @@
             }
         }
 
-        function showMoreResults() {
-            const hiddenMovies = document.querySelectorAll('.search-result-horizontal-card.hidden-movie');
-            const limit = 10;
-            let count = 0;
+        let currentPage = 0;
+        const keyword = /*[[${keyword}]]*/ '';
+
+        function loadNextPage() {
+            currentPage++;
+            const showMoreBtn = document.getElementById('showMoreBtn');
+            if (!showMoreBtn) return;
             
-            hiddenMovies.forEach(movie => {
-                if (count < limit) {
-                    movie.style.display = 'flex';
-                    movie.classList.remove('hidden-movie');
-                    count++;
-                }
-            });
+            showMoreBtn.disabled = true;
+            const originalHtml = showMoreBtn.innerHTML;
+            showMoreBtn.innerHTML = 'Loading...';
             
-            const remainingHidden = document.querySelectorAll('.search-result-horizontal-card.hidden-movie');
-            if (remainingHidden.length === 0) {
-                const container = document.getElementById('showMoreContainer');
-                if (container) {
-                    container.style.display = 'none';
-                }
-            }
+            fetch(`/search/fragment?q=${encodeURIComponent(keyword)}&page=${currentPage}`)
+                .then(res => {
+                    const hasNext = res.headers.get('X-Has-More') === 'true';
+                    if (!hasNext) {
+                        const container = document.getElementById('showMoreContainer');
+                        if (container) container.style.display = 'none';
+                    }
+                    return res.text();
+                })
+                .then(html => {
+                    const list = document.getElementById('searchResultsList');
+                    if (list) {
+                        list.insertAdjacentHTML('beforeend', html);
+                    }
+                    if (showMoreBtn) {
+                        showMoreBtn.disabled = false;
+                        showMoreBtn.innerHTML = originalHtml;
+                    }
+                })
+                .catch(err => {
+                    console.error('Error loading next page:', err);
+                    if (showMoreBtn) {
+                        showMoreBtn.disabled = false;
+                        showMoreBtn.innerHTML = originalHtml;
+                    }
+                });
         }
         /*]]>*/
     </script>
