@@ -20,6 +20,8 @@ import java.util.concurrent.*;
 @Controller
 public class HomeController {
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(HomeController.class);
+
     @Autowired private MovieService movieService;
     @Autowired private RecommendationService recommendationService;
     @Autowired private UserService userService;
@@ -125,11 +127,13 @@ public class HomeController {
         try {
             vectorMoviesRaw = vectorFuture.get(3, TimeUnit.SECONDS);
         } catch (Exception e) {
+            log.error("Error retrieving database vector search results: {}", e.getMessage(), e);
             vectorMoviesRaw = Collections.emptyList();
         }
         try {
             textMovies = textFuture.get(3, TimeUnit.SECONDS);
         } catch (Exception e) {
+            log.error("Error retrieving text search results: {}", e.getMessage(), e);
             textMovies = Collections.emptyList();
         }
 
