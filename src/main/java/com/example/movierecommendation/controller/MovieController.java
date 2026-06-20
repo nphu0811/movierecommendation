@@ -140,10 +140,12 @@ public class MovieController {
                 model.addAttribute("server2", buildSuperEmbedUrl(primaryId));
             }
         } else {
-            // Fallback: No IMDb ID available
+            // Fallback when no IMDb ID is available:
             if (primaryId != null) {
                 // Server 1 (Primary) - SuperEmbed (Multiembed)
                 model.addAttribute("server1", buildSuperEmbedUrl(primaryId));
+                // Server 2 (Secondary) - 2Embed (works with TMDB ID)
+                model.addAttribute("server2", "https://www.2embed.online/embed/movie/" + primaryId);
             }
         }
 
