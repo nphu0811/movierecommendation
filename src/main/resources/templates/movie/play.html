@@ -38,6 +38,7 @@
       <div class="player-actions-row">
         <div class="server-switcher">
           <button th:if="${server1 != null}" class="server-pill active" data-server="1" th:data-src="${server1}" onclick="switchServer(this)" th:text="#{play.server1}">Server 1</button>
+          <button th:if="${server2 != null}" class="server-pill" data-server="2" th:data-src="${server2}" onclick="switchServer(this)" th:text="#{play.server2}">Server 2</button>
         </div>
         
         <button id="lightsOutBtn" class="lights-out-btn" onclick="toggleLightsOut()">
