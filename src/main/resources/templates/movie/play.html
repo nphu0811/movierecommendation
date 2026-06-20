@@ -61,7 +61,6 @@
         <div th:if="${server1 != null or movie.trailerKey != null}" style="width:100%;height:100%">
           <iframe id="mainPlayer" th:src="${server1 != null ? server1 : 'https://www.youtube.com/embed/' + movie.trailerKey + '?enablejsapi=1'}"
                   class="player-iframe"
-                  sandbox="allow-scripts allow-same-origin allow-presentation allow-forms"
                   allowfullscreen frameborder="0"></iframe>
         </div>
         
