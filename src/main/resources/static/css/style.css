@@ -1307,7 +1307,7 @@ textarea.form-control { resize: vertical; min-height: 100px; }
 
 .admin-ops-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: var(--space-4);
   margin-bottom: var(--space-5);
 }
@@ -1340,6 +1340,11 @@ textarea.form-control { resize: vertical; min-height: 100px; }
   border-color: rgba(245, 197, 24, 0.26);
 }
 
+.admin-job-card--blue.is-running,
+.admin-job-card--blue:hover {
+  border-color: rgba(59, 130, 246, 0.26);
+}
+
 .admin-job-copy {
   display: flex;
   align-items: flex-start;
@@ -1363,6 +1368,12 @@ textarea.form-control { resize: vertical; min-height: 100px; }
   color: var(--gold);
   background: rgba(245, 197, 24, 0.1);
   border-color: rgba(245, 197, 24, 0.18);
+}
+
+.admin-job-card--blue .admin-job-icon {
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.18);
 }
 
 .admin-job-icon i {
@@ -1401,6 +1412,10 @@ textarea.form-control { resize: vertical; min-height: 100px; }
 
 .admin-job-card--gold .admin-progress-fill {
   background: linear-gradient(90deg, var(--gold), #f97316);
+}
+
+.admin-job-card--blue .admin-progress-fill {
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
 }
 
 .admin-job-action {

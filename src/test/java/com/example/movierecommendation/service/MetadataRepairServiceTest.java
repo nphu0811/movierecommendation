@@ -1,0 +1,170 @@
+package com.example.movierecommendation.service;
+
+import com.example.movierecommendation.entity.Link;
+import com.example.movierecommendation.entity.Movie;
+import com.example.movierecommendation.repository.LinkRepository;
+import com.example.movierecommendation.repository.MovieRepository;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class MetadataRepairServiceTest {
+
+    @Mock
+    private MovieRepository movieRepository;
+
+    @Mock
+    private LinkRepository linkRepository;
+
+    @Mock
+    private RestTemplate restTemplate;
+
+    @InjectMocks
+    private MetadataRepairService repairService;
+
+    @Test
+    void whenMovieMatchesTmbdDetails_noRepairIsDone() {
+        // Setup a matching movie
+        Movie movie = new Movie();
+        movie.setMovieId(1);
+        movie.setTitle("The Matrix");
+        movie.setReleaseYear(1999);
+        movie.setPosterUrl("https://image.tmdb.org/t/p/w342/matrix.jpg");
+
+        Link link = new Link();
+        link.setMovie(movie);
+        link.setTmdbId(603);
+        movie.setLink(link);
+
+        when(movieRepository.findAllWithExternalLinks()).thenReturn(List.of(movie));
+
+        // Mock TMDB response details
+        Map<String, Object> details = Map.of(
+            "id", 603,
+            "title", "The Matrix",
+            "release_date", "1999-03-30",
+            "overview", "A computer hacker learns from mysterious rebels..."
+        );
+        // We use ReflectionTestUtils to inject our mocked restTemplate into repairService
+        ReflectionTestUtils.setField(repairService, "rest", restTemplate);
+        ReflectionTestUtils.setField(repairService, "apiKey", "test-key");
+
+        when(restTemplate.getForObject(anyString(), eq(Map.class))).thenReturn(details);
+
+        // Run
+        repairService.repairMetadata();
+
+        // Verify: no links were deleted, no new links created
+        verify(linkRepository, never()).delete(any(Link.class));
+        verify(linkRepository, never()).save(any(Link.class));
+        assertEquals("https://image.tmdb.org/t/p/w342/matrix.jpg", movie.getPosterUrl());
+    }
+
+    @Test
+    void whenMovieIsMismatched_replacesWithCorrectLinkAndEnriches() {
+        // Setup a mismatched movie: local "The Matrix (1999)" but linked to tmdbId 12345 (which is "Gravity")
+        Movie movie = new Movie();
+        movie.setMovieId(2);
+        movie.setTitle("The Matrix");
+        movie.setReleaseYear(1999);
+        movie.setPosterUrl("https://image.tmdb.org/t/p/w342/gravity.jpg");
+        movie.setDescription("Incorrect description");
+
+        Link incorrectLink = new Link();
+        incorrectLink.setMovie(movie);
+        incorrectLink.setTmdbId(12345);
+        movie.setLink(incorrectLink);
+
+        when(movieRepository.findAllWithExternalLinks()).thenReturn(List.of(movie));
+
+        // Mock TMDB Details for wrong tmdb_id (12345) -> returns Gravity
+        Map<String, Object> wrongDetails = Map.of(
+            "id", 12345,
+            "title", "Gravity",
+            "release_date", "2013-10-03",
+            "overview", "Dr. Ryan Stone is a brilliant medical engineer..."
+        );
+
+        // Mock TMDB Search results for "The Matrix" (1999) -> returns correct tmdb_id (603) candidate
+        Map<String, Object> searchResults = Map.of(
+            "results", List.of(
+                Map.of(
+                    "id", 603,
+                    "title", "The Matrix",
+                    "release_date", "1999-03-30",
+                    "overview", "A computer hacker learns from mysterious rebels..."
+                )
+            )
+        );
+
+        // Mock TMDB Details for correct tmdb_id (603)
+        Map<String, Object> correctDetails = Map.of(
+            "id", 603,
+            "title", "The Matrix",
+            "release_date", "1999-03-30",
+            "overview", "A computer hacker learns from mysterious rebels...",
+            "poster_path", "/matrix.jpg",
+            "backdrop_path", "/matrix_backdrop.jpg"
+        );
+
+        // Mock TMDB Videos for correct tmdb_id (603)
+        Map<String, Object> videoResults = Map.of(
+            "results", List.of(
+                Map.of(
+                    "site", "YouTube",
+                    "type", "Trailer",
+                    "key", "m8e-FF8MsqU"
+                )
+            )
+        );
+
+        ReflectionTestUtils.setField(repairService, "rest", restTemplate);
+        ReflectionTestUtils.setField(repairService, "apiKey", "test-key");
+
+        // Set up RestTemplate expectations:
+        // 1. Details for tmdb_id 12345
+        when(restTemplate.getForObject(containsString("/movie/12345"), eq(Map.class))).thenReturn(wrongDetails);
+        // 2. Search for "The Matrix"
+        when(restTemplate.getForObject(containsString("/search/movie"), eq(Map.class))).thenReturn(searchResults);
+        // 3. Details for correct tmdb_id 603
+        when(restTemplate.getForObject(containsString("/movie/603?"), eq(Map.class))).thenReturn(correctDetails);
+        // 4. Videos for correct tmdb_id 603
+        when(restTemplate.getForObject(containsString("/movie/603/videos"), eq(Map.class))).thenReturn(videoResults);
+
+        // Run
+        repairService.repairMetadata();
+
+        // Verify:
+        // - Incorrect link deleted
+        verify(linkRepository).delete(incorrectLink);
+        // - Correct link saved
+        verify(linkRepository).save(any(Link.class));
+        // - Movie saved with correct details
+        verify(movieRepository, atLeastOnce()).save(movie);
+
+        assertEquals("https://image.tmdb.org/t/p/w342/matrix.jpg", movie.getPosterUrl());
+        assertEquals("https://image.tmdb.org/t/p/w780/matrix_backdrop.jpg", movie.getBackdropUrl());
+        assertEquals("A computer hacker learns from mysterious rebels...", movie.getDescription());
+        assertEquals("m8e-FF8MsqU", movie.getTrailerKey());
+        assertEquals("TMDB", movie.getMetadataSource());
+    }
+
+    private String containsString(String sub) {
+        return argThat(s -> s != null && s.contains(sub));
+    }
+}

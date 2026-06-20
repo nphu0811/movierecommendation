@@ -30,6 +30,7 @@ public class AdminController {
     @Autowired private InteractionService interactionService;
     @Autowired private PosterFetchService posterFetchService;
     @Autowired private SeedDataService seedDataService;
+    @Autowired private MetadataRepairService metadataRepairService;
 
     private void addCurrentUser(UserDetails ud, Model model) {
         if (ud != null) {
@@ -57,6 +58,9 @@ public class AdminController {
         model.addAttribute("seedRatingsAdded",  seedDataService.getRatingsAdded());
         model.addAttribute("seedCommentsAdded", seedDataService.getCommentsAdded());
         model.addAttribute("demoSeedEnabled", seedDataService.isDemoSeedEnabled());
+        model.addAttribute("repairRunning", metadataRepairService.isRunning());
+        model.addAttribute("repairDone",    metadataRepairService.getDone());
+        model.addAttribute("repairTotal",   metadataRepairService.getTotal());
         return "admin/dashboard";
     }
 
@@ -107,6 +111,29 @@ public class AdminController {
             "total",    seedDataService.getTotal(),
             "ratings",  seedDataService.getRatingsAdded(),
             "comments", seedDataService.getCommentsAdded()
+        );
+    }
+
+    @PostMapping("/repair-metadata")
+    public String repairMetadata(RedirectAttributes redirect) {
+        if (metadataRepairService.isRunning()) {
+            boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
+            redirect.addFlashAttribute("info", (isVi ? "Sửa metadata đang chạy: " : "Metadata repair is running: ")
+                + metadataRepairService.getDone() + "/" + metadataRepairService.getTotal());
+        } else {
+            metadataRepairService.repairMetadata();
+            redirect.addFlashAttribute("success", "✅ Metadata repair started!");
+        }
+        return "redirect:/admin";
+    }
+
+    @GetMapping("/repair-status")
+    @ResponseBody
+    public Map<String, Object> repairStatus() {
+        return Map.of(
+            "running", metadataRepairService.isRunning(),
+            "done",    metadataRepairService.getDone(),
+            "total",   metadataRepairService.getTotal()
         );
     }
 

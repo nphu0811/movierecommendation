@@ -37,52 +37,75 @@
     </div>
 
     <section class="admin-ops-grid" aria-label="Background operations">
-      <article class="admin-job-card" th:classappend="${posterRunning} ? ' is-running' : ''">
+      <article class="admin-job-card" th:classappend="${posterRunning} ? ' is-running' : ''" id="job-poster">
         <div class="admin-job-copy">
           <div class="admin-job-icon"><i class="ph-fill ph-image-square" aria-hidden="true"></i></div>
           <div>
             <h2>Movie Posters</h2>
-            <p th:if="${!posterRunning}">Fetch missing posters, backdrops, descriptions, and trailers from TMDB.</p>
-            <p th:if="${posterRunning}" th:text="|Fetching ${posterDone}/${posterTotal} movies...|">Fetching movies...</p>
+            <p class="job-desc" th:if="${!posterRunning}">Fetch missing posters, backdrops, descriptions, and trailers from TMDB.</p>
+            <p class="job-desc" th:if="${posterRunning}" th:text="|Fetching ${posterDone}/${posterTotal} movies...|">Fetching movies...</p>
           </div>
         </div>
         <div class="admin-progress-track" aria-hidden="true">
-          <div class="admin-progress-fill"
+          <div class="admin-progress-fill" id="progress-poster"
                th:style="|width:${posterTotal > 0 ? posterDone * 100 / posterTotal : 0}%|"></div>
         </div>
         <form th:action="@{/admin/fetch-posters}" method="post" class="admin-job-action">
           <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-          <button type="submit" class="btn btn-primary btn-sm"
+          <button type="submit" class="btn btn-primary btn-sm" id="btn-poster"
                   th:disabled="${posterRunning}">
             <i class="ph-bold ph-download-simple" aria-hidden="true"></i>
-            <span th:text="${posterRunning} ? 'Running...' : 'Fetch Posters'">Fetch Posters</span>
+            <span class="btn-text" th:text="${posterRunning} ? 'Running...' : 'Fetch Posters'">Fetch Posters</span>
           </button>
         </form>
       </article>
 
-      <article class="admin-job-card admin-job-card--gold" th:classappend="${seedRunning} ? ' is-running' : ''">
+      <article class="admin-job-card admin-job-card--gold" th:classappend="${seedRunning} ? ' is-running' : ''" id="job-seed">
         <div class="admin-job-copy">
           <div class="admin-job-icon"><i class="ph-fill ph-database" aria-hidden="true"></i></div>
           <div>
             <h2>Ratings & Comments</h2>
-            <p th:if="${!demoSeedEnabled}">Disabled in this environment to keep production data clean.</p>
-            <p th:if="${demoSeedEnabled and !seedRunning}">Seed demo-only ratings and reviews using TMDB data.</p>
-            <p th:if="${seedRunning}"
+            <p class="job-desc" th:if="${!demoSeedEnabled}">Disabled in this environment to keep production data clean.</p>
+            <p class="job-desc" th:if="${demoSeedEnabled and !seedRunning}">Seed demo-only ratings and reviews using TMDB data.</p>
+            <p class="job-desc" th:if="${seedRunning}"
                th:text="|Seeding ${seedDone}/${seedTotal} movies, ${seedRatingsAdded} ratings, ${seedCommentsAdded} comments...|">
               Seeding data...
             </p>
           </div>
         </div>
         <div class="admin-progress-track" aria-hidden="true">
-          <div class="admin-progress-fill"
+          <div class="admin-progress-fill" id="progress-seed"
                th:style="|width:${seedTotal > 0 ? seedDone * 100 / seedTotal : 0}%|"></div>
         </div>
         <form th:action="@{/admin/seed-data}" method="post" class="admin-job-action">
           <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-          <button type="submit" class="btn btn-primary btn-sm"
+          <button type="submit" class="btn btn-primary btn-sm" id="btn-seed"
                   th:disabled="${seedRunning or !demoSeedEnabled}">
             <i class="ph-bold ph-sparkle" aria-hidden="true"></i>
-            <span th:text="${!demoSeedEnabled} ? 'Disabled' : (${seedRunning} ? 'Running...' : 'Seed Data')">Seed Data</span>
+            <span class="btn-text" th:text="${!demoSeedEnabled} ? 'Disabled' : (${seedRunning} ? 'Running...' : 'Seed Data')">Seed Data</span>
+          </button>
+        </form>
+      </article>
+
+      <article class="admin-job-card admin-job-card--blue" th:classappend="${repairRunning} ? ' is-running' : ''" id="job-repair">
+        <div class="admin-job-copy">
+          <div class="admin-job-icon"><i class="ph-fill ph-wrench" aria-hidden="true"></i></div>
+          <div>
+            <h2>Metadata Repair</h2>
+            <p class="job-desc" th:if="${!repairRunning}">Detect and fix mismatched posters, descriptions, and trailers from TMDB.</p>
+            <p class="job-desc" th:if="${repairRunning}" th:text="|Repairing ${repairDone}/${repairTotal} movies...|">Repairing...</p>
+          </div>
+        </div>
+        <div class="admin-progress-track" aria-hidden="true">
+          <div class="admin-progress-fill" id="progress-repair"
+               th:style="|width:${repairTotal > 0 ? repairDone * 100 / repairTotal : 0}%|"></div>
+        </div>
+        <form th:action="@{/admin/repair-metadata}" method="post" class="admin-job-action">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+          <button type="submit" class="btn btn-primary btn-sm" id="btn-repair"
+                  th:disabled="${repairRunning}">
+            <i class="ph-bold ph-wrench" aria-hidden="true"></i>
+            <span class="btn-text" th:text="${repairRunning} ? 'Repairing...' : 'Repair Metadata'">Repair Metadata</span>
           </button>
         </form>
       </article>
@@ -193,5 +216,88 @@
   </main>
 </div>
 <script th:src="@{/js/app.js}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var posterCard = document.getElementById('job-poster');
+    var seedCard = document.getElementById('job-seed');
+    var repairCard = document.getElementById('job-repair');
+
+    function updateCard(card, running, done, total, descriptionText, defaultBtnText, runningBtnText, extraMsg) {
+        if (!card) return;
+        var desc = card.querySelector('.job-desc');
+        var fill = card.querySelector('.admin-progress-fill');
+        var btn = card.querySelector('button[type="submit"]');
+        var btnSpan = btn ? btn.querySelector('.btn-text') : null;
+
+        if (running) {
+            card.classList.add('is-running');
+            if (btn) btn.disabled = true;
+            if (btnSpan) btnSpan.textContent = runningBtnText;
+            if (desc) desc.textContent = extraMsg || ('Running: ' + done + '/' + total);
+        } else {
+            card.classList.remove('is-running');
+            if (btn) {
+                // If it is seed card, only enable if not disabled by environment
+                if (card.id === 'job-seed' && btnSpan && btnSpan.textContent === 'Disabled') {
+                    btn.disabled = true;
+                } else {
+                    btn.disabled = false;
+                }
+            }
+            if (btnSpan && btnSpan.textContent !== 'Disabled') btnSpan.textContent = defaultBtnText;
+            if (desc) desc.textContent = descriptionText;
+        }
+
+        if (fill) {
+            var percent = total > 0 ? Math.round((done * 100) / total) : 0;
+            fill.style.width = percent + '%';
+        }
+    }
+
+    var posterDefaultDesc = "Fetch missing posters, backdrops, descriptions, and trailers from TMDB.";
+    var seedDefaultDesc = "Seed demo-only ratings and reviews using TMDB data.";
+    var repairDefaultDesc = "Detect and fix mismatched posters, descriptions, and trailers from TMDB.";
+
+    function pollStatus() {
+        var isVi = document.documentElement.lang === 'vi';
+
+        // Poll Poster status
+        fetch('/admin/poster-status')
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                var defaultText = isVi ? "Tải poster, ảnh nền, mô tả và trailer từ TMDB." : posterDefaultDesc;
+                var runningText = isVi ? "Đang chạy..." : "Running...";
+                var extraMsg = isVi ? ("Đang tải " + data.done + "/" + data.total + " phim...") : ("Fetching " + data.done + "/" + data.total + " movies...");
+                updateCard(posterCard, data.running, data.done, data.total, defaultText, isVi ? "Tải Posters" : "Fetch Posters", runningText, extraMsg);
+            }).catch(function(e) {});
+
+        // Poll Seed status
+        fetch('/admin/seed-status')
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                var defaultText = isVi ? "Gieo dữ liệu đánh giá và bình luận demo từ TMDB." : seedDefaultDesc;
+                var runningText = isVi ? "Đang chạy..." : "Running...";
+                var extraMsg = isVi ? 
+                    ("Đang gieo " + data.done + "/" + data.total + " phim, " + data.ratings + " đánh giá, " + data.comments + " bình luận...") :
+                    ("Seeding " + data.done + "/" + data.total + " movies, " + data.ratings + " ratings, " + data.comments + " comments...");
+                updateCard(seedCard, data.running, data.done, data.total, defaultText, isVi ? "Gieo Dữ Liệu" : "Seed Data", runningText, extraMsg);
+            }).catch(function(e) {});
+
+        // Poll Repair status
+        fetch('/admin/repair-status')
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                var defaultText = isVi ? "Phát hiện và sửa các poster, mô tả, trailer bị lệch từ TMDB." : repairDefaultDesc;
+                var runningText = isVi ? "Đang sửa..." : "Repairing...";
+                var extraMsg = isVi ? ("Đang sửa " + data.done + "/" + data.total + " phim...") : ("Repairing " + data.done + "/" + data.total + " movies...");
+                updateCard(repairCard, data.running, data.done, data.total, defaultText, isVi ? "Sửa Metadata" : "Repair Metadata", runningText, extraMsg);
+            }).catch(function(e) {});
+    }
+
+    // Check if any job is currently running to start polling immediately,
+    // and set up periodic polling every 3 seconds.
+    setInterval(pollStatus, 3000);
+});
+</script>
 </body>
 </html>
