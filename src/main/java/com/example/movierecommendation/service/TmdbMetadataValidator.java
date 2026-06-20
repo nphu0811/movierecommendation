@@ -23,18 +23,26 @@ final class TmdbMetadataValidator {
         String tmdbTitle = canonicalTitle(stringValue(detail.get("title")));
         String originalTitle = canonicalTitle(stringValue(detail.get("original_title")));
         
+        Integer localYear = movie.getReleaseYear();
+        Integer externalYear = releaseYear(stringValue(detail.get("release_date")));
+
         boolean titleMatches = !localTitle.isEmpty() && (
             localTitle.equals(tmdbTitle) || 
             localTitle.equals(originalTitle) ||
             matchesSubTitle(localTitle, stringValue(detail.get("title"))) ||
-            matchesSubTitle(localTitle, stringValue(detail.get("original_title")))
+            matchesSubTitle(localTitle, stringValue(detail.get("original_title"))) ||
+            // Substring title match if release year matches exactly (e.g. Grimsby vs The Brothers Grimsby)
+            (localYear != null && externalYear != null && localYear.equals(externalYear) && (
+                (!tmdbTitle.isEmpty() && localTitle.contains(tmdbTitle)) ||
+                (!originalTitle.isEmpty() && localTitle.contains(originalTitle)) ||
+                (!tmdbTitle.isEmpty() && tmdbTitle.contains(localTitle)) ||
+                (!originalTitle.isEmpty() && originalTitle.contains(localTitle))
+            ))
         );
         if (!titleMatches) return false;
 
-        Integer localYear = movie.getReleaseYear();
-        Integer externalYear = releaseYear(stringValue(detail.get("release_date")));
-        // Allow up to 4 years difference for regional delayed releases
-        return localYear == null || externalYear == null || Math.abs(localYear - externalYear) <= 4;
+        // Allow up to 5 years difference for regional delayed releases (e.g. The Fantasticks 1995 vs 2000)
+        return localYear == null || externalYear == null || Math.abs(localYear - externalYear) <= 5;
     }
 
     private static boolean matchesSubTitle(String localCanonical, String fullTitle) {
@@ -49,7 +57,9 @@ final class TmdbMetadataValidator {
 
     static String canonicalTitle(String title) {
         if (title == null) return "";
-        String withoutAlternateTitle = title.replaceFirst("\\s*\\([^)]*\\)\\s*$", "").trim();
+        // Map ampersand to 'and'
+        String processed = title.replaceAll("\\s*&\\s*", " and ");
+        String withoutAlternateTitle = processed.replaceFirst("\\s*\\([^)]*\\)\\s*$", "").trim();
         int comma = withoutAlternateTitle.lastIndexOf(',');
         if (comma > 0) {
             String suffix = withoutAlternateTitle.substring(comma + 1).trim().toLowerCase(Locale.ROOT);

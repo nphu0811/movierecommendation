@@ -47,6 +47,33 @@ class TmdbMetadataValidatorTest {
         )));
     }
 
+    @Test
+    void acceptsAmpersandMapping() {
+        Movie movie = movie("Smiling Fish and Goat on Fire", 1999);
+        assertTrue(TmdbMetadataValidator.matches(movie, Map.of(
+            "title", "Smiling Fish & Goat On Fire",
+            "release_date", "1999-09-16"
+        )));
+    }
+
+    @Test
+    void acceptsSubstringTitleWithExactYearMatch() {
+        Movie movie = movie("The Brothers Grimsby", 2016);
+        assertTrue(TmdbMetadataValidator.matches(movie, Map.of(
+            "title", "Grimsby",
+            "release_date", "2016-02-24"
+        )));
+    }
+
+    @Test
+    void acceptsReleaseYearDifferenceUpToFiveYears() {
+        Movie movie = movie("Fantasticks, The", 1995);
+        assertTrue(TmdbMetadataValidator.matches(movie, Map.of(
+            "title", "The Fantasticks",
+            "release_date", "2000-09-22"
+        )));
+    }
+
     private Movie movie(String title, int year) {
         Movie movie = new Movie();
         movie.setTitle(title);
