@@ -384,8 +384,6 @@
       player.onload = () => player.style.opacity = '1';
     }
     
-    // Save preference
-    localStorage.setItem('preferredServer', btn.dataset.server);
   }
 
   function toggleLightsOut() {
@@ -416,16 +414,7 @@
     }
   });
 
-  // Restore preferred server
-  document.addEventListener('DOMContentLoaded', () => {
-    const pref = localStorage.getItem('preferredServer');
-    if (pref) {
-      const btn = document.querySelector(`.server-pill[data-server="${pref}"]`);
-      if (btn && !btn.classList.contains('active')) {
-        switchServer(btn);
-      }
-    }
-  });
+
 
   function submitCommentInline(btn) {
     const input = document.getElementById('comment-input');
