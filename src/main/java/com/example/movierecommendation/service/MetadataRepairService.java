@@ -28,6 +28,7 @@ public class MetadataRepairService {
 
     @Autowired private MovieRepository movieRepository;
     @Autowired private LinkRepository linkRepository;
+    @Autowired private MetadataRepairHelper repairHelper;
     @Value("${tmdb.api.key:}") private String apiKey;
 
     private final RestTemplate rest = new RestTemplate();
@@ -85,18 +86,8 @@ public class MetadataRepairService {
                                     tmdbId, detail.get("title"), detail.get("release_date"));
                             }
 
-                            // 1. Clear incorrect metadata
-                            movie.setPosterUrl(null);
-                            movie.setBackdropUrl(null);
-                            movie.setDescription(null);
-                            movie.setTrailerKey(null);
-                            movie.setMetadataSource(null);
-                            movie.setMetadataVerifiedAt(null);
-
-                            // 2. Remove incorrect link
-                            linkRepository.delete(link);
-                            movie.setLink(null);
-                            movieRepository.save(movie);
+                            // Clean mismatched metadata and delete incorrect link in a short transaction
+                            repairHelper.deleteLink(movie.getMovieId());
 
                             needsSearchAndHeal = true;
                         }
@@ -127,27 +118,22 @@ public class MetadataRepairService {
                                 Integer correctTmdbId = (Integer) correctCandidate.get("id");
                                 log.info("Found correct TMDB ID={} for movie '{}'", correctTmdbId, movie.getTitle());
 
-                                // Create new correct link
-                                Link newLink = new Link();
-                                newLink.setMovie(movie);
-                                newLink.setTmdbId(correctTmdbId);
-                                linkRepository.save(newLink);
-                                movie.setLink(newLink);
+                                String posterUrl = null;
+                                String backdropUrl = null;
+                                String description = null;
+                                String trailerKey = null;
 
                                 // Fetch full details of the correct movie to get backdrop, trailer, etc.
                                 Map<?, ?> correctDetail = rest.getForObject(url("/movie/" + correctTmdbId), Map.class);
                                 if (correctDetail != null) {
                                     if (correctDetail.get("poster_path") != null)
-                                        movie.setPosterUrl(IMG342 + correctDetail.get("poster_path"));
+                                        posterUrl = IMG342 + correctDetail.get("poster_path");
 
                                     if (correctDetail.get("overview") != null)
-                                        movie.setDescription(correctDetail.get("overview").toString());
+                                        description = correctDetail.get("overview").toString();
 
                                     if (correctDetail.get("backdrop_path") != null)
-                                        movie.setBackdropUrl(IMG780 + correctDetail.get("backdrop_path"));
-
-                                    movie.setMetadataSource("TMDB");
-                                    movie.setMetadataVerifiedAt(LocalDateTime.now());
+                                        backdropUrl = IMG780 + correctDetail.get("backdrop_path");
                                 }
 
                                 // Fetch trailer for correct movie
@@ -159,7 +145,7 @@ public class MetadataRepairService {
                                                 if ("YouTube".equals(v.get("site"))
                                                     && "Trailer".equals(v.get("type"))
                                                     && v.get("key") != null) {
-                                                    movie.setTrailerKey(v.get("key").toString());
+                                                    trailerKey = v.get("key").toString();
                                                     break;
                                                 }
                                             }
@@ -169,7 +155,8 @@ public class MetadataRepairService {
                                     // video fetch failure is fine
                                 }
 
-                                movieRepository.save(movie);
+                                // Save correct link and metadata via the helper
+                                repairHelper.updateMovieMetadata(movie.getMovieId(), correctTmdbId, posterUrl, backdropUrl, description, trailerKey);
                             } else {
                                 log.warn("Could not find correct TMDB match for movie '{}'", movie.getTitle());
                             }

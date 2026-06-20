@@ -18,6 +18,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -30,6 +31,9 @@ class MetadataRepairServiceTest {
 
     @Mock
     private LinkRepository linkRepository;
+
+    @Mock
+    private MetadataRepairHelper repairHelper;
 
     @Mock
     private RestTemplate restTemplate;
@@ -60,7 +64,6 @@ class MetadataRepairServiceTest {
             "release_date", "1999-03-30",
             "overview", "A computer hacker learns from mysterious rebels..."
         );
-        // We use ReflectionTestUtils to inject our mocked restTemplate into repairService
         ReflectionTestUtils.setField(repairService, "rest", restTemplate);
         ReflectionTestUtils.setField(repairService, "apiKey", "test-key");
 
@@ -69,10 +72,9 @@ class MetadataRepairServiceTest {
         // Run
         repairService.repairMetadata();
 
-        // Verify: no links were deleted, no new links created
-        verify(linkRepository, never()).delete(any(Link.class));
-        verify(linkRepository, never()).save(any(Link.class));
-        assertEquals("https://image.tmdb.org/t/p/w342/matrix.jpg", movie.getPosterUrl());
+        // Verify: no links were deleted, no updates were made
+        verify(repairHelper, never()).deleteLink(anyInt());
+        verify(repairHelper, never()).updateMovieMetadata(anyInt(), anyInt(), any(), any(), any(), any());
     }
 
     @Test
@@ -150,18 +152,16 @@ class MetadataRepairServiceTest {
         repairService.repairMetadata();
 
         // Verify:
-        // - Incorrect link deleted
-        verify(linkRepository).delete(incorrectLink);
-        // - Correct link saved
-        verify(linkRepository).save(any(Link.class));
-        // - Movie saved with correct details
-        verify(movieRepository, atLeastOnce()).save(movie);
-
-        assertEquals("https://image.tmdb.org/t/p/w342/matrix.jpg", movie.getPosterUrl());
-        assertEquals("https://image.tmdb.org/t/p/w780/matrix_backdrop.jpg", movie.getBackdropUrl());
-        assertEquals("A computer hacker learns from mysterious rebels...", movie.getDescription());
-        assertEquals("m8e-FF8MsqU", movie.getTrailerKey());
-        assertEquals("TMDB", movie.getMetadataSource());
+        // - Incorrect link deleted via helper
+        verify(repairHelper).deleteLink(2);
+        // - Correct link and metadata updated via helper
+        verify(repairHelper).updateMovieMetadata(
+            eq(2), eq(603),
+            eq("https://image.tmdb.org/t/p/w342/matrix.jpg"),
+            eq("https://image.tmdb.org/t/p/w780/matrix_backdrop.jpg"),
+            eq("A computer hacker learns from mysterious rebels..."),
+            eq("m8e-FF8MsqU")
+        );
     }
 
     @Test
@@ -222,18 +222,16 @@ class MetadataRepairServiceTest {
         repairService.repairMetadata();
 
         // Verify:
-        // - No link was deleted because there was none
-        verify(linkRepository, never()).delete(any(Link.class));
-        // - Correct link saved
-        verify(linkRepository).save(any(Link.class));
-        // - Movie saved with correct details
-        verify(movieRepository, atLeastOnce()).save(movie);
-
-        assertEquals("https://image.tmdb.org/t/p/w342/inception.jpg", movie.getPosterUrl());
-        assertEquals("https://image.tmdb.org/t/p/w780/inception_backdrop.jpg", movie.getBackdropUrl());
-        assertEquals("Cobb, a skilled thief who commits corporate espionage...", movie.getDescription());
-        assertEquals("YoFYyK0kPdI", movie.getTrailerKey());
-        assertEquals("TMDB", movie.getMetadataSource());
+        // - No link was deleted
+        verify(repairHelper, never()).deleteLink(anyInt());
+        // - Correct link and metadata updated via helper
+        verify(repairHelper).updateMovieMetadata(
+            eq(3), eq(27205),
+            eq("https://image.tmdb.org/t/p/w342/inception.jpg"),
+            eq("https://image.tmdb.org/t/p/w780/inception_backdrop.jpg"),
+            eq("Cobb, a skilled thief who commits corporate espionage..."),
+            eq("YoFYyK0kPdI")
+        );
     }
 
     private String containsString(String sub) {
