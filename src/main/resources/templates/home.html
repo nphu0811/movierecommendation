@@ -235,7 +235,7 @@
             <p class="hero-movie-desc" th:text="${movie.description}">Description</p>
 
             <div class="hero-actions">
-              <a th:href="@{/movies/{id}(id=${movie.movieId})}" class="btn btn-white btn-xl">
+              <a th:if="${currentUser != null}" th:href="@{/movies/{id}/play(id=${movie.movieId})}" class="btn btn-white btn-xl">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256">
                   <path d="M240,128a15.84,15.84,0,0,1-7.76,13.63l-152,88A15.82,15.82,0,0,1,72,232a15.88,15.88,0,0,1-8-2.12A15.81,15.81,0,0,1,56,216V40a15.81,15.81,0,0,1,8-13.88,15.88,15.88,0,0,1,8-2.12,15.82,15.82,0,0,1,8.24,2.37l152,88A15.84,15.84,0,0,1,240,128Z"></path>
                 </svg> Play
