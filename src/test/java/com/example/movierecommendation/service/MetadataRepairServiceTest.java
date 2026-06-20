@@ -164,6 +164,78 @@ class MetadataRepairServiceTest {
         assertEquals("TMDB", movie.getMetadataSource());
     }
 
+    @Test
+    void whenMovieHasNoLink_searchesAndEnrichesCorrectly() {
+        // Setup a movie with no link
+        Movie movie = new Movie();
+        movie.setMovieId(3);
+        movie.setTitle("Inception");
+        movie.setReleaseYear(2010);
+
+        when(movieRepository.findAllWithExternalLinks()).thenReturn(List.of(movie));
+
+        // Mock TMDB Search results for "Inception" (2010)
+        Map<String, Object> searchResults = Map.of(
+            "results", List.of(
+                Map.of(
+                    "id", 27205,
+                    "title", "Inception",
+                    "release_date", "2010-07-15",
+                    "overview", "Cobb, a skilled thief who commits corporate espionage..."
+                )
+            )
+        );
+
+        // Mock TMDB Details for correct tmdb_id (27205)
+        Map<String, Object> correctDetails = Map.of(
+            "id", 27205,
+            "title", "Inception",
+            "release_date", "2010-07-15",
+            "overview", "Cobb, a skilled thief who commits corporate espionage...",
+            "poster_path", "/inception.jpg",
+            "backdrop_path", "/inception_backdrop.jpg"
+        );
+
+        // Mock TMDB Videos for correct tmdb_id (27205)
+        Map<String, Object> videoResults = Map.of(
+            "results", List.of(
+                Map.of(
+                    "site", "YouTube",
+                    "type", "Trailer",
+                    "key", "YoFYyK0kPdI"
+                )
+            )
+        );
+
+        ReflectionTestUtils.setField(repairService, "rest", restTemplate);
+        ReflectionTestUtils.setField(repairService, "apiKey", "test-key");
+
+        // Set up RestTemplate expectations:
+        // 1. Search for "Inception"
+        when(restTemplate.getForObject(containsString("/search/movie"), eq(Map.class))).thenReturn(searchResults);
+        // 2. Details for correct tmdb_id 27205
+        when(restTemplate.getForObject(containsString("/movie/27205?"), eq(Map.class))).thenReturn(correctDetails);
+        // 3. Videos for correct tmdb_id 27205
+        when(restTemplate.getForObject(containsString("/movie/27205/videos"), eq(Map.class))).thenReturn(videoResults);
+
+        // Run
+        repairService.repairMetadata();
+
+        // Verify:
+        // - No link was deleted because there was none
+        verify(linkRepository, never()).delete(any(Link.class));
+        // - Correct link saved
+        verify(linkRepository).save(any(Link.class));
+        // - Movie saved with correct details
+        verify(movieRepository, atLeastOnce()).save(movie);
+
+        assertEquals("https://image.tmdb.org/t/p/w342/inception.jpg", movie.getPosterUrl());
+        assertEquals("https://image.tmdb.org/t/p/w780/inception_backdrop.jpg", movie.getBackdropUrl());
+        assertEquals("Cobb, a skilled thief who commits corporate espionage...", movie.getDescription());
+        assertEquals("YoFYyK0kPdI", movie.getTrailerKey());
+        assertEquals("TMDB", movie.getMetadataSource());
+    }
+
     private String containsString(String sub) {
         return argThat(s -> s != null && s.contains(sub));
     }

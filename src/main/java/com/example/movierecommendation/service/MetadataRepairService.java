@@ -53,12 +53,7 @@ public class MetadataRepairService {
         done = 0;
         try {
             // Find all movies that have external links
-            List<Movie> movies = movieRepository.findAllWithExternalLinks();
-            
-            // We only process movies that have a tmdb_id link
-            List<Movie> toCheck = movies.stream()
-                .filter(m -> m.getLink() != null && m.getLink().getTmdbId() != null)
-                .toList();
+            List<Movie> toCheck = movieRepository.findAllWithExternalLinks();
 
             total = toCheck.size();
             log.info("Starting metadata repair verification for {} movies", total);
@@ -66,27 +61,29 @@ public class MetadataRepairService {
             for (Movie movie : toCheck) {
                 try {
                     Link link = movie.getLink();
-                    Integer tmdbId = link.getTmdbId();
+                    Integer tmdbId = link != null ? link.getTmdbId() : null;
+                    boolean needsSearchAndHeal = false;
 
-                    // Fetch current TMDB details for this tmdbId
-                    Map<?, ?> detail = null;
-                    boolean is404 = false;
-                    try {
-                        detail = rest.getForObject(url("/movie/" + tmdbId), Map.class);
-                    } catch (org.springframework.web.client.HttpClientErrorException.NotFound e) {
-                        is404 = true;
-                    } catch (Exception e) {
-                        log.error("Failed to fetch TMDB details for ID {}: {}", tmdbId, e.getMessage());
-                    }
-
-                    if (is404 || (detail != null && !TmdbMetadataValidator.matches(movie, detail))) {
-                        if (is404) {
-                            log.warn("TMDB ID={} not found (404). Triggering repair for movie: '{}' (ID={})", tmdbId, movie.getTitle(), movie.getMovieId());
-                        } else {
-                            log.warn("Mismatch detected! MovieId={}, Title='{}' ({}), TMDB ID={}, TMDB Title='{}' ({})",
-                                movie.getMovieId(), movie.getTitle(), movie.getReleaseYear(),
-                                tmdbId, detail.get("title"), detail.get("release_date"));
+                    if (tmdbId != null) {
+                        // Fetch current TMDB details for this tmdbId
+                        Map<?, ?> detail = null;
+                        boolean is404 = false;
+                        try {
+                            detail = rest.getForObject(url("/movie/" + tmdbId), Map.class);
+                        } catch (org.springframework.web.client.HttpClientErrorException.NotFound e) {
+                            is404 = true;
+                        } catch (Exception e) {
+                            log.error("Failed to fetch TMDB details for ID {}: {}", tmdbId, e.getMessage());
                         }
+
+                        if (is404 || (detail != null && !TmdbMetadataValidator.matches(movie, detail))) {
+                            if (is404) {
+                                log.warn("TMDB ID={} not found (404). Triggering repair for movie: '{}' (ID={})", tmdbId, movie.getTitle(), movie.getMovieId());
+                            } else {
+                                log.warn("Mismatch detected! MovieId={}, Title='{}' ({}), TMDB ID={}, TMDB Title='{}' ({})",
+                                    movie.getMovieId(), movie.getTitle(), movie.getReleaseYear(),
+                                    tmdbId, detail.get("title"), detail.get("release_date"));
+                            }
 
                             // 1. Clear incorrect metadata
                             movie.setPosterUrl(null);
@@ -101,75 +98,83 @@ public class MetadataRepairService {
                             movie.setLink(null);
                             movieRepository.save(movie);
 
-                            // 3. Search TMDB for the correct tmdbId by Title and Release Year
-                            String searchUrl = url("/search/movie") + "&query="
-                                + URLEncoder.encode(movie.getTitle(), StandardCharsets.UTF_8)
-                                + (movie.getReleaseYear() != null ? "&year=" + movie.getReleaseYear() : "");
+                            needsSearchAndHeal = true;
+                        }
+                    } else {
+                        // No TMDB ID exists, needs to search and heal
+                        needsSearchAndHeal = true;
+                    }
 
-                            Map<?, ?> searchResult = rest.getForObject(searchUrl, Map.class);
-                            if (searchResult != null && searchResult.get("results") instanceof List<?> results) {
-                                Map<?, ?> correctCandidate = null;
-                                for (Object r : results) {
-                                    if (r instanceof Map<?, ?> candidate) {
-                                        if (TmdbMetadataValidator.matches(movie, candidate)) {
-                                            correctCandidate = candidate;
-                                            break;
-                                        }
+                    if (needsSearchAndHeal) {
+                        // 3. Search TMDB for the correct tmdbId by Title and Release Year
+                        String searchUrl = url("/search/movie") + "&query="
+                            + URLEncoder.encode(movie.getTitle(), StandardCharsets.UTF_8)
+                            + (movie.getReleaseYear() != null ? "&year=" + movie.getReleaseYear() : "");
+
+                        Map<?, ?> searchResult = rest.getForObject(searchUrl, Map.class);
+                        if (searchResult != null && searchResult.get("results") instanceof List<?> results) {
+                            Map<?, ?> correctCandidate = null;
+                            for (Object r : results) {
+                                if (r instanceof Map<?, ?> candidate) {
+                                    if (TmdbMetadataValidator.matches(movie, candidate)) {
+                                        correctCandidate = candidate;
+                                        break;
                                     }
                                 }
+                            }
 
-                                if (correctCandidate != null) {
-                                    Integer correctTmdbId = (Integer) correctCandidate.get("id");
-                                    log.info("Found correct TMDB ID={} for movie '{}'", correctTmdbId, movie.getTitle());
+                            if (correctCandidate != null) {
+                                Integer correctTmdbId = (Integer) correctCandidate.get("id");
+                                log.info("Found correct TMDB ID={} for movie '{}'", correctTmdbId, movie.getTitle());
 
-                                    // Create new correct link
-                                    Link newLink = new Link();
-                                    newLink.setMovie(movie);
-                                    newLink.setTmdbId(correctTmdbId);
-                                    linkRepository.save(newLink);
-                                    movie.setLink(newLink);
+                                // Create new correct link
+                                Link newLink = new Link();
+                                newLink.setMovie(movie);
+                                newLink.setTmdbId(correctTmdbId);
+                                linkRepository.save(newLink);
+                                movie.setLink(newLink);
 
-                                    // Fetch full details of the correct movie to get backdrop, trailer, etc.
-                                    Map<?, ?> correctDetail = rest.getForObject(url("/movie/" + correctTmdbId), Map.class);
-                                    if (correctDetail != null) {
-                                        if (correctDetail.get("poster_path") != null)
-                                            movie.setPosterUrl(IMG342 + correctDetail.get("poster_path"));
+                                // Fetch full details of the correct movie to get backdrop, trailer, etc.
+                                Map<?, ?> correctDetail = rest.getForObject(url("/movie/" + correctTmdbId), Map.class);
+                                if (correctDetail != null) {
+                                    if (correctDetail.get("poster_path") != null)
+                                        movie.setPosterUrl(IMG342 + correctDetail.get("poster_path"));
 
-                                        if (correctDetail.get("overview") != null)
-                                            movie.setDescription(correctDetail.get("overview").toString());
+                                    if (correctDetail.get("overview") != null)
+                                        movie.setDescription(correctDetail.get("overview").toString());
 
-                                        if (correctDetail.get("backdrop_path") != null)
-                                            movie.setBackdropUrl(IMG780 + correctDetail.get("backdrop_path"));
+                                    if (correctDetail.get("backdrop_path") != null)
+                                        movie.setBackdropUrl(IMG780 + correctDetail.get("backdrop_path"));
 
-                                        movie.setMetadataSource("TMDB");
-                                        movie.setMetadataVerifiedAt(LocalDateTime.now());
-                                    }
+                                    movie.setMetadataSource("TMDB");
+                                    movie.setMetadataVerifiedAt(LocalDateTime.now());
+                                }
 
-                                    // Fetch trailer for correct movie
-                                    try {
-                                        Map<?, ?> videos = rest.getForObject(url("/movie/" + correctTmdbId + "/videos"), Map.class);
-                                        if (videos != null && videos.get("results") instanceof List<?> videoList) {
-                                            for (Object rv : videoList) {
-                                                if (rv instanceof Map<?, ?> v) {
-                                                    if ("YouTube".equals(v.get("site"))
-                                                        && "Trailer".equals(v.get("type"))
-                                                        && v.get("key") != null) {
-                                                        movie.setTrailerKey(v.get("key").toString());
-                                                        break;
-                                                    }
+                                // Fetch trailer for correct movie
+                                try {
+                                    Map<?, ?> videos = rest.getForObject(url("/movie/" + correctTmdbId + "/videos"), Map.class);
+                                    if (videos != null && videos.get("results") instanceof List<?> videoList) {
+                                        for (Object rv : videoList) {
+                                            if (rv instanceof Map<?, ?> v) {
+                                                if ("YouTube".equals(v.get("site"))
+                                                    && "Trailer".equals(v.get("type"))
+                                                    && v.get("key") != null) {
+                                                    movie.setTrailerKey(v.get("key").toString());
+                                                    break;
                                                 }
                                             }
                                         }
-                                    } catch (Exception videoEx) {
-                                        // video fetch failure is fine
                                     }
-
-                                    movieRepository.save(movie);
-                                } else {
-                                    log.warn("Could not find correct TMDB match for movie '{}'", movie.getTitle());
+                                } catch (Exception videoEx) {
+                                    // video fetch failure is fine
                                 }
+
+                                movieRepository.save(movie);
+                            } else {
+                                log.warn("Could not find correct TMDB match for movie '{}'", movie.getTitle());
                             }
                         }
+                    }
                     done++;
                     Thread.sleep(260); // rate limiting
                 } catch (Exception e) {
