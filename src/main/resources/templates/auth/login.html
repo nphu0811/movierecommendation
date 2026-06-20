@@ -45,6 +45,10 @@
         <p th:text="#{auth.loginTitle}">Sign in to your account</p>
       </div>
 
+      <a href="/" class="btn btn-outline" style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:var(--space-4);text-decoration:none;font-size:0.9rem">
+        <i class="ph-bold ph-house"></i> <span th:text="#{auth.backToHome}">Back to Home</span>
+      </a>
+
       <div class="alert alert-danger" th:if="${error}" th:text="${error}"></div>
       <div class="alert alert-success" th:if="${message}" th:text="${message}"></div>
       <div class="alert alert-success" th:if="${success}" th:text="${success}"></div>
