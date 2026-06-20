@@ -15,7 +15,11 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
+import java.util.stream.Collectors;
+import com.example.movierecommendation.repository.UserPreferenceRepository;
 
 @Controller
 @RequestMapping("/admin")
@@ -31,6 +35,7 @@ public class AdminController {
     @Autowired private PosterFetchService posterFetchService;
     @Autowired private SeedDataService seedDataService;
     @Autowired private MetadataRepairService metadataRepairService;
+    @Autowired private UserPreferenceRepository userPreferenceRepository;
 
     private void addCurrentUser(UserDetails ud, Model model) {
         if (ud != null) {
@@ -61,6 +66,79 @@ public class AdminController {
         model.addAttribute("repairRunning", metadataRepairService.isRunning());
         model.addAttribute("repairDone",    metadataRepairService.getDone());
         model.addAttribute("repairTotal",   metadataRepairService.getTotal());
+
+        // Extract User Preference Statistics for Bar Charts (no database changes)
+        try {
+            List<com.example.movierecommendation.entity.UserPreference> allPrefs = userPreferenceRepository.findAll();
+            List<com.example.movierecommendation.entity.Genre> allGenres = movieService.getAllGenres();
+            Map<String, String> genreMap = new HashMap<>();
+            for (com.example.movierecommendation.entity.Genre g : allGenres) {
+                genreMap.put(String.valueOf(g.getGenreId()), g.getGenreName());
+            }
+
+            Map<String, Long> preferredCounts = new HashMap<>();
+            Map<String, Long> dislikedCounts = new HashMap<>();
+
+            for (com.example.movierecommendation.entity.UserPreference pref : allPrefs) {
+                // Preferred
+                String preferred = pref.getPreferredGenres();
+                if (preferred != null && !preferred.trim().isEmpty()) {
+                    String[] ids = preferred.split(",");
+                    for (String id : ids) {
+                        String cleanId = id.trim();
+                        if (!cleanId.isEmpty()) {
+                            String genreName = genreMap.get(cleanId);
+                            if (genreName != null) {
+                                preferredCounts.put(genreName, preferredCounts.getOrDefault(genreName, 0L) + 1);
+                            }
+                        }
+                    }
+                }
+
+                // Disliked
+                String disliked = pref.getDislikedGenres();
+                if (disliked != null && !disliked.trim().isEmpty()) {
+                    String[] ids = disliked.split(",");
+                    for (String id : ids) {
+                        String cleanId = id.trim();
+                        if (!cleanId.isEmpty()) {
+                            String genreName = genreMap.get(cleanId);
+                            if (genreName != null) {
+                                dislikedCounts.put(genreName, dislikedCounts.getOrDefault(genreName, 0L) + 1);
+                            }
+                        }
+                    }
+                }
+            }
+
+            List<Map.Entry<String, Long>> topPreferred = preferredCounts.entrySet().stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .limit(5)
+                .collect(Collectors.toList());
+
+            List<Map.Entry<String, Long>> topDisliked = dislikedCounts.entrySet().stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .limit(5)
+                .collect(Collectors.toList());
+
+            List<String> prefLabels = topPreferred.stream().map(Map.Entry::getKey).collect(Collectors.toList());
+            List<Long> prefValues = topPreferred.stream().map(Map.Entry::getValue).collect(Collectors.toList());
+
+            List<String> dislikeLabels = topDisliked.stream().map(Map.Entry::getKey).collect(Collectors.toList());
+            List<Long> dislikeValues = topDisliked.stream().map(Map.Entry::getValue).collect(Collectors.toList());
+
+            model.addAttribute("prefLabels", prefLabels);
+            model.addAttribute("prefValues", prefValues);
+            model.addAttribute("dislikeLabels", dislikeLabels);
+            model.addAttribute("dislikeValues", dislikeValues);
+        } catch (Exception e) {
+            log.error("Failed to compute genre preferences analytics: {}", e.getMessage());
+            model.addAttribute("prefLabels", java.util.Collections.emptyList());
+            model.addAttribute("prefValues", java.util.Collections.emptyList());
+            model.addAttribute("dislikeLabels", java.util.Collections.emptyList());
+            model.addAttribute("dislikeValues", java.util.Collections.emptyList());
+        }
+
         return "admin/dashboard";
     }
 
