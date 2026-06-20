@@ -115,26 +115,25 @@ public class HomeController {
             return "search/index";
         }
 
-        // --- Run search queries in parallel with recommendations ---
+        // --- Run search queries sequentially to prevent connection pool starvation ---
         String keyword = q.trim();
-        CompletableFuture<List<Movie>> vectorFuture = CompletableFuture.supplyAsync(
-            () -> movieService.searchMoviesDBVector(keyword), homeExecutor);
-        CompletableFuture<List<Movie>> textFuture = CompletableFuture.supplyAsync(
-            () -> movieService.searchMoviesTextOnly(keyword), homeExecutor);
-
-        List<Movie> vectorMoviesRaw;
-        List<Movie> textMovies;
+        List<Movie> searchResults = new ArrayList<>();
+        
         try {
-            vectorMoviesRaw = vectorFuture.get(3, TimeUnit.SECONDS);
+            // Try vector search first (uses full-text indices)
+            searchResults = movieService.searchMoviesDBVector(keyword);
         } catch (Exception e) {
-            log.error("Error retrieving database vector search results: {}", e.getMessage(), e);
-            vectorMoviesRaw = Collections.emptyList();
+            log.error("Error retrieving database vector search results, falling back to text search: {}", e.getMessage(), e);
         }
-        try {
-            textMovies = textFuture.get(3, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            log.error("Error retrieving text search results: {}", e.getMessage(), e);
-            textMovies = Collections.emptyList();
+        
+        // If vector search failed or returned no results, fall back to simple text search
+        if (searchResults == null || searchResults.isEmpty()) {
+            try {
+                searchResults = movieService.searchMoviesTextOnly(keyword);
+            } catch (Exception e) {
+                log.error("Error retrieving text search results: {}", e.getMessage(), e);
+                searchResults = Collections.emptyList();
+            }
         }
 
         // Deduplicate by ID and Title+Year (to handle duplicate DB records)
@@ -142,16 +141,12 @@ public class HomeController {
         Set<String> seenTitles = new HashSet<>();
         List<Movie> movies = new ArrayList<>();
 
-        for (Movie movie : vectorMoviesRaw) {
-            String key = (movie.getTitle() + "|" + movie.getReleaseYear()).toLowerCase();
-            if (seenIds.add(movie.getMovieId()) && seenTitles.add(key)) {
-                movies.add(movie);
-            }
-        }
-        for (Movie movie : textMovies) {
-            String key = (movie.getTitle() + "|" + movie.getReleaseYear()).toLowerCase();
-            if (seenIds.add(movie.getMovieId()) && seenTitles.add(key)) {
-                movies.add(movie);
+        if (searchResults != null) {
+            for (Movie movie : searchResults) {
+                String key = (movie.getTitle() + "|" + movie.getReleaseYear()).toLowerCase();
+                if (seenIds.add(movie.getMovieId()) && seenTitles.add(key)) {
+                    movies.add(movie);
+                }
             }
         }
 
