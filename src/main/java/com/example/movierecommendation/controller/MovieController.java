@@ -126,11 +126,15 @@ public class MovieController {
         }
         if (imdbId != null && !imdbId.isBlank()) {
             String cleanImdbId = imdbId.trim();
-            if (!cleanImdbId.startsWith("tt")) {
-                cleanImdbId = "tt" + cleanImdbId;
+            if (cleanImdbId.startsWith("tt")) {
+                cleanImdbId = cleanImdbId.substring(2);
             }
-            // Server 2 (Secondary) - streamimdb.ru (only supports IMDb ID starting with 'tt')
-            model.addAttribute("server2", "https://streamimdb.ru/embed/movie/" + cleanImdbId);
+            cleanImdbId = cleanImdbId.replaceFirst("^0+", "");
+            if (!cleanImdbId.isEmpty()) {
+                cleanImdbId = "tt" + cleanImdbId;
+                // Server 2 (Secondary) - streamimdb.ru (only supports IMDb ID starting with 'tt' and no leading zeros)
+                model.addAttribute("server2", "https://streamimdb.ru/embed/movie/" + cleanImdbId);
+            }
         }
 
         // Watch History / Progress
