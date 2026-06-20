@@ -125,8 +125,12 @@ public class MovieController {
             model.addAttribute("server1", buildSuperEmbedUrl(primaryId));
         }
         if (imdbId != null && !imdbId.isBlank()) {
-            // Server 2 (Secondary) - streamimdb.ru (only supports IMDb ID)
-            model.addAttribute("server2", "https://streamimdb.ru/embed/movie/" + imdbId.trim());
+            String cleanImdbId = imdbId.trim();
+            if (!cleanImdbId.startsWith("tt")) {
+                cleanImdbId = "tt" + cleanImdbId;
+            }
+            // Server 2 (Secondary) - streamimdb.ru (only supports IMDb ID starting with 'tt')
+            model.addAttribute("server2", "https://streamimdb.ru/embed/movie/" + cleanImdbId);
         }
 
         // Watch History / Progress
