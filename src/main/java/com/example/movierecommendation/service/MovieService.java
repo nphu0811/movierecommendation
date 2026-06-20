@@ -20,11 +20,81 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 @Service
 public class MovieService {
 
     private static final Set<String> RESERVED_GENRE_NAMES = Set.of("testgenre", "new genre");
+
+    private static final Map<String, String> VI_TO_EN_GENRES = new LinkedHashMap<>();
+    static {
+        VI_TO_EN_GENRES.put("khoa học viễn tưởng", "Science Fiction");
+        VI_TO_EN_GENRES.put("khoa hoc vien tuong", "Science Fiction");
+        VI_TO_EN_GENRES.put("hành động", "Action");
+        VI_TO_EN_GENRES.put("hanh dong", "Action");
+        VI_TO_EN_GENRES.put("phiêu lưu", "Adventure");
+        VI_TO_EN_GENRES.put("phieu luu", "Adventure");
+        VI_TO_EN_GENRES.put("hoạt hình", "Animation");
+        VI_TO_EN_GENRES.put("hoat hinh", "Animation");
+        VI_TO_EN_GENRES.put("thiếu nhi", "Children");
+        VI_TO_EN_GENRES.put("thieu nhi", "Children");
+        VI_TO_EN_GENRES.put("hài hước", "Comedy");
+        VI_TO_EN_GENRES.put("hai huoc", "Comedy");
+        VI_TO_EN_GENRES.put("hài", "Comedy");
+        VI_TO_EN_GENRES.put("hình sự", "Crime");
+        VI_TO_EN_GENRES.put("hinh su", "Crime");
+        VI_TO_EN_GENRES.put("tội phạm", "Crime");
+        VI_TO_EN_GENRES.put("toi pham", "Crime");
+        VI_TO_EN_GENRES.put("tài liệu", "Documentary");
+        VI_TO_EN_GENRES.put("tai lieu", "Documentary");
+        VI_TO_EN_GENRES.put("chính kịch", "Drama");
+        VI_TO_EN_GENRES.put("chinh kich", "Drama");
+        VI_TO_EN_GENRES.put("tâm lý", "Drama");
+        VI_TO_EN_GENRES.put("tam ly", "Drama");
+        VI_TO_EN_GENRES.put("kỳ ảo", "Fantasy");
+        VI_TO_EN_GENRES.put("ky ao", "Fantasy");
+        VI_TO_EN_GENRES.put("kinh dị", "Horror");
+        VI_TO_EN_GENRES.put("kinh di", "Horror");
+        VI_TO_EN_GENRES.put("nhạc kịch", "Musical");
+        VI_TO_EN_GENRES.put("nhac kich", "Musical");
+        VI_TO_EN_GENRES.put("ca nhạc", "Musical");
+        VI_TO_EN_GENRES.put("ca nhac", "Musical");
+        VI_TO_EN_GENRES.put("bí ẩn", "Mystery");
+        VI_TO_EN_GENRES.put("bi an", "Mystery");
+        VI_TO_EN_GENRES.put("trinh thám", "Mystery");
+        VI_TO_EN_GENRES.put("trinh tham", "Mystery");
+        VI_TO_EN_GENRES.put("tình cảm", "Romance");
+        VI_TO_EN_GENRES.put("tinh cam", "Romance");
+        VI_TO_EN_GENRES.put("lãng mạn", "Romance");
+        VI_TO_EN_GENRES.put("lang man", "Romance");
+        VI_TO_EN_GENRES.put("viễn tưởng", "Science Fiction");
+        VI_TO_EN_GENRES.put("vien tuong", "Science Fiction");
+        VI_TO_EN_GENRES.put("giật gân", "Thriller");
+        VI_TO_EN_GENRES.put("giat gan", "Thriller");
+        VI_TO_EN_GENRES.put("kịch tính", "Thriller");
+        VI_TO_EN_GENRES.put("kich tinh", "Thriller");
+        VI_TO_EN_GENRES.put("chiến tranh", "War");
+        VI_TO_EN_GENRES.put("chien tranh", "War");
+        VI_TO_EN_GENRES.put("viễn tây", "Western");
+        VI_TO_EN_GENRES.put("vien tay", "Western");
+    }
+
+    public static String translateGenreKeyword(String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return keyword;
+        }
+        String result = keyword;
+        for (Map.Entry<String, String> entry : VI_TO_EN_GENRES.entrySet()) {
+            String target = entry.getKey();
+            String replacement = entry.getValue();
+            result = Pattern.compile("\\b" + Pattern.quote(target) + "\\b", 
+                     Pattern.UNICODE_CHARACTER_CLASS | Pattern.CASE_INSENSITIVE)
+                     .matcher(result)
+                     .replaceAll(replacement);
+        }
+        return result;
+    }
 
     @Autowired
     private MovieRepository movieRepository;
@@ -51,12 +121,13 @@ public class MovieService {
         StringBuilder filterConditions = new StringBuilder();
 
         if (keyword != null && !keyword.trim().isEmpty()) {
+            String translatedKeyword = translateGenreKeyword(keyword);
             filterConditions.append(" AND (LOWER(m.title) LIKE LOWER(:keyword) ")
                             .append("OR LOWER(g.genreName) LIKE LOWER(:keyword) ")
                             .append("OR LOWER(m.description) LIKE LOWER(:keyword) ")
                             .append("OR LOWER(m.actorsText) LIKE LOWER(:keyword) ")
                             .append("OR LOWER(m.directorsText) LIKE LOWER(:keyword))");
-            params.put("keyword", "%" + keyword.trim().toLowerCase() + "%");
+            params.put("keyword", "%" + translatedKeyword.trim().toLowerCase() + "%");
         }
 
         if (genreId != null) {
@@ -127,8 +198,9 @@ public class MovieService {
         if (keyword == null || keyword.trim().isEmpty()) {
             return Collections.emptyList();
         }
-        List<Movie> vectorResults = movieRepository.searchByDatabaseVector(keyword);
-        List<Movie> textResults = movieRepository.searchByTitleOrGenre(keyword);
+        String translatedKeyword = translateGenreKeyword(keyword);
+        List<Movie> vectorResults = movieRepository.searchByDatabaseVector(translatedKeyword);
+        List<Movie> textResults = movieRepository.searchByTitleOrGenre(translatedKeyword);
         Map<Integer, Movie> merged = new LinkedHashMap<>();
         for (Movie movie : vectorResults) {
             merged.put(movie.getMovieId(), movie);
@@ -151,7 +223,8 @@ public class MovieService {
         if (keyword == null || keyword.trim().isEmpty()) {
             return Collections.emptyList();
         }
-        List<Movie> dbVector = movieRepository.searchByDatabaseVector(keyword);
+        String translatedKeyword = translateGenreKeyword(keyword);
+        List<Movie> dbVector = movieRepository.searchByDatabaseVector(translatedKeyword);
         if (openAIService.isEnabled()) {
             List<Movie> semantic = movieEmbeddingService.searchSemantic(keyword, 15);
             Map<Integer, Movie> merged = new LinkedHashMap<>();
@@ -170,13 +243,14 @@ public class MovieService {
         if (keyword == null || keyword.trim().isEmpty()) {
             return Collections.emptyList();
         }
+        String translatedKeyword = translateGenreKeyword(keyword);
 
-        Map<String, Double> queryVector = buildWeightedVector(keyword, 1.0);
+        Map<String, Double> queryVector = buildWeightedVector(translatedKeyword, 1.0);
         if (queryVector.isEmpty()) {
             return Collections.emptyList();
         }
 
-        String normalizedKeyword = normalize(keyword);
+        String normalizedKeyword = normalize(translatedKeyword);
         List<Movie> results = movieRepository.findAllWithGenres().stream()
             .distinct()
             .map(movie -> new MovieVectorScore(movie, vectorScore(movie, queryVector, normalizedKeyword)))
@@ -192,7 +266,8 @@ public class MovieService {
         if (keyword == null || keyword.trim().isEmpty()) {
             return Collections.emptyList();
         }
-        List<Movie> results = movieRepository.searchByTitleOrGenre(keyword);
+        String translatedKeyword = translateGenreKeyword(keyword);
+        List<Movie> results = movieRepository.searchByTitleOrGenre(translatedKeyword);
         return results;
     }
 
