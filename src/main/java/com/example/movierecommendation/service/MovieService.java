@@ -6,6 +6,7 @@ import com.example.movierecommendation.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -224,7 +225,9 @@ public class MovieService {
             return Collections.emptyList();
         }
         String translatedKeyword = translateGenreKeyword(keyword);
-        List<Movie> dbVector = movieRepository.searchByDatabaseVector(translatedKeyword, PageRequest.of(page, size));
+        int pageSize = size - 1;
+        long offset = (long) page * pageSize;
+        List<Movie> dbVector = movieRepository.searchByDatabaseVector(translatedKeyword, new OffsetLimitPageable(offset, size, Sort.unsorted()));
         if (openAIService.isEnabled()) {
             List<Movie> semantic = movieEmbeddingService.searchSemantic(keyword, size);
             Map<Integer, Movie> merged = new LinkedHashMap<>();
@@ -267,7 +270,9 @@ public class MovieService {
             return Collections.emptyList();
         }
         String translatedKeyword = translateGenreKeyword(keyword);
-        List<Movie> results = movieRepository.searchByTitleOrGenre(translatedKeyword, PageRequest.of(page, size));
+        int pageSize = size - 1;
+        long offset = (long) page * pageSize;
+        List<Movie> results = movieRepository.searchByTitleOrGenre(translatedKeyword, new OffsetLimitPageable(offset, size, Sort.unsorted()));
         return results;
     }
 
@@ -514,5 +519,62 @@ public class MovieService {
         movie.setAiSummary(summary);
         movieRepository.save(movie);
         return summary;
+    }
+
+    public static class OffsetLimitPageable implements Pageable {
+        private final long offset;
+        private final int limit;
+        private final Sort sort;
+
+        public OffsetLimitPageable(long offset, int limit, Sort sort) {
+            this.offset = offset;
+            this.limit = limit;
+            this.sort = sort;
+        }
+
+        @Override
+        public int getPageNumber() {
+            return (int) (offset / limit);
+        }
+
+        @Override
+        public int getPageSize() {
+            return limit;
+        }
+
+        @Override
+        public long getOffset() {
+            return offset;
+        }
+
+        @Override
+        public Sort getSort() {
+            return sort;
+        }
+
+        @Override
+        public Pageable next() {
+            return new OffsetLimitPageable(offset + limit, limit, sort);
+        }
+
+        @Override
+        public Pageable previousOrFirst() {
+            return offset > limit ? new OffsetLimitPageable(offset - limit, limit, sort) : first();
+        }
+
+        @Override
+        public Pageable first() {
+            return new OffsetLimitPageable(0, limit, sort);
+        }
+
+        @Override
+        public Pageable withPage(int pageNumber) {
+            return new OffsetLimitPageable((long) pageNumber * limit, limit, sort);
+        }
+
+        @Override
+        public boolean hasPrevious() {
+            return offset > 0;
+        }
     }
 }

@@ -4044,7 +4044,7 @@ body.auth-page {
   gap: var(--space-5);
   width: 100%;
   max-width: 100%;
-  margin: 0 0 var(--space-8) 0;
+  margin: 0 0 var(--space-4) 0;
   padding: 0 var(--space-4);
 }
 
@@ -4576,7 +4576,7 @@ body.auth-page {
   align-items: center;
   justify-content: center;
   position: relative;
-  margin: var(--space-6) 0 var(--space-8);
+  margin: var(--space-4) 0 var(--space-5);
   width: 100%;
   max-width: 100%;
 }
@@ -4587,7 +4587,7 @@ body.auth-page {
   left: 0;
   right: 0;
   height: 1px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.15); /* Slightly brighter line for visibility */
   z-index: 1;
 }
 
