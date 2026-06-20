@@ -441,6 +441,56 @@ public class MovieService {
         movieRepository.deleteById(id);
     }
 
+    @Transactional
+    public int cleanUpInvalidMovies() {
+        List<?> rawIds = entityManager.createNativeQuery(
+            "SELECT m.movie_id FROM movies m " +
+            "LEFT JOIN links l ON m.movie_id = l.movie_id " +
+            "WHERE m.poster_url IS NULL OR TRIM(m.poster_url) = '' " +
+            "   OR l.movie_id IS NULL OR l.imdb_id IS NULL OR TRIM(l.imdb_id) = ''"
+        ).getResultList();
+
+        if (rawIds.isEmpty()) {
+            return 0;
+        }
+
+        List<Integer> invalidMovieIds = new ArrayList<>();
+        for (Object obj : rawIds) {
+            if (obj instanceof Number) {
+                invalidMovieIds.add(((Number) obj).intValue());
+            }
+        }
+
+        // Delete from tables that might not have ON DELETE CASCADE set up by Hibernate:
+        
+        // 1. ai_chat_recommendation_items
+        entityManager.createNativeQuery("DELETE FROM ai_chat_recommendation_items WHERE movie_id IN :ids")
+            .setParameter("ids", invalidMovieIds)
+            .executeUpdate();
+            
+        // 2. movie_reports
+        entityManager.createNativeQuery("DELETE FROM movie_reports WHERE movie_id IN :ids")
+            .setParameter("ids", invalidMovieIds)
+            .executeUpdate();
+
+        // 3. user_recommendations
+        entityManager.createNativeQuery("DELETE FROM user_recommendations WHERE movie_id IN :ids")
+            .setParameter("ids", invalidMovieIds)
+            .executeUpdate();
+
+        // 4. Update search_history to set clicked_movie_id = NULL
+        entityManager.createNativeQuery("UPDATE search_history SET clicked_movie_id = NULL WHERE clicked_movie_id IN :ids")
+            .setParameter("ids", invalidMovieIds)
+            .executeUpdate();
+
+        // 5. Delete from movies (which will cascade to links, ratings, comments, watch_history, watchlist, movie_genres, tags due to Postgres schema)
+        int deletedCount = entityManager.createNativeQuery("DELETE FROM movies WHERE movie_id IN :ids")
+            .setParameter("ids", invalidMovieIds)
+            .executeUpdate();
+
+        return deletedCount;
+    }
+
     public long countMovies() {
         return movieRepository.findByDeletedAtIsNull(PageRequest.of(0, 1)).getTotalElements();
     }

@@ -137,6 +137,23 @@ public class AdminController {
         );
     }
 
+    @PostMapping("/cleanup-movies")
+    public String cleanUpMovies(RedirectAttributes redirect) {
+        try {
+            int cleanedCount = movieService.cleanUpInvalidMovies();
+            boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
+            if (isVi) {
+                redirect.addFlashAttribute("success", "✅ Đã dọn dẹp xong! Đã xóa " + cleanedCount + " bộ phim thiếu poster hoặc IMDb ID.");
+            } else {
+                redirect.addFlashAttribute("success", "✅ Clean up completed! Removed " + cleanedCount + " movies missing posters or IMDb IDs.");
+            }
+        } catch (Exception e) {
+            log.error("Failed to clean up movies: {}", e.getMessage());
+            redirect.addFlashAttribute("error", "Failed to clean up movies: " + e.getMessage());
+        }
+        return "redirect:/admin";
+    }
+
     @GetMapping("/movies")
     public String manageMovies(@RequestParam(name = "q", required = false) String keyword,
                                @RequestParam(name = "page", defaultValue = "0") int page,
