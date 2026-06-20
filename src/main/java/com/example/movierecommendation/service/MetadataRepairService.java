@@ -69,13 +69,24 @@ public class MetadataRepairService {
                     Integer tmdbId = link.getTmdbId();
 
                     // Fetch current TMDB details for this tmdbId
-                    Map<?, ?> detail = rest.getForObject(url("/movie/" + tmdbId), Map.class);
-                    if (detail != null) {
-                        boolean matches = TmdbMetadataValidator.matches(movie, detail);
-                        if (!matches) {
+                    Map<?, ?> detail = null;
+                    boolean is404 = false;
+                    try {
+                        detail = rest.getForObject(url("/movie/" + tmdbId), Map.class);
+                    } catch (org.springframework.web.client.HttpClientErrorException.NotFound e) {
+                        is404 = true;
+                    } catch (Exception e) {
+                        log.error("Failed to fetch TMDB details for ID {}: {}", tmdbId, e.getMessage());
+                    }
+
+                    if (is404 || (detail != null && !TmdbMetadataValidator.matches(movie, detail))) {
+                        if (is404) {
+                            log.warn("TMDB ID={} not found (404). Triggering repair for movie: '{}' (ID={})", tmdbId, movie.getTitle(), movie.getMovieId());
+                        } else {
                             log.warn("Mismatch detected! MovieId={}, Title='{}' ({}), TMDB ID={}, TMDB Title='{}' ({})",
                                 movie.getMovieId(), movie.getTitle(), movie.getReleaseYear(),
                                 tmdbId, detail.get("title"), detail.get("release_date"));
+                        }
 
                             // 1. Clear incorrect metadata
                             movie.setPosterUrl(null);
@@ -159,8 +170,6 @@ public class MetadataRepairService {
                                 }
                             }
                         }
-                    }
-
                     done++;
                     Thread.sleep(260); // rate limiting
                 } catch (Exception e) {
