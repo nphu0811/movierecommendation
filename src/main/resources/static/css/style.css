@@ -3538,6 +3538,12 @@ body.auth-page {
   gap: var(--space-3);
 }
 
+.auth-forgot-password-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+
 .auth-link,
 .auth-alt-action a {
   color: var(--red);

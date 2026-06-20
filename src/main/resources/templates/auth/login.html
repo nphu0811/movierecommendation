@@ -63,16 +63,16 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label auth-label-row" for="password">
-            <span th:text="#{auth.passwordLabel}">Password</span>
-            <a href="/auth/forgot-password" class="auth-link" th:text="#{auth.forgotPasswordLink}">Forgot password?</a>
-          </label>
+          <label class="form-label" for="password" th:text="#{auth.passwordLabel}">Password</label>
           <div class="password-field">
             <input type="password" id="password" name="password" class="form-control"
                    th:placeholder="#{auth.passwordLabel}" required autocomplete="current-password"/>
             <button type="button" class="password-toggle" aria-label="Show password" aria-pressed="false">
               <i class="ph-bold ph-eye" aria-hidden="true"></i>
             </button>
+          </div>
+          <div class="auth-forgot-password-row">
+            <a href="/auth/forgot-password" class="auth-link" th:text="#{auth.forgotPasswordLink}">Forgot password?</a>
           </div>
         </div>
 
