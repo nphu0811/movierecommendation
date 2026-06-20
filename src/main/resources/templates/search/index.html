@@ -114,7 +114,9 @@
 
                     <div class="search-results-list" id="searchResultsList">
                         <th:block th:fragment="searchResultCards">
-                            <div th:replace="~{fragments :: movieHorizontalCard(${movie})}" th:each="movie : ${movies}"></div>
+                            <th:block th:each="movie : ${movies}">
+                                <div th:replace="~{fragments :: movieHorizontalCard(${movie})}"></div>
+                            </th:block>
                         </th:block>
                     </div>
 
