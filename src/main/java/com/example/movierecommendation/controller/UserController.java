@@ -58,16 +58,6 @@ public class UserController {
         }
         model.addAttribute("progressMap", progressMap);
 
-        // Retrieve User Preferences
-        UserPreference pref = userPreferenceRepository.findByUserUserId(user.getUserId())
-            .orElseGet(() -> {
-                UserPreference p = new UserPreference();
-                p.setUser(user);
-                return p;
-            });
-        model.addAttribute("preferences", pref);
-        model.addAttribute("allGenres", movieService.getAllGenres());
-        
         // Retrieve Search History
         List<SearchHistory> searchHist = searchHistoryRepository.findByUserUserIdOrderByCreatedAtDesc(user.getUserId());
         model.addAttribute("searchHistory", searchHist);
@@ -210,44 +200,7 @@ public class UserController {
         return "user/recommendations";
     }
 
-    @GetMapping("/profile/preferences")
-    public String profilePreferencesRedirect() {
-        return "redirect:/user/profile?tab=preferences";
-    }
 
-    @PostMapping("/profile/preferences/update")
-    public String updatePreferences(@AuthenticationPrincipal UserDetails userDetails,
-                                    @RequestParam(name = "preferredGenres", required = false) List<String> preferredGenres,
-                                    @RequestParam(name = "dislikedGenres", required = false) List<String> dislikedGenres,
-                                    @RequestParam(name = "minRating", required = false) Double minRating,
-                                    @RequestParam(name = "preferNewReleases", defaultValue = "false") Boolean preferNewReleases,
-                                    @RequestParam(name = "preferTopRated", defaultValue = "false") Boolean preferTopRated,
-                                    RedirectAttributes redirect) {
-        User user = userService.getCurrentUser(userDetails.getUsername());
-        try {
-            UserPreference pref = userPreferenceRepository.findByUserUserId(user.getUserId())
-                .orElseGet(() -> {
-                    UserPreference p = new UserPreference();
-                    p.setUser(user);
-                    return p;
-                });
-            pref.setPreferredGenres(preferredGenres != null ? String.join(",", preferredGenres) : "");
-            pref.setDislikedGenres(dislikedGenres != null ? String.join(",", dislikedGenres) : "");
-            pref.setMinRating(minRating);
-            pref.setPreferNewReleases(preferNewReleases);
-            pref.setPreferTopRated(preferTopRated);
-            userPreferenceRepository.save(pref);
-
-            recommendationService.evictRecommendationsCache(user.getUserId());
-
-            boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
-            redirect.addFlashAttribute("success", isVi ? "Cập nhật sở thích cá nhân thành công!" : "Personal preferences updated successfully!");
-        } catch (Exception e) {
-            boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
-            redirect.addFlashAttribute("error", isVi ? "Lỗi cập nhật sở thích: " + e.getMessage() : "Error updating preferences: " + e.getMessage());
-        }
-        return "redirect:/user/profile?tab=preferences";
-    }
 
     @DeleteMapping("/api/watch-history/{historyId}")
     @ResponseBody

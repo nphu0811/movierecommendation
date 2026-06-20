@@ -51,6 +51,29 @@ public class RecommendationService {
     }
 
     public List<Movie> getPersonalizedRecommendations(Integer userId) {
+        String algo = openAIService.isEnabled() ? "HYBRID_AI" : "HYBRID";
+        List<UserRecommendation> dbRecs = userRecommendationRepository.findByUserUserIdAndAlgorithmTypeOrderByScoreDescGeneratedAtDesc(
+            userId, algo, PageRequest.of(0, 20));
+        
+        if (dbRecs != null && !dbRecs.isEmpty()) {
+            List<Movie> movies = new ArrayList<>();
+            for (UserRecommendation ur : dbRecs) {
+                Movie m = ur.getMovie();
+                if (m != null) {
+                    m.setRecommendationReason(ur.getRecommendationReason());
+                    movies.add(m);
+                }
+            }
+            List<Movie> filtered = removeExcludedMovies(userId, movies);
+            if (!filtered.isEmpty()) {
+                return filtered;
+            }
+        }
+        
+        return computeAndPersistPersonalizedRecommendations(userId);
+    }
+
+    public List<Movie> computeAndPersistPersonalizedRecommendations(Integer userId) {
         long started = System.currentTimeMillis();
         List<Movie> hybrid = removeExcludedMovies(userId, engine.getRecommendations(userId));
         List<Movie> result = hybrid;
@@ -193,6 +216,7 @@ public class RecommendationService {
                         row.setMovie(m);
                         row.setAlgorithmType(algorithmType);
                         row.setScore(BigDecimal.valueOf(Math.max(0.01, movies.size() - i)));
+                        row.setRecommendationReason(m.getRecommendationReason());
                         rows.add(row);
                     }
                 }

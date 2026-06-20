@@ -75,6 +75,7 @@ public class RecommendationEngine {
     @Cacheable(value = "recommendations", key = "#userId")
     public List<Movie> getRecommendations(Integer userId) {
         Set<Integer> excluded = buildExcludedMovieIds(userId);
+        Set<Integer> dislikedGenreIds = getDislikedGenreIds(userId);
         List<Rating> userRatings = ratingRepository.findByUserUserId(userId);
 
         Map<Integer, Double> contentScores    = computeContentBasedScores(userId, userRatings);
@@ -104,10 +105,45 @@ public class RecommendationEngine {
         }
 
         if (topIds.isEmpty()) {
-            return movieRepository.findMostWatchedMoviesExcludingUserInteractions(userId, PageRequest.of(0, maxRecommendations));
+            List<Movie> popular = movieRepository.findMostWatchedMoviesExcludingUserInteractions(userId, PageRequest.of(0, maxRecommendations * 2));
+            List<Movie> filteredPopular = new ArrayList<>();
+            for (Movie m : popular) {
+                boolean hasDisliked = false;
+                if (m.getGenres() != null) {
+                    for (Genre g : m.getGenres()) {
+                        if (dislikedGenreIds.contains(g.getGenreId())) {
+                            hasDisliked = true;
+                            break;
+                        }
+                    }
+                }
+                if (!hasDisliked) {
+                    filteredPopular.add(m);
+                }
+            }
+            if (filteredPopular.size() > maxRecommendations) {
+                return filteredPopular.subList(0, maxRecommendations);
+            }
+            return filteredPopular;
         }
 
         List<Movie> movies = new ArrayList<>(movieRepository.findAllByIdWithGenres(topIds));
+        List<Movie> filteredMovies = new ArrayList<>();
+        for (Movie m : movies) {
+            boolean hasDisliked = false;
+            if (m.getGenres() != null) {
+                for (Genre g : m.getGenres()) {
+                    if (dislikedGenreIds.contains(g.getGenreId())) {
+                        hasDisliked = true;
+                        break;
+                    }
+                }
+            }
+            if (!hasDisliked) {
+                filteredMovies.add(m);
+            }
+        }
+        movies = filteredMovies;
         final Map<Integer, Double> finalScoreMap = scoreMap;
         for (Movie m : movies) {
             m.setHybridScore(getOrDefault(finalScoreMap, m.getMovieId()));
@@ -154,11 +190,35 @@ public class RecommendationEngine {
 
     public List<Movie> getGenreBasedRecommendations(Integer userId) {
         List<Integer> topGenreIds = getTopGenreIdsForUser(userId);
+        Set<Integer> dislikedGenreIds = getDislikedGenreIds(userId);
 
+        List<Movie> rawRecs;
         if (topGenreIds.isEmpty()) {
-            return movieRepository.findTopRatedMoviesExcludingUserInteractions(userId, PageRequest.of(0, maxRecommendations));
+            rawRecs = movieRepository.findTopRatedMoviesExcludingUserInteractions(userId, PageRequest.of(0, maxRecommendations * 2));
+        } else {
+            rawRecs = movieRepository.findByGenreIdsExcludingUserInteractions(topGenreIds, userId, PageRequest.of(0, maxRecommendations * 2));
         }
-        return movieRepository.findByGenreIdsExcludingUserInteractions(topGenreIds, userId, PageRequest.of(0, maxRecommendations));
+
+        List<Movie> filtered = new ArrayList<>();
+        for (Movie m : rawRecs) {
+            boolean hasDisliked = false;
+            if (m.getGenres() != null) {
+                for (Genre g : m.getGenres()) {
+                    if (dislikedGenreIds.contains(g.getGenreId())) {
+                        hasDisliked = true;
+                        break;
+                    }
+                }
+            }
+            if (!hasDisliked) {
+                filtered.add(m);
+            }
+        }
+
+        if (filtered.size() > maxRecommendations) {
+            return filtered.subList(0, maxRecommendations);
+        }
+        return filtered;
     }
 
     public List<Movie> getTrendingMovies(int limit) {
@@ -204,7 +264,7 @@ public class RecommendationEngine {
                 genreProfile.merge(g.getGenreId(), r.getRating(), Double::sum);
             }
         }
-        if (genreProfile.isEmpty() && userId != null) {
+        if (userId != null) {
             Optional<UserPreference> prefOpt = userPreferenceRepository.findByUserUserId(userId);
             if (prefOpt.isPresent()) {
                 UserPreference pref = prefOpt.get();
@@ -215,10 +275,10 @@ public class RecommendationEngine {
                         if (!gStr.isEmpty()) {
                             try {
                                 Integer gid = Integer.parseInt(gStr);
-                                genreProfile.put(gid, 5.0);
+                                genreProfile.merge(gid, 5.0, Double::sum);
                             } catch (NumberFormatException e) {
                                 Optional<Genre> dbGenre = genreRepository.findByGenreName(gStr);
-                                dbGenre.ifPresent(genre -> genreProfile.put(genre.getGenreId(), 5.0));
+                                dbGenre.ifPresent(genre -> genreProfile.merge(genre.getGenreId(), 5.0, Double::sum));
                             }
                         }
                     }
@@ -325,6 +385,31 @@ public class RecommendationEngine {
     }
 
     // ── HELPERS ───────────────────────────────────────────────────
+
+    private Set<Integer> getDislikedGenreIds(Integer userId) {
+        Set<Integer> dislikedIds = new HashSet<>();
+        if (userId != null) {
+            Optional<UserPreference> prefOpt = userPreferenceRepository.findByUserUserId(userId);
+            if (prefOpt.isPresent()) {
+                UserPreference pref = prefOpt.get();
+                if (pref.getDislikedGenres() != null && !pref.getDislikedGenres().trim().isEmpty()) {
+                    String[] genres = pref.getDislikedGenres().split(",");
+                    for (String gStr : genres) {
+                        gStr = gStr.trim();
+                        if (!gStr.isEmpty()) {
+                            try {
+                                dislikedIds.add(Integer.parseInt(gStr));
+                            } catch (NumberFormatException e) {
+                                Optional<Genre> dbGenre = genreRepository.findByGenreName(gStr);
+                                dbGenre.ifPresent(genre -> dislikedIds.add(genre.getGenreId()));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return dislikedIds;
+    }
 
     private List<Integer> getTopGenreIdsForUser(Integer userId) {
         List<Rating> ratings = ratingRepository.findByUserUserId(userId);

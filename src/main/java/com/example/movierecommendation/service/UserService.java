@@ -45,7 +45,9 @@ public class UserService {
         user.setRole("USER");
         user.setIsActive(true);
         user.setIsEmailVerified(false);
-        return userRepository.save(user);
+        User savedUser = userRepository.save(user);
+        verificationService.sendCode(savedUser, VerificationPurpose.EMAIL_VERIFY);
+        return savedUser;
     }
 
     @Transactional

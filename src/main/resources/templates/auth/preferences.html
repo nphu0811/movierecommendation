@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title th:text="#{auth.preferencesTitle} + ' - MovieRec'">Preferences - MovieRec</title>
+  <link rel="icon" type="image/svg+xml" sizes="any" th:href="@{/favicon.svg(v=2)}"/>
+  <link rel="stylesheet" th:href="@{/css/style.css}"/>
+  <style>
+    /* Full-screen onboarding layout */
+    .onboarding-page {
+      background: #090909;
+      color: var(--white);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      font-family: var(--font);
+    }
+    .onboarding-header {
+      padding: 1.5rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .onboarding-skip-btn {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: color 0.2s;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 8px 16px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .onboarding-skip-btn:hover {
+      color: var(--white);
+      background: rgba(255, 255, 255, 0.1);
+    }
+    .onboarding-container {
+      max-width: 800px;
+      margin: 3rem auto;
+      padding: 0 1.5rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .onboarding-wizard {
+      position: relative;
+      overflow: hidden;
+    }
+    .onboarding-step {
+      display: none;
+      animation: fadeIn 0.4s var(--ease);
+    }
+    .onboarding-step.active {
+      display: block;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .onboarding-title {
+      font-size: 2.2rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+      text-align: center;
+      font-family: var(--font-display);
+    }
+    .onboarding-subtitle {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+    
+    /* Onboarding Grid Cards */
+    .genre-grid-selection {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 12px;
+      margin-bottom: 2rem;
+    }
+    .genre-selection-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 18px 10px;
+      text-align: center;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      user-select: none;
+      transition: all 0.25s var(--spring);
+      position: relative;
+    }
+    .genre-selection-card:hover {
+      background: rgba(255, 255, 255, 0.06);
+      transform: translateY(-2px);
+    }
+    
+    /* Favorite Genre active state (TikTok style) */
+    .genre-selection-card.fav-active {
+      background: rgba(229, 9, 20, 0.1);
+      border-color: var(--red);
+      box-shadow: 0 0 15px rgba(229, 9, 20, 0.2);
+      color: var(--white);
+    }
+    .genre-selection-card.fav-active::after {
+      content: '✓';
+      position: absolute;
+      top: 6px;
+      right: 10px;
+      color: var(--red);
+      font-weight: 900;
+      font-size: 0.8rem;
+    }
+    
+    /* Disliked Genre active state (TikTok style) */
+    .genre-selection-card.dislike-active {
+      background: rgba(245, 158, 11, 0.1);
+      border-color: #f59e0b;
+      box-shadow: 0 0 15px rgba(245, 158, 11, 0.15);
+      color: var(--white);
+    }
+    .genre-selection-card.dislike-active::after {
+      content: '✕';
+      position: absolute;
+      top: 6px;
+      right: 10px;
+      color: #f59e0b;
+      font-weight: 900;
+      font-size: 0.75rem;
+    }
+
+    /* Step Indicators */
+    .step-indicators {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 2rem;
+    }
+    .step-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.15);
+      transition: all 0.3s;
+    }
+    .step-dot.active {
+      background: var(--red);
+      width: 24px;
+      border-radius: 4px;
+    }
+    
+    .wizard-actions {
+      display: flex;
+      justify-content: space-between;
+      gap: 15px;
+      margin-top: 1rem;
+    }
+    
+    /* Modern Loading Screen Overlay */
+    .ai-loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(12, 12, 12, 0.98);
+      backdrop-filter: blur(20px);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease;
+    }
+    .ai-loading-overlay.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .pulsing-logo {
+      font-size: 3rem;
+      font-weight: 800;
+      font-family: var(--font-display);
+      margin-bottom: 2rem;
+      animation: logoPulse 1.8s infinite ease-in-out;
+    }
+    .pulsing-logo span {
+      color: var(--red);
+    }
+    @keyframes logoPulse {
+      0% { transform: scale(0.95); opacity: 0.7; }
+      50% { transform: scale(1.05); opacity: 1; }
+      100% { transform: scale(0.95); opacity: 0.7; }
+    }
+    .ai-loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 3px solid rgba(229, 9, 20, 0.1);
+      border-top-color: var(--red);
+      border-radius: 50%;
+      animation: spin 1s infinite linear;
+      margin-bottom: 2rem;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .ai-loading-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--white);
+      margin-bottom: 0.5rem;
+      text-align: center;
+      letter-spacing: -0.01em;
+    }
+    .ai-loading-subtitle {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      text-align: center;
+      max-width: 400px;
+    }
+  </style>
+</head>
+<body class="onboarding-page">
+
+  <!-- Header -->
+  <header class="onboarding-header">
+    <div class="auth-logo-mark" style="font-size: 1.5rem;">Movie<span>Rec</span></div>
+    <a href="/home" class="onboarding-skip-btn" th:text="#{auth.skipBtn}">Skip</a>
+  </header>
+
+  <!-- Container -->
+  <main class="onboarding-container">
+    
+    <!-- Step indicators -->
+    <div class="step-indicators">
+      <div class="step-dot active" id="dot-1"></div>
+      <div class="step-dot" id="dot-2"></div>
+      <div class="step-dot" id="dot-3"></div>
+    </div>
+
+    <!-- Wizard Form -->
+    <form id="preferencesForm" class="onboarding-wizard">
+      
+      <!-- STEP 1: Favorites -->
+      <div class="onboarding-step active" id="step-1">
+        <h2 class="onboarding-title" th:text="#{auth.favQuestion}">Which movie genres do you love most?</h2>
+        <p class="onboarding-subtitle" th:text="#{auth.preferencesDesc}">Select your favorite genres to help our AI recommendation engine find movies you'll love.</p>
+        
+        <div class="genre-grid-selection">
+          <div th:each="genre : ${allGenres}" 
+               th:data-genre-id="${genre.genreId}" 
+               class="genre-selection-card favorite-card"
+               onclick="toggleFavorite(this)">
+            <span th:text="${genre.genreName}">Action</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2: Dislikes -->
+      <div class="onboarding-step" id="step-2">
+        <h2 class="onboarding-title" th:text="#{auth.dislikedQuestion}">Which movie genres do you want to avoid?</h2>
+        <p class="onboarding-subtitle">Select genres you dislike so we completely filter them out of your feed.</p>
+        
+        <div class="genre-grid-selection">
+          <div th:each="genre : ${allGenres}" 
+               th:data-genre-id="${genre.genreId}" 
+               class="genre-selection-card dislike-card"
+               onclick="toggleDislike(this)">
+            <span th:text="${genre.genreName}">Action</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 3: Options -->
+      <div class="onboarding-step" id="step-3">
+        <h2 class="onboarding-title" th:text="#{auth.otherQuestion}">What are your streaming preferences?</h2>
+        <p class="onboarding-subtitle">Fine-tune the recommendation algorithm criteria.</p>
+        
+        <div style="max-width: 450px; margin: 0 auto 3rem auto; display: flex; flex-direction: column; gap: 20px;">
+          <label class="checkbox-container" style="display:flex; align-items:center; gap:12px; cursor:pointer; font-size:1.05rem;">
+            <input type="checkbox" id="preferNewReleases" style="width:20px; height:20px; accent-color:var(--red)"/>
+            <span th:text="#{auth.preferNewReleaseLabel}">Prefer new releases</span>
+          </label>
+          <label class="checkbox-container" style="display:flex; align-items:center; gap:12px; cursor:pointer; font-size:1.05rem;">
+            <input type="checkbox" id="preferTopRated" style="width:20px; height:20px; accent-color:var(--red)"/>
+            <span th:text="#{auth.preferTopRatedLabel}">Prefer highly-rated classics</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="wizard-actions">
+        <button type="button" class="btn btn-ghost btn-lg" id="prevBtn" onclick="prevStep()" style="visibility:hidden">← Back</button>
+        <button type="button" class="btn btn-primary btn-lg" id="nextBtn" onclick="nextStep()" th:text="#{auth.confirmPreferencesBtn}">Continue</button>
+      </div>
+
+    </form>
+  </main>
+
+  <!-- Fullscreen Loading Overlay -->
+  <div class="ai-loading-overlay" id="loadingOverlay">
+    <div class="pulsing-logo">Movie<span>Rec</span></div>
+    <div class="ai-loading-spinner"></div>
+    <div class="ai-loading-title" th:text="#{auth.loadingPersonalizing}">AI is personalizing your movie feed...</div>
+    <div class="ai-loading-subtitle" th:text="#{auth.loadingSub}">Please wait while we craft recommendations based on your tastes.</div>
+  </div>
+
+  <script th:inline="javascript">
+    /*<![CDATA[*/
+    let currentStepIndex = 1;
+    const totalSteps = 3;
+    const favoriteGenreIds = new Set();
+    const dislikedGenreIds = new Set();
+
+    function toggleFavorite(card) {
+      const gid = card.dataset.genreId;
+      if (favoriteGenreIds.has(gid)) {
+        favoriteGenreIds.delete(gid);
+        card.classList.remove('fav-active');
+      } else {
+        // Remove from dislikes if selected there
+        if (dislikedGenreIds.has(gid)) {
+          dislikedGenreIds.delete(gid);
+          const dislikeCard = document.querySelector(`.dislike-card[data-genre-id="${gid}"]`);
+          if (dislikeCard) dislikeCard.classList.remove('dislike-active');
+        }
+        favoriteGenreIds.add(gid);
+        card.classList.add('fav-active');
+      }
+    }
+
+    function toggleDislike(card) {
+      const gid = card.dataset.genreId;
+      if (dislikedGenreIds.has(gid)) {
+        dislikedGenreIds.delete(gid);
+        card.classList.remove('dislike-active');
+      } else {
+        // Remove from favorites if selected there
+        if (favoriteGenreIds.has(gid)) {
+          favoriteGenreIds.delete(gid);
+          const favCard = document.querySelector(`.favorite-card[data-genre-id="${gid}"]`);
+          if (favCard) favCard.classList.remove('fav-active');
+        }
+        dislikedGenreIds.add(gid);
+        card.classList.add('dislike-active');
+      }
+    }
+
+    function updateStepIndicator() {
+      for (let i = 1; i <= totalSteps; i++) {
+        const dot = document.getElementById(`dot-${i}`);
+        if (i === currentStepIndex) {
+          dot.classList.add('active');
+        } else {
+          dot.classList.remove('active');
+        }
+      }
+    }
+
+    function nextStep() {
+      if (currentStepIndex < totalSteps) {
+        document.getElementById(`step-${currentStepIndex}`).classList.remove('active');
+        currentStepIndex++;
+        document.getElementById(`step-${currentStepIndex}`).classList.add('active');
+        updateStepIndicator();
+        
+        // Show Back button
+        document.getElementById('prevBtn').style.visibility = 'visible';
+        
+        // Change Continue to Confirm on last step
+        if (currentStepIndex === totalSteps) {
+          document.getElementById('nextBtn').innerText = /*[[${#locale.language == 'vi' ? 'Xác nhận & Hoàn tất' : 'Confirm & Finish'}]]*/ 'Confirm & Finish';
+        }
+      } else {
+        submitPreferences();
+      }
+    }
+
+    function prevStep() {
+      if (currentStepIndex > 1) {
+        document.getElementById(`step-${currentStepIndex}`).classList.remove('active');
+        currentStepIndex--;
+        document.getElementById(`step-${currentStepIndex}`).classList.add('active');
+        updateStepIndicator();
+        
+        // Hide Back button on first step
+        if (currentStepIndex === 1) {
+          document.getElementById('prevBtn').style.visibility = 'hidden';
+        }
+        
+        // Restore Continue button text
+        document.getElementById('nextBtn').innerText = /*[[${#locale.language == 'vi' ? 'Tiếp tục' : 'Continue'}]]*/ 'Continue';
+      }
+    }
+
+    function submitPreferences() {
+      // Show loading screen overlay
+      const overlay = document.getElementById('loadingOverlay');
+      overlay.classList.add('visible');
+
+      const csrfToken = /*[[${_csrf.token}]]*/ '';
+      const csrfHeader = /*[[${_csrf.headerName}]]*/ 'X-CSRF-TOKEN';
+
+      const formData = new URLSearchParams();
+      favoriteGenreIds.forEach(id => formData.append('preferredGenres', id));
+      dislikedGenreIds.forEach(id => formData.append('dislikedGenres', id));
+      formData.append('preferNewReleases', document.getElementById('preferNewReleases').checked);
+      formData.append('preferTopRated', document.getElementById('preferTopRated').checked);
+
+      fetch('/auth/preferences', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          [csrfHeader]: csrfToken
+        },
+        body: formData.toString()
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          // Success, redirect to homepage!
+          window.location.href = '/home';
+        } else {
+          overlay.classList.remove('visible');
+          alert('Error saving preferences: ' + data.message);
+        }
+      })
+      .catch(err => {
+        overlay.classList.remove('visible');
+        console.error(err);
+        alert('Server error during personalization.');
+      });
+    }
+    /*]]>*/
+  </script>
+</body>
+</html>

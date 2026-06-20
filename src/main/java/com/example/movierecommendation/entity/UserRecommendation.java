@@ -29,6 +29,9 @@ public class UserRecommendation {
     @Column(name = "algorithm_type", length = 50)
     private String algorithmType;
 
+    @Column(name = "recommendation_reason", columnDefinition = "TEXT")
+    private String recommendationReason;
+
     @Column(name = "generated_at")
     private LocalDateTime generatedAt;
 
@@ -49,6 +52,8 @@ public class UserRecommendation {
     public void setScore(BigDecimal score) { this.score = score; }
     public String getAlgorithmType() { return algorithmType; }
     public void setAlgorithmType(String algorithmType) { this.algorithmType = algorithmType; }
+    public String getRecommendationReason() { return recommendationReason; }
+    public void setRecommendationReason(String recommendationReason) { this.recommendationReason = recommendationReason; }
     public LocalDateTime getGeneratedAt() { return generatedAt; }
     public void setGeneratedAt(LocalDateTime generatedAt) { this.generatedAt = generatedAt; }
 }
