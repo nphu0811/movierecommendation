@@ -120,10 +120,7 @@ public class MovieController {
 
         String primaryId = (imdbId != null && !imdbId.isBlank()) ? imdbId.trim() : (tmdbId != null ? String.valueOf(tmdbId) : null);
 
-        if (primaryId != null) {
-            // Server 1 (Primary) - SuperEmbed
-            model.addAttribute("server1", buildSuperEmbedUrl(primaryId));
-        }
+        String streamImdbUrl = null;
         if (imdbId != null && !imdbId.isBlank()) {
             String cleanImdbId = imdbId.trim();
             if (cleanImdbId.startsWith("tt")) {
@@ -131,9 +128,22 @@ public class MovieController {
             }
             cleanImdbId = cleanImdbId.replaceFirst("^0+", "");
             if (!cleanImdbId.isEmpty()) {
-                cleanImdbId = "tt" + cleanImdbId;
-                // Server 2 (Secondary) - streamimdb.ru (only supports IMDb ID starting with 'tt' and no leading zeros)
-                model.addAttribute("server2", "https://streamimdb.ru/embed/movie/" + cleanImdbId);
+                streamImdbUrl = "https://streamimdb.ru/embed/movie/tt" + cleanImdbId;
+            }
+        }
+
+        if (streamImdbUrl != null) {
+            // Server 1 (Primary) - streamimdb.ru
+            model.addAttribute("server1", streamImdbUrl);
+            if (primaryId != null) {
+                // Server 2 (Secondary) - SuperEmbed (Multiembed)
+                model.addAttribute("server2", buildSuperEmbedUrl(primaryId));
+            }
+        } else {
+            // Fallback: No IMDb ID available
+            if (primaryId != null) {
+                // Server 1 (Primary) - SuperEmbed (Multiembed)
+                model.addAttribute("server1", buildSuperEmbedUrl(primaryId));
             }
         }
 
