@@ -111,6 +111,11 @@ public interface MovieRepository extends JpaRepository<Movie, Integer> {
 
     Page<Movie> findByDeletedAtIsNull(Pageable pageable);
 
+    @Query("SELECT DISTINCT m FROM Movie m LEFT JOIN m.genres g WHERE m.deletedAt IS NULL AND (" +
+           "LOWER(m.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "LOWER(g.genreName) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+    Page<Movie> searchMoviesPaged(@Param("keyword") String keyword, Pageable pageable);
+
     Optional<Movie> findFirstByTitleIgnoreCaseAndReleaseYearAndDeletedAtIsNull(String title, Integer releaseYear);
 
     @Query("SELECT m FROM Movie m WHERE m.deletedAt IS NULL AND m.releaseYear IS NOT NULL " +

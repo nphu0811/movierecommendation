@@ -81,8 +81,14 @@ public class UserService {
     }
 
     public Page<User> getAllUsersPaged(int page, int size) {
-        // Sort by userId ascending so the smallest IDs appear first in the admin table
-        return userRepository.findAll(PageRequest.of(page, size, Sort.by("userId").ascending()));
+        return getAllUsersPaged(null, page, size);
+    }
+
+    public Page<User> getAllUsersPaged(String keyword, int page, int size) {
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            return userRepository.searchUsersPaged(keyword.trim(), PageRequest.of(page, size, Sort.by("userId").ascending()));
+        }
+        return userRepository.findByDeletedAtIsNull(PageRequest.of(page, size, Sort.by("userId").ascending()));
     }
 
     @Transactional

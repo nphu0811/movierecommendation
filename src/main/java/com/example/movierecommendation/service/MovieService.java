@@ -111,6 +111,13 @@ public class MovieService {
     private MovieEmbeddingService movieEmbeddingService;
 
     public Page<Movie> getAllMovies(int page, int size) {
+        return getAllMovies(null, page, size);
+    }
+
+    public Page<Movie> getAllMovies(String keyword, int page, int size) {
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            return movieRepository.searchMoviesPaged(keyword.trim(), PageRequest.of(page, size, Sort.by("movieId").ascending()));
+        }
         return movieRepository.findByDeletedAtIsNull(PageRequest.of(page, size, Sort.by("movieId").ascending()));
     }
 

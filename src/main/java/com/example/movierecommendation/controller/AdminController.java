@@ -138,11 +138,13 @@ public class AdminController {
     }
 
     @GetMapping("/movies")
-    public String manageMovies(@RequestParam(name = "page", defaultValue = "0") int page,
+    public String manageMovies(@RequestParam(name = "q", required = false) String keyword,
+                               @RequestParam(name = "page", defaultValue = "0") int page,
                                @AuthenticationPrincipal UserDetails ud, Model model) {
         addCurrentUser(ud, model);
-        model.addAttribute("moviePage", movieService.getAllMovies(page, 15));
+        model.addAttribute("moviePage", movieService.getAllMovies(keyword, page, 15));
         model.addAttribute("allGenres", movieService.getAllGenres());
+        model.addAttribute("searchKeyword", keyword);
         return "admin/movies";
     }
 
@@ -237,11 +239,12 @@ public class AdminController {
     }
 
     @GetMapping("/users")
-    public String manageUsers(@RequestParam(name = "page", defaultValue = "0") int page,
-                               @AuthenticationPrincipal UserDetails ud, Model model) {
+    public String manageUsers(@RequestParam(name = "q", required = false) String keyword,
+                              @RequestParam(name = "page", defaultValue = "0") int page,
+                              @AuthenticationPrincipal UserDetails ud, Model model) {
         addCurrentUser(ud, model);
-        // FIX: Use pagination instead of findAll()
-        model.addAttribute("userPage", userService.getAllUsersPaged(page, 20));
+        model.addAttribute("userPage", userService.getAllUsersPaged(keyword, page, 20));
+        model.addAttribute("searchKeyword", keyword);
         return "admin/users";
     }
 
