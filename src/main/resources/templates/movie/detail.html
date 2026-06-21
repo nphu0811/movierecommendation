@@ -284,7 +284,7 @@
         });
     }
 
-    // Trailer hover logic (similar to home page)
+    // Auto-play trailer on page load (similar to Netflix)
     const backdrop = document.getElementById('movieBackdrop');
     if (backdrop) {
       const trailerKey = backdrop.dataset.trailerKey;
@@ -292,26 +292,14 @@
       let trailerTimeout;
 
       if (trailerKey && videoContainer) {
-        backdrop.addEventListener('mouseenter', () => {
-          clearTimeout(trailerTimeout);
-          trailerTimeout = setTimeout(() => {
-            videoContainer.innerHTML = `
-              <iframe src="https://www.youtube.com/embed/${trailerKey}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&iv_load_policy=3&enablejsapi=1" 
-                      frameborder="0" allow="autoplay; encrypted-media"></iframe>
-            `;
-            videoContainer.classList.add('active');
-          }, 1500); // Wait 1.5s before playing
-        });
-
-        backdrop.addEventListener('mouseleave', stopTrailer);
-      }
-
-      function stopTrailer() {
-        clearTimeout(trailerTimeout);
-        if (videoContainer) {
-          videoContainer.innerHTML = '';
-          videoContainer.classList.remove('active');
-        }
+        // Start playing automatically 1 second after page loads
+        trailerTimeout = setTimeout(() => {
+          videoContainer.innerHTML = `
+            <iframe src="https://www.youtube.com/embed/${trailerKey}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&iv_load_policy=3&enablejsapi=1" 
+                    frameborder="0" allow="autoplay; encrypted-media"></iframe>
+          `;
+          videoContainer.classList.add('active');
+        }, 1000);
       }
     }
   });
