@@ -16,10 +16,11 @@
 <div th:replace="~{search-overlay :: searchOverlay}"></div>
 
 <!-- ── HERO BACKDROP ── -->
-<div class="movie-hero-backdrop"
+<div class="movie-hero-backdrop" id="movieBackdrop" th:data-trailer-key="${movie.trailerKey}"
      th:style="${movie.backdropUrl != null} ? 'background-image:url(' + ${movie.backdropUrl} + ')' :
                (${movie.posterUrl != null} ? 'background-image:url(' + ${movie.posterUrl} + ')' : '')">
-  <div class="movie-hero-content">
+  <div class="hero-video-container" id="detailVideoContainer"></div>
+  <div class="movie-hero-content" style="z-index: 10;">
 
     <!-- Poster -->
     <img th:if="${movie.posterUrl != null and !#strings.isEmpty(movie.posterUrl)}"
@@ -52,23 +53,11 @@
          th:text="${movie.description}">Description</p>
 
       <div class="action-buttons-group">
-        <button class="movie-trailer-btn"
-                th:if="${movie.trailerKey != null and !#strings.isEmpty(movie.trailerKey)}"
-                th:data-trailer-key="${movie.trailerKey}"
-                onclick="openTrailer(this.dataset.trailerKey)">
-          <i class="ph-fill ph-play-circle" style="margin-right:6px"></i> <span th:text="#{detail.watchTrailer}">Watch Trailer</span>
-        </button>
         <th:block th:if="${currentUser != null}">
-          <a class="watch-btn trailer"
+          <a class="watch-btn play-btn-large"
            th:if="${movieLink != null and ((movieLink.imdbId != null and !#strings.isEmpty(movieLink.imdbId)) or (movieLink.tmdbId != null))}"
            th:href="@{/movies/{id}/play(id=${movie.movieId})}">
-          <i class="ph-fill ph-play-circle" style="margin-right:6px"></i> <span th:text="#{detail.play}">Play</span> </a>
-          <a class="watch-btn netflix"
-             th:href="|https://www.netflix.com/search?q=${movie.title}|"
-             target="_blank" rel="noopener"><i class="ph-fill ph-play-circle" style="margin-right:6px"></i> Netflix</a>
-          <a class="watch-btn fpt"
-             th:href="|https://fptplay.vn/tim-kiem?keyword=${movie.title}|"
-             target="_blank" rel="noopener"><i class="ph-fill ph-television" style="margin-right:6px"></i> FPT Play</a>
+          <i class="ph-fill ph-play" style="margin-right:6px"></i> <span th:text="#{detail.play}">Play</span> </a>
         </th:block>
       </div>
 
@@ -183,18 +172,12 @@
       <p class="text-muted-sm" style="margin-top:10px">Click to find this film on streaming platforms.</p>
     </div>
 
-    <!-- Guest: trailer only -->
+    <!-- Guest: sign in message -->
     <div class="detail-card" th:if="${currentUser == null}">
       <h3><i class="ph-bold ph-broadcast" style="margin-right:6px;vertical-align:-3px;color:var(--text-secondary)"></i> Where to Watch</h3>
       <p class="text-muted-md">
         <a href="/auth/login" class="login-link-highlight">Sign in</a> to access Netflix, FPT Play and more.
       </p>
-      <button class="movie-trailer-btn"
-              th:if="${movie.trailerKey != null and !#strings.isEmpty(movie.trailerKey)}"
-              th:data-trailer-key="${movie.trailerKey}"
-              onclick="openTrailer(this.dataset.trailerKey)">
-        <i class="ph-fill ph-play-circle" style="margin-right:6px"></i> Watch Trailer
-      </button>
     </div>
 
     <!-- Tags -->
@@ -299,6 +282,39 @@
           detailsSummaryText.classList.remove('loading');
           detailsSummaryText.innerHTML = /*[[#{detail.aiSummaryError}]]*/ '';
         });
+    }
+
+    // Trailer hover logic (similar to home page)
+    const backdrop = document.getElementById('movieBackdrop');
+    if (backdrop) {
+      const trailerKey = backdrop.dataset.trailerKey;
+      const videoContainer = document.getElementById('detailVideoContainer');
+      let trailerTimeout;
+
+      if (trailerKey && videoContainer) {
+        backdrop.addEventListener('mouseenter', () => {
+          clearTimeout(trailerTimeout);
+          trailerTimeout = setTimeout(() => {
+            videoContainer.innerHTML = `
+              <iframe src="https://www.youtube.com/embed/${trailerKey}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&iv_load_policy=3&enablejsapi=1" 
+                      frameborder="0" allow="autoplay; encrypted-media"></iframe>
+            `;
+            videoContainer.classList.add('active');
+            // Auto-stop after 15s
+            setTimeout(stopTrailer, 15000);
+          }, 1500); // Wait 1.5s before playing
+        });
+
+        backdrop.addEventListener('mouseleave', stopTrailer);
+      }
+
+      function stopTrailer() {
+        clearTimeout(trailerTimeout);
+        if (videoContainer) {
+          videoContainer.innerHTML = '';
+          videoContainer.classList.remove('active');
+        }
+      }
     }
   });
 
