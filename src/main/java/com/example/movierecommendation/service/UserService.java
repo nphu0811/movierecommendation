@@ -85,10 +85,10 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
-            throw new IllegalArgumentException(isVi ? "Mật khẩu hiện tại không chính xác" : "Current password is incorrect");
+            throw new IllegalArgumentException(isVi ? "Sai mật khẩu hiện tại. Hãy thử lại." : "Incorrect current password. Please try again.");
         }
         if (passwordEncoder.matches(newPassword, user.getPasswordHash())) {
-            throw new IllegalArgumentException(isVi ? "Mật khẩu mới không được trùng với mật khẩu cũ" : "New password cannot be the same as the old password");
+            throw new IllegalArgumentException(isVi ? "Mật khẩu mới phải khác mật khẩu hiện tại." : "New password must be different from the current password.");
         }
         user.setPasswordHash(passwordEncoder.encode(newPassword));
         userRepository.save(user);
@@ -190,7 +190,7 @@ public class UserService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Account with this email was not found"));
         if (passwordEncoder.matches(newPassword, user.getPasswordHash())) {
-            throw new IllegalArgumentException(isVi ? "Mật khẩu mới không được trùng với mật khẩu cũ" : "New password cannot be the same as the old password");
+            throw new IllegalArgumentException(isVi ? "Mật khẩu mới phải khác mật khẩu hiện tại." : "New password must be different from the current password.");
         }
         verificationService.verifyOrThrow(user, code, VerificationPurpose.PASSWORD_RESET);
         user.setPasswordHash(passwordEncoder.encode(newPassword));

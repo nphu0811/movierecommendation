@@ -97,8 +97,23 @@ public class UserController {
             userService.changePassword(user.getUserId(), currentPassword, newPassword);
             redirect.addFlashAttribute("success", isVi ? "Thay đổi mật khẩu thành công!" : "Password changed successfully!");
         } catch (IllegalArgumentException e) {
-            redirect.addFlashAttribute("error", e.getMessage());
+            redirect.addFlashAttribute("currentPasswordVal", currentPassword);
+            redirect.addFlashAttribute("newPasswordVal", newPassword);
+            redirect.addFlashAttribute("confirmPasswordVal", confirmPassword);
+
+            String msg = e.getMessage();
+            String lowerMsg = msg.toLowerCase();
+            if (lowerMsg.contains("mật khẩu hiện tại") || lowerMsg.contains("sai mật khẩu") || lowerMsg.contains("current password")) {
+                redirect.addFlashAttribute("currentPasswordError", msg);
+            } else if (lowerMsg.contains("xác nhận") || lowerMsg.contains("confirm")) {
+                redirect.addFlashAttribute("confirmPasswordError", msg);
+            } else {
+                redirect.addFlashAttribute("newPasswordError", msg);
+            }
         } catch (Exception e) {
+            redirect.addFlashAttribute("currentPasswordVal", currentPassword);
+            redirect.addFlashAttribute("newPasswordVal", newPassword);
+            redirect.addFlashAttribute("confirmPasswordVal", confirmPassword);
             redirect.addFlashAttribute("error", isVi ? "Không thể thay đổi mật khẩu" : "Failed to change password");
         }
         return "redirect:/user/profile?tab=change-password";

@@ -182,12 +182,16 @@
           <form th:action="@{/user/profile/change-password}" method="post" class="profile-form">
             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
             <div class="form-group">
-              <label class="form-label" th:text="#{profile.currentPasswordLabel}">Current Password</label>
+              <label class="form-label" th:text="#{profile.currentPasswordLabel} + (${currentUser.updatedAt} != null ? ' (' + #{profile.passwordLastUpdated} + ': ' + ${#temporals.format(currentUser.updatedAt, 'dd/MM/yyyy')} + ')' : '')">Current Password</label>
               <div class="password-field">
-                <input type="password" name="currentPassword" class="form-control" required autocomplete="current-password"/>
+                <input type="password" name="currentPassword" class="form-control" th:classappend="${currentPasswordError} ? 'is-invalid' : ''" th:value="${currentPasswordVal}" required autocomplete="current-password"/>
                 <button type="button" class="password-toggle" aria-label="Show password" aria-pressed="false">
                   <i class="ph-bold ph-eye" aria-hidden="true"></i>
                 </button>
+              </div>
+              <div class="error-feedback" th:if="${currentPasswordError}">
+                <i class="ph-bold ph-warning-circle" style="margin-right: 4px; display: inline-block; vertical-align: middle;"></i>
+                <span th:text="${currentPasswordError}">Error message</span>
               </div>
               <div style="margin-top: 8px;">
                 <a href="javascript:void(0)" class="forgot-password-inline-link" onclick="openResetPasswordModal()" th:text="#{auth.forgotPasswordLink}">Forgot Password?</a>
@@ -196,19 +200,27 @@
             <div class="form-group">
               <label class="form-label" th:text="#{profile.newPasswordLabel}">New Password</label>
               <div class="password-field">
-                <input type="password" name="newPassword" class="form-control" required minlength="6" autocomplete="new-password"/>
+                <input type="password" name="newPassword" class="form-control" th:classappend="${newPasswordError} ? 'is-invalid' : ''" th:value="${newPasswordVal}" required minlength="6" autocomplete="new-password"/>
                 <button type="button" class="password-toggle" aria-label="Show password" aria-pressed="false">
                   <i class="ph-bold ph-eye" aria-hidden="true"></i>
                 </button>
+              </div>
+              <div class="error-feedback" th:if="${newPasswordError}">
+                <i class="ph-bold ph-warning-circle" style="margin-right: 4px; display: inline-block; vertical-align: middle;"></i>
+                <span th:text="${newPasswordError}">Error message</span>
               </div>
             </div>
             <div class="form-group">
               <label class="form-label" th:text="#{auth.confirmPasswordLabel}">Confirm Password</label>
               <div class="password-field">
-                <input type="password" name="confirmPassword" class="form-control" required minlength="6" autocomplete="new-password"/>
+                <input type="password" name="confirmPassword" class="form-control" th:classappend="${confirmPasswordError} ? 'is-invalid' : ''" th:value="${confirmPasswordVal}" required minlength="6" autocomplete="new-password"/>
                 <button type="button" class="password-toggle" aria-label="Show password" aria-pressed="false">
                   <i class="ph-bold ph-eye" aria-hidden="true"></i>
                 </button>
+              </div>
+              <div class="error-feedback" th:if="${confirmPasswordError}">
+                <i class="ph-bold ph-warning-circle" style="margin-right: 4px; display: inline-block; vertical-align: middle;"></i>
+                <span th:text="${confirmPasswordError}">Error message</span>
               </div>
             </div>
             <button type="submit" class="btn btn-primary" th:text="#{profile.updatePasswordBtn}">Update Password</button>
