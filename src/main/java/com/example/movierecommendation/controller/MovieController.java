@@ -132,18 +132,13 @@ public class MovieController {
             }
         }
 
-        if (streamImdbUrl != null) {
-            // Server 1 (Primary) - streamimdb.ru
-            model.addAttribute("server1", streamImdbUrl);
-            if (primaryId != null) {
-                // Server 2 (Secondary) - SuperEmbed (Multiembed)
-                model.addAttribute("server2", buildSuperEmbedUrl(primaryId));
-            }
-        } else {
-            // Fallback when no IMDb ID is available:
-            if (primaryId != null) {
-                // Server 1 (Primary) - SuperEmbed (Multiembed)
-                model.addAttribute("server1", buildSuperEmbedUrl(primaryId));
+        if (primaryId != null) {
+            // Server 1 (Primary) - SuperEmbed (Multiembed) - Stable, does not redirect localhost
+            model.addAttribute("server1", buildSuperEmbedUrl(primaryId));
+            if (streamImdbUrl != null) {
+                // Server 2 (Secondary) - streamimdb.ru
+                model.addAttribute("server2", streamImdbUrl);
+            } else {
                 // Server 2 (Secondary) - 2Embed (works with TMDB ID)
                 model.addAttribute("server2", "https://www.2embed.online/embed/movie/" + primaryId);
             }
