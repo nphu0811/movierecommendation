@@ -15,6 +15,21 @@
 
     let timer = null;
     let focusedIndex = -1;
+    let searchPanelOpen = false;
+
+    const closeSearchPanels = () => {
+        searchPanelOpen = false;
+        focusedIndex = -1;
+        autocomplete.classList.remove('active');
+        if (initialTrends) initialTrends.classList.add('hidden');
+    };
+
+    const showInitialTrends = () => {
+        if (!initialTrends || input.value.trim().length > 0) return;
+        searchPanelOpen = true;
+        autocomplete.classList.remove('active');
+        initialTrends.classList.remove('hidden');
+    };
 
     // Show/Hide Clear Button
     const toggleClearBtn = () => {
@@ -24,9 +39,12 @@
         } else {
             clearBtn.classList.remove('visible');
             autocomplete.classList.remove('active');
-            if (initialTrends) initialTrends.classList.remove('hidden');
+            if (searchPanelOpen && initialTrends) initialTrends.classList.remove('hidden');
         }
     };
+
+    input.addEventListener('focus', showInitialTrends);
+    input.addEventListener('click', showInitialTrends);
 
     input.addEventListener('input', function() {
         toggleClearBtn();
@@ -35,6 +53,7 @@
         clearTimeout(timer);
         if (q.length < 1) {
             autocomplete.classList.remove('active');
+            showInitialTrends();
             return;
         }
 
@@ -46,6 +65,7 @@
     clearBtn.addEventListener('click', () => {
         input.value = '';
         input.focus();
+        searchPanelOpen = true;
         toggleClearBtn();
     });
 
@@ -80,7 +100,8 @@
                 window.location.href = '/search?source=search_page&q=' + encodeURIComponent(this.value.trim());
             }
         } else if (e.key === 'Escape') {
-            autocomplete.classList.remove('active');
+            closeSearchPanels();
+            input.blur();
         }
     });
 
@@ -146,6 +167,7 @@
         }
 
         resultsContainer.innerHTML = html;
+        searchPanelOpen = true;
         autocomplete.classList.add('active');
 
         // Attach click listeners to suggestion items so they execute a real search
@@ -172,8 +194,9 @@
 
     // Close when clicking outside
     document.addEventListener('click', (e) => {
-        if (!input.contains(e.target) && !autocomplete.contains(e.target)) {
-            autocomplete.classList.remove('active');
+        const clickedInsideSearch = searchForm && searchForm.contains(e.target);
+        if (!clickedInsideSearch) {
+            closeSearchPanels();
         }
     });
 
