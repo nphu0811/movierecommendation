@@ -193,9 +193,6 @@
                 <i class="ph-bold ph-warning-circle" style="margin-right: 4px; display: inline-block; vertical-align: middle;"></i>
                 <span th:text="${currentPasswordError}">Error message</span>
               </div>
-              <div style="margin-top: 8px;">
-                <a href="javascript:void(0)" class="forgot-password-inline-link" onclick="openResetPasswordModal()" th:text="#{auth.forgotPasswordLink}">Forgot Password?</a>
-              </div>
             </div>
             <div class="form-group">
               <label class="form-label" th:text="#{profile.newPasswordLabel}">New Password</label>
@@ -221,6 +218,9 @@
               <div class="error-feedback" th:if="${confirmPasswordError}">
                 <i class="ph-bold ph-warning-circle" style="margin-right: 4px; display: inline-block; vertical-align: middle;"></i>
                 <span th:text="${confirmPasswordError}">Error message</span>
+              </div>
+              <div style="margin-top: 8px;">
+                <a href="javascript:void(0)" class="forgot-password-inline-link" onclick="openResetPasswordModal()" th:text="#{auth.forgotPasswordLink}">Forgot Password?</a>
               </div>
             </div>
             <button type="submit" class="btn btn-primary" th:text="#{profile.updatePasswordBtn}">Update Password</button>
@@ -547,17 +547,21 @@ async function postFetchWithBody(url, bodyParams) {
 var modalOtpTimer = null;
 var modalOtpCountdownSeconds = 0;
 
-function openResetPasswordModal() {
+async function openResetPasswordModal() {
   var modal = document.getElementById('reset-password-modal');
   if (!modal) return;
 
-  // Reset modal step view
-  document.getElementById('modal-step-email').style.display = 'block';
-  document.getElementById('modal-step-otp').style.display = 'none';
-  document.getElementById('modal-step-reset').style.display = 'none';
+  var email = /*[[${currentUser.email}]]*/ '';
+  if (!email) {
+    showToast('User email not found', 'error');
+    return;
+  }
+
+  // Pre-fill email label and input
+  document.getElementById('modal-email').value = email;
+  document.getElementById('modal-otp-sent-email-label').innerText = email;
 
   // Clear modal input values
-  document.getElementById('modal-email').value = '';
   var otpInputs = document.querySelectorAll('#modalOtpContainer .verify-code-input');
   otpInputs.forEach(function(input) { input.value = ''; });
   document.getElementById('modalFinalCode').value = '';
@@ -567,15 +571,46 @@ function openResetPasswordModal() {
   clearInterval(modalOtpTimer);
   document.getElementById('modalCountdown').innerText = '';
 
+  // Show Step 2 (OTP) directly, hide others
+  document.getElementById('modal-step-email').style.display = 'none';
+  document.getElementById('modal-step-otp').style.display = 'block';
+  document.getElementById('modal-step-reset').style.display = 'none';
+
+  // Disable verify button during sending
+  var submitBtn = document.getElementById('btn-modal-otp-submit');
+  submitBtn.disabled = true;
+  submitBtn.style.opacity = '0.6';
+
+  // Show modal
   modal.style.display = 'flex';
   setTimeout(function() {
     modal.classList.add('active');
   }, 10);
   document.body.style.overflow = 'hidden';
 
-  setTimeout(function() {
-    document.getElementById('modal-email').focus();
-  }, 100);
+  // Trigger send code AJAX
+  var isVi = /*[[${#locale.language == 'vi'}]]*/ false;
+  showToast(isVi ? 'Đang gửi mã xác thực...' : 'Sending verification code...', 'info');
+
+  try {
+    var res = await postFetchWithBody('/user/profile/password/reset-send-code', { email: email });
+    var data = await res.json();
+    if (res.ok) {
+      showToast(data.message, 'success');
+      submitBtn.disabled = false;
+      submitBtn.style.opacity = '1';
+      startModalOtpCountdown(60);
+      setTimeout(function() {
+        if (otpInputs.length > 0) otpInputs[0].focus();
+      }, 100);
+    } else {
+      showToast(data.error || 'Failed to send OTP code', 'error');
+      closeResetPasswordModal();
+    }
+  } catch (err) {
+    showToast('Connection error', 'error');
+    closeResetPasswordModal();
+  }
 }
 
 function closeResetPasswordModal() {
