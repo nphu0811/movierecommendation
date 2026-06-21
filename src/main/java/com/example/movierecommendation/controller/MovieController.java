@@ -175,6 +175,8 @@ public class MovieController {
                          @RequestParam(value = "e", required = false) Integer e,
                          @RequestParam(value = "season", required = false) Integer season,
                          @RequestParam(value = "episode", required = false) Integer episode,
+                         @RequestParam(value = "t", required = false) String t,
+                         @RequestParam(value = "start", required = false) String start,
                          HttpServletResponse response) throws IOException {
         
         int finalSeason = (season != null) ? season : ((s != null) ? s : 0);
@@ -207,6 +209,17 @@ public class MovieController {
             String playerUrl = restTemplate.getForObject(requestUrl, String.class);
             
             if (playerUrl != null && playerUrl.contains("https://")) {
+                if (t != null || start != null) {
+                    UriComponentsBuilder redirectBuilder = UriComponentsBuilder.fromUriString(playerUrl);
+                    if (t != null) {
+                        redirectBuilder.queryParam("t", t);
+                        redirectBuilder.fragment("t=" + t);
+                    }
+                    if (start != null) {
+                        redirectBuilder.queryParam("start", start);
+                    }
+                    playerUrl = redirectBuilder.build().toUriString();
+                }
                 response.sendRedirect(playerUrl);
             } else {
                 response.setContentType("text/html;charset=UTF-8");

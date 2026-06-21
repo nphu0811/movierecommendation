@@ -244,7 +244,7 @@
     <div class="resume-timestamp" id="resumeTimestampDisplay">00:00:00</div>
     <div class="resume-actions">
       <button class="resume-btn resume-btn-primary" onclick="resumeFromLast()" th:text="#{play.resumeContinue}">Resume</button>
-      <button class="resume-btn resume-btn-secondary" onclick="closeResumeModal()" th:text="#{play.resumeStartOver}">Start Over</button>
+      <button class="resume-btn resume-btn-secondary" onclick="startOver()" th:text="#{play.resumeStartOver}">Start Over</button>
     </div>
   </div>
 </div>
@@ -263,6 +263,7 @@
   const msgAiAnalyzing = /*[[#{play.aiAnalyzing}]]*/ 'Analyzing video...';
   const msgChatError = /*[[#{play.chatError}]]*/ 'An error occurred while talking to AI. Please try again later!';
 
+  let currentPlaybackBase = LAST_DURATION || 0;
   let activeSeconds = 0;
   let isTabActive = true;
   document.addEventListener('visibilitychange', () => {
@@ -298,7 +299,7 @@
             total += activeSeconds;
         }
     } else {
-        total += activeSeconds;
+        total = currentPlaybackBase + activeSeconds;
     }
     
     // Estimate progress (assume 100 mins = 6000s for recommendation purposes if real duration is unknown)
@@ -799,19 +800,40 @@
       performSeek(seconds);
   }
   
-  function performSeek(seconds) {
-      if (ytPlayer && typeof ytPlayer.seekTo === 'function') {
-          try {
-              ytPlayer.seekTo(seconds, true);
-              ytPlayer.playVideo();
-              showToast((/*[[#{play.toastSeeked}]]*/ '').replace('{0}', formatMinutesSeconds(seconds)) + '! 🎥', 'success');
-          } catch(e) {
-              fallbackSeek(seconds);
+   function performSeek(seconds) {
+       currentPlaybackBase = seconds;
+       activeSeconds = 0;
+       if (ytPlayer && typeof ytPlayer.seekTo === 'function') {
+           try {
+               ytPlayer.seekTo(seconds, true);
+               ytPlayer.playVideo();
+               showToast((/*[[#{play.toastSeeked}]]*/ '').replace('{0}', formatMinutesSeconds(seconds)) + '! 🎥', 'success');
+           } catch(e) {
+               fallbackSeek(seconds);
           }
       } else {
           fallbackSeek(seconds);
       }
-  }
+   }
+
+   function startOver() {
+       performSeek(0);
+       closeResumeModal();
+       
+       const body = new URLSearchParams();
+       body.append('duration', 0);
+       body.append('progress', 0);
+       const headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
+       const csrfMeta = document.querySelector('meta[name="_csrf"]');
+       const csrfHeader = document.querySelector('meta[name="_csrf_header"]');
+       if (csrfMeta && csrfHeader) headers[csrfHeader.content] = csrfMeta.content;
+
+       fetch(`/api/movies/${MOVIE_ID}/watch`, { 
+         method: 'POST', 
+         headers,
+         body: body
+       }).catch(console.error);
+   }
   
   function fallbackSeek(seconds) {
       const player = document.getElementById('mainPlayer');
