@@ -274,6 +274,155 @@
     }
   }, 1000);
 
+  // Update localStorage keys for the current movie
+  function updatePlayerStorageTime(seconds) {
+      const imdbId = /*[[${movieLink != null ? movieLink.imdbId : ''}]]*/ '';
+      const tmdbId = /*[[${movieLink != null ? movieLink.tmdbId : ''}]]*/ '';
+      const cleanImdbId = imdbId ? imdbId.replace(/^tt0*/, '') : '';
+      const targets = [imdbId, tmdbId, cleanImdbId, MOVIE_ID.toString()].filter(Boolean);
+      
+      // Update existing keys in localStorage
+      for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key.startsWith('watch_') || key.startsWith('player_') || key.startsWith('va_') || key.includes('progress') || key.includes('time')) {
+              const isMatch = targets.some(t => key.includes(t));
+              if (isMatch || key.includes('play')) {
+                  try {
+                      let val = localStorage.getItem(key);
+                      if (val) {
+                          if (val.trim().startsWith('{') || val.trim().startsWith('[')) {
+                              let parsed = JSON.parse(val);
+                              if (parsed && typeof parsed === 'object') {
+                                  let updated = false;
+                                  ['time', 'position', 'progress', 'current', 'seconds'].forEach(prop => {
+                                      if (parsed[prop] !== undefined) {
+                                          parsed[prop] = seconds;
+                                          updated = true;
+                                      }
+                                  });
+                                  if (!updated) {
+                                      parsed.time = seconds;
+                                  }
+                                  localStorage.setItem(key, JSON.stringify(parsed));
+                              }
+                          } else {
+                              localStorage.setItem(key, seconds);
+                          }
+                      }
+                  } catch (e) {
+                      localStorage.setItem(key, seconds);
+                  }
+              }
+          }
+      }
+      
+      // Pre-populate keys for these targets to ensure they exist
+      targets.forEach(t => {
+          localStorage.setItem(`watch_${t}`, seconds);
+          localStorage.setItem(`player_${t}`, seconds);
+          localStorage.setItem(`va_${t}`, seconds);
+      });
+  }
+
+  let playerSupportsPostMessage = false;
+
+  // Message listener for Iframe Storage Proxy and seeking
+  window.addEventListener('message', function(event) {
+      let msg;
+      try {
+          msg = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+      } catch (e) {
+          return;
+      }
+      if (!msg || typeof msg !== 'object') return;
+
+      const action = msg.key || msg.type || msg.action || msg.command;
+      
+      // If the message has PlayerJS properties, mark it as supporting postMessage
+      if (msg.event && msg.event !== 'STORAGE_GET_ALL' && msg.event !== 'STORAGE_SET' && msg.event !== 'STORAGE_REMOVE') {
+          playerSupportsPostMessage = true;
+      }
+      if (msg.type && msg.type !== 'STORAGE_GET_ALL' && msg.type !== 'STORAGE_SET' && msg.type !== 'STORAGE_REMOVE') {
+          playerSupportsPostMessage = true;
+      }
+      if (msg.method && msg.method !== 'STORAGE_GET_ALL' && msg.method !== 'STORAGE_SET' && msg.method !== 'STORAGE_REMOVE') {
+          playerSupportsPostMessage = true;
+      }
+
+      if (action === 'STORAGE_GET_ALL') {
+          const storageData = {};
+          for (let i = 0; i < localStorage.length; i++) {
+              const k = localStorage.key(i);
+              storageData[k] = localStorage.getItem(k);
+          }
+          
+          const responsePayload = {
+              key: 'STORAGE_INIT',
+              type: 'STORAGE_INIT',
+              action: 'STORAGE_INIT',
+              data: storageData
+          };
+          try {
+              event.source.postMessage(
+                  typeof event.data === 'string' ? JSON.stringify(responsePayload) : responsePayload,
+                  event.origin
+              );
+          } catch(e) {}
+      } else if (action === 'STORAGE_SET') {
+          let key = msg.key;
+          let value = msg.value;
+          if (!key && msg.data) {
+              key = msg.data.key;
+              value = msg.data.value;
+          }
+          if (key && value !== undefined) {
+              localStorage.setItem(key, value);
+              
+              // Sync our parent page progress tracking
+              const imdbId = /*[[${movieLink != null ? movieLink.imdbId : ''}]]*/ '';
+              const tmdbId = /*[[${movieLink != null ? movieLink.tmdbId : ''}]]*/ '';
+              const cleanImdbId = imdbId ? imdbId.replace(/^tt0*/, '') : '';
+              const targets = [imdbId, tmdbId, cleanImdbId, MOVIE_ID.toString()].filter(Boolean);
+              
+              const isMatch = targets.some(t => key.includes(t));
+              if (isMatch && (key.startsWith('watch_') || key.startsWith('player_') || key.startsWith('va_'))) {
+                  let seconds = null;
+                  if (typeof value === 'number') {
+                      seconds = value;
+                  } else if (typeof value === 'string') {
+                      if (value.trim().startsWith('{') || value.trim().startsWith('[')) {
+                          try {
+                              const parsed = JSON.parse(value);
+                              if (parsed && typeof parsed === 'object') {
+                                  ['time', 'position', 'progress', 'current', 'seconds'].forEach(prop => {
+                                      if (parsed[prop] !== undefined && !isNaN(parsed[prop])) {
+                                          seconds = parseFloat(parsed[prop]);
+                                      }
+                                  });
+                              }
+                          } catch (e) {}
+                      } else if (!isNaN(value)) {
+                          seconds = parseFloat(value);
+                      }
+                  }
+                  if (seconds !== null && !isNaN(seconds)) {
+                      currentPlaybackBase = Math.floor(seconds);
+                      activeSeconds = 0;
+                      updateProgress();
+                  }
+              }
+          }
+      } else if (action === 'STORAGE_REMOVE') {
+          let key = msg.key;
+          if (!key && msg.data) {
+              key = msg.data.key;
+          }
+          if (key) {
+              localStorage.removeItem(key);
+          }
+      }
+  });
+
   // Format seconds to HH:MM:SS
   function formatTime(seconds) {
     const h = Math.floor(seconds / 3600);
@@ -348,6 +497,7 @@
   function fallbackResume() {
       const player = document.getElementById('mainPlayer');
       if (player) {
+          updatePlayerStorageTime(LAST_DURATION);
           const currentSrc = player.src;
           let cleanSrc = currentSrc.replace(/[\?&#](?:start|t|time)=\d+(?:s)?/g, '');
           const connector = cleanSrc.includes('?') ? '&' : '?';
@@ -799,21 +949,51 @@
       performSeek(seconds);
   }
   
-   function performSeek(seconds) {
-       currentPlaybackBase = seconds;
-       activeSeconds = 0;
-       if (ytPlayer && typeof ytPlayer.seekTo === 'function') {
-           try {
-               ytPlayer.seekTo(seconds, true);
-               ytPlayer.playVideo();
-               showToast((/*[[#{play.toastSeeked}]]*/ '').replace('{0}', formatMinutesSeconds(seconds)) + '! 🎥', 'success');
-           } catch(e) {
-               fallbackSeek(seconds);
+  function performSeek(seconds) {
+      currentPlaybackBase = seconds;
+      activeSeconds = 0;
+      
+      updatePlayerStorageTime(seconds);
+      
+      if (ytPlayer && typeof ytPlayer.seekTo === 'function') {
+          try {
+              ytPlayer.seekTo(seconds, true);
+              ytPlayer.playVideo();
+              showToast((/*[[#{play.toastSeeked}]]*/ '').replace('{0}', formatMinutesSeconds(seconds)) + '! 🎥', 'success');
+              return;
+          } catch(e) {
+              // Fallback to normal seek logic if YouTube API fails
           }
-      } else {
-          fallbackSeek(seconds);
       }
-   }
+
+      const player = document.getElementById('mainPlayer');
+      if (player) {
+           try {
+               const win = player.contentWindow;
+               if (win) {
+                   const msgs = [
+                       { event: "command", method: "seek", value: seconds },
+                       { method: "seek", value: seconds },
+                       { event: "seek", value: seconds },
+                       { command: "seek", value: seconds },
+                       { method: "setCurrentTime", value: seconds },
+                       { type: "seek", time: seconds }
+                   ];
+                   msgs.forEach(m => {
+                       win.postMessage(JSON.stringify(m), '*');
+                       win.postMessage(m, '*');
+                   });
+               }
+           } catch(e) {}
+           
+           if (playerSupportsPostMessage) {
+               showToast((/*[[#{play.toastSeeked}]]*/ '').replace('{0}', formatMinutesSeconds(seconds)) + '! 🎥', 'success');
+               return;
+           }
+      }
+
+      fallbackSeek(seconds);
+  }
 
    function startOver() {
        performSeek(0);
@@ -837,6 +1017,38 @@
   function fallbackSeek(seconds) {
       const player = document.getElementById('mainPlayer');
       if (player) {
+          updatePlayerStorageTime(seconds);
+          
+          // Try sending seek command to player without reload
+          let seekSent = false;
+          try {
+              const win = player.contentWindow;
+              if (win) {
+                  const msgs = [
+                      { event: "command", method: "seek", value: seconds },
+                      { method: "seek", value: seconds },
+                      { event: "seek", value: seconds },
+                      { command: "seek", value: seconds },
+                      { method: "setCurrentTime", value: seconds },
+                      { type: "seek", time: seconds }
+                  ];
+                  msgs.forEach(m => {
+                      win.postMessage(JSON.stringify(m), '*');
+                      win.postMessage(m, '*');
+                  });
+                  seekSent = true;
+              }
+          } catch(e) {
+              console.error("Error posting seek message", e);
+          }
+          
+          // If we detected that the player supports postMessage, we don't reload
+          if (playerSupportsPostMessage) {
+              showToast((/*[[#{play.toastSeeked}]]*/ '').replace('{0}', formatMinutesSeconds(seconds)) + '! 🎥', 'success');
+              return;
+          }
+          
+          // Fallback: reload the player with parameters in the URL
           let src = player.src;
           src = src.replace(/[\?&#](?:start|t|time)=\d+(?:s)?/g, '');
           const connector = src.includes('?') ? '&' : '?';
