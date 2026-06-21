@@ -3898,7 +3898,7 @@ body.auth-page {
   background: rgba(255, 255, 255, 0.025);
 }
 
-/* Inline Forgot Password Flow */
+/* Forgot Password Link styling */
 .forgot-password-inline-link {
   font-size: 0.85rem;
   color: var(--red);
@@ -3910,24 +3910,116 @@ body.auth-page {
 .forgot-password-inline-link:hover {
   color: var(--red-hover);
 }
-.btn-back-flow {
+
+/* Premium Reset Password Modal & Blur Backdrop */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 10000;
   display: flex;
   align-items: center;
-  gap: var(--space-1);
-  font-size: 0.85rem;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--t-mid) var(--ease);
+}
+.modal-overlay.active {
+  opacity: 1;
+  pointer-events: all;
+}
+.modal-card {
+  width: 100%;
+  max-width: 440px;
+  position: relative;
+  border-radius: var(--radius-xl);
+  background: rgba(14, 14, 14, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  padding: var(--space-7);
+  animation: scaleIn 0.35s var(--spring) both;
+}
+.modal-close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.05);
   color: var(--text-secondary);
-  transition: color var(--t-fast) var(--ease);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--t-fast) var(--ease);
+  z-index: 10002;
 }
-.btn-back-flow:hover {
+.modal-close-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
   color: var(--white);
+  transform: scale(1.1);
 }
-.forgot-step {
+.modal-close-btn:active {
+  transform: scale(0.95);
+}
+.modal-step {
   animation: fadeIn var(--t-mid) var(--ease) both;
 }
-#forgot-otp-countdown {
+
+/* OTP Segmented Inputs */
+.verify-code-input-container {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 1.5rem 0;
+}
+.verify-code-input {
+  width: 50px;
+  height: 58px;
+  font-size: 1.8rem;
+  font-weight: 700;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: var(--white);
+  outline: none;
+  transition: all 0.3s var(--ease);
+}
+.verify-code-input:focus {
+  background: rgba(229, 9, 20, 0.05);
+  border-color: var(--red);
+  box-shadow: 0 0 10px rgba(229, 9, 20, 0.3);
+  transform: translateY(-2px);
+}
+.resend-container {
+  margin-top: 1.5rem;
+  text-align: center;
   font-size: 0.85rem;
   color: var(--text-secondary);
-  font-weight: 500;
+}
+.resend-btn {
+  background: none;
+  border: none;
+  color: var(--red);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 5px;
+  text-decoration: underline;
+  transition: color 0.2s;
+}
+.resend-btn:hover {
+  color: #ff4d4d;
+}
+.resend-btn:disabled {
+  color: var(--text-muted);
+  cursor: not-allowed;
+  text-decoration: none;
 }
 
 @media (max-width: 900px) {
