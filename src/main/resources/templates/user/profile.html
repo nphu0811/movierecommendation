@@ -168,42 +168,136 @@
     <!-- Panel: Password -->
     <section id="change-password" class="tab-content profile-panel" style="display:none">
       <div class="profile-panel-card">
-        <div class="profile-panel-header">
-          <div>
-            <p class="profile-kicker" th:text="#{profile.securityKicker}">Security</p>
-            <h2 th:text="#{profile.changePasswordTitle}">Change Password</h2>
+        
+        <!-- Normal Change Password Form Container -->
+        <div id="change-pass-form-container">
+          <div class="profile-panel-header">
+            <div>
+              <p class="profile-kicker" th:text="#{profile.securityKicker}">Security</p>
+              <h2 th:text="#{profile.changePasswordTitle}">Change Password</h2>
+            </div>
+            <i class="ph-fill ph-lock" aria-hidden="true" style="font-size: 2rem; color: rgba(255, 255, 255, 0.24);"></i>
           </div>
-          <button id="sendPassBtn" type="button" class="btn btn-secondary"
-                  onclick="handleSendCode('sendPassBtn', '/user/profile/password/send-code')" th:text="#{profile.sendPassCodeBtn}">Send verification code</button>
-        </div>
-        <p class="form-note" th:text="#{profile.changePassNote}">Enter the 6-digit code sent to your email before updating your password.</p>
 
-        <form th:action="@{/user/profile/change-password}" method="post" class="profile-form">
-          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-          <div class="form-group">
-            <label class="form-label" th:text="#{profile.currentPasswordLabel}">Current Password</label>
-            <div class="password-field">
-              <input type="password" name="currentPassword" class="form-control" required autocomplete="current-password"/>
-              <button type="button" class="password-toggle" aria-label="Show password" aria-pressed="false">
-                <i class="ph-bold ph-eye" aria-hidden="true"></i>
-              </button>
+          <form th:action="@{/user/profile/change-password}" method="post" class="profile-form">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <div class="form-group">
+              <label class="form-label" th:text="#{profile.currentPasswordLabel}">Current Password</label>
+              <div class="password-field">
+                <input type="password" name="currentPassword" class="form-control" required autocomplete="current-password"/>
+                <button type="button" class="password-toggle" aria-label="Show password" aria-pressed="false">
+                  <i class="ph-bold ph-eye" aria-hidden="true"></i>
+                </button>
+              </div>
+              <div style="margin-top: 8px;">
+                <a href="javascript:void(0)" class="forgot-password-inline-link" onclick="switchPasswordFlow('forgot')" th:text="#{auth.forgotPasswordLink}">Forgot Password?</a>
+              </div>
             </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label" th:text="#{profile.newPasswordLabel}">New Password</label>
-            <div class="password-field">
-              <input type="password" name="newPassword" class="form-control" required minlength="6" autocomplete="new-password"/>
-              <button type="button" class="password-toggle" aria-label="Show password" aria-pressed="false">
-                <i class="ph-bold ph-eye" aria-hidden="true"></i>
-              </button>
+            <div class="form-group">
+              <label class="form-label" th:text="#{profile.newPasswordLabel}">New Password</label>
+              <div class="password-field">
+                <input type="password" name="newPassword" class="form-control" required minlength="6" autocomplete="new-password"/>
+                <button type="button" class="password-toggle" aria-label="Show password" aria-pressed="false">
+                  <i class="ph-bold ph-eye" aria-hidden="true"></i>
+                </button>
+              </div>
             </div>
+            <div class="form-group">
+              <label class="form-label" th:text="#{auth.confirmPasswordLabel}">Confirm Password</label>
+              <div class="password-field">
+                <input type="password" name="confirmPassword" class="form-control" required minlength="6" autocomplete="new-password"/>
+                <button type="button" class="password-toggle" aria-label="Show password" aria-pressed="false">
+                  <i class="ph-bold ph-eye" aria-hidden="true"></i>
+                </button>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary" th:text="#{profile.updatePasswordBtn}">Update Password</button>
+          </form>
+        </div>
+
+        <!-- Forgot Password Inline Form Container -->
+        <div id="forgot-pass-flow-container" style="display: none;">
+          <!-- Step 1: Input Email -->
+          <div id="forgot-step-email" class="forgot-step">
+            <div class="profile-panel-header">
+              <div>
+                <p class="profile-kicker" th:text="#{auth.forgotPasswordLink}">Forgot Password?</p>
+                <h2 th:text="#{auth.emailLabel}">Email Address</h2>
+              </div>
+              <a href="javascript:void(0)" onclick="switchPasswordFlow('normal')" class="btn-back-flow"><i class="ph ph-arrow-left"></i> <span th:text="#{detail.back}">← Back</span></a>
+            </div>
+            <p class="form-note" th:text="#{auth.forgotPasswordSub}" style="margin-bottom: 20px;">Enter your email to receive a verification code.</p>
+            
+            <form onsubmit="handleForgotEmail(event)" class="profile-form">
+              <div class="form-group">
+                <label class="form-label" th:text="#{auth.emailLabel}">Email Address</label>
+                <input type="email" id="forgot-email-input" class="form-control" required placeholder="name@example.com"/>
+              </div>
+              <button type="submit" class="btn btn-primary" id="btn-forgot-email-submit" th:text="#{profile.sendCodeBtn}">Send 6-digit code</button>
+            </form>
           </div>
-          <div class="form-group">
-            <label class="form-label" th:text="#{profile.emailPassCodeLabel}">Email verification code</label>
-            <input type="text" name="verificationCode" class="form-control" pattern="[0-9]{6}" maxlength="6" placeholder="123456" required/>
+
+          <!-- Step 2: Input OTP -->
+          <div id="forgot-step-otp" class="forgot-step" style="display: none;">
+            <div class="profile-panel-header">
+              <div>
+                <p class="profile-kicker" th:text="#{auth.forgotPasswordLink}">Forgot Password?</p>
+                <h2 th:text="#{auth.verifyResetCodeTitle}">Verify Reset Code</h2>
+              </div>
+              <a href="javascript:void(0)" onclick="switchPasswordFlow('forgot')" class="btn-back-flow"><i class="ph ph-arrow-left"></i> <span th:text="#{auth.emailLabel}">Email Address</span></a>
+            </div>
+            <p class="form-note" style="margin-bottom: 20px;">
+              <span th:text="#{auth.verifyResetCodeDesc}">Enter the 6-digit code sent to your email to verify your identity.</span>
+              (<strong id="otp-sent-email-label"></strong>)
+            </p>
+            
+            <form onsubmit="handleForgotOtp(event)" class="profile-form">
+              <div class="form-group">
+                <label class="form-label" th:text="#{auth.verificationCodeLabel}">Verification code</label>
+                <input type="text" id="forgot-otp-input" class="form-control" pattern="[0-9]{6}" maxlength="6" placeholder="123456" required/>
+              </div>
+              <div style="margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
+                <button type="button" class="btn btn-secondary btn-sm" id="btn-forgot-otp-resend" onclick="resendForgotOtp()" th:text="#{auth.resendCode}">Resend Code</button>
+                <span id="forgot-otp-countdown"></span>
+              </div>
+              <button type="submit" class="btn btn-primary" id="btn-forgot-otp-submit" th:text="#{auth.verifyEmailBtn}">Verify & Continue</button>
+            </form>
           </div>
-          <button type="submit" class="btn btn-primary" th:text="#{profile.updatePasswordBtn}">Update Password</button>
-        </form>
+
+          <!-- Step 3: Reset Password -->
+          <div id="forgot-step-reset" class="forgot-step" style="display: none;">
+            <div class="profile-panel-header">
+              <div>
+                <p class="profile-kicker" th:text="#{auth.forgotPasswordLink}">Forgot Password?</p>
+                <h2 th:text="#{auth.resetPasswordTitle}">Reset Password</h2>
+              </div>
+            </div>
+            <p class="form-note" th:text="#{auth.resetPasswordSub}" style="margin-bottom: 20px;">Enter your new password below.</p>
+            
+            <form onsubmit="handleForgotReset(event)" class="profile-form">
+              <div class="form-group">
+                <label class="form-label" th:text="#{profile.newPasswordLabel}">New Password</label>
+                <div class="password-field">
+                  <input type="password" id="forgot-new-password" class="form-control" required minlength="6" autocomplete="new-password"/>
+                  <button type="button" class="password-toggle" aria-label="Show password" aria-pressed="false">
+                    <i class="ph-bold ph-eye" aria-hidden="true"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label" th:text="#{auth.confirmPasswordLabel}">Confirm Password</label>
+                <div class="password-field">
+                  <input type="password" id="forgot-confirm-password" class="form-control" required minlength="6" autocomplete="new-password"/>
+                  <button type="button" class="password-toggle" aria-label="Show password" aria-pressed="false">
+                    <i class="ph-bold ph-eye" aria-hidden="true"></i>
+                  </button>
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary" id="btn-forgot-reset-submit" th:text="#{auth.resetPasswordTitle}">Reset Password</button>
+            </form>
+          </div>
+        </div>
+
       </div>
     </section>
 
@@ -402,9 +496,220 @@ async function clearSearchHistory() {
   }
 }
 
+var forgotOtpTimer = null;
+var forgotOtpCountdownSeconds = 0;
+
+function switchPasswordFlow(flow) {
+  var normalForm = document.getElementById('change-pass-form-container');
+  var forgotContainer = document.getElementById('forgot-pass-flow-container');
+  if (flow === 'forgot') {
+    if (window.gsap) {
+      window.gsap.to(normalForm, {autoAlpha: 0, y: -10, duration: 0.2, onComplete: function() {
+        normalForm.style.display = 'none';
+        forgotContainer.style.display = 'block';
+        document.getElementById('forgot-step-email').style.display = 'block';
+        document.getElementById('forgot-step-otp').style.display = 'none';
+        document.getElementById('forgot-step-reset').style.display = 'none';
+        window.gsap.fromTo(forgotContainer, {autoAlpha: 0, y: 10}, {autoAlpha: 1, y: 0, duration: 0.3});
+      }});
+    } else {
+      normalForm.style.display = 'none';
+      forgotContainer.style.display = 'block';
+      document.getElementById('forgot-step-email').style.display = 'block';
+      document.getElementById('forgot-step-otp').style.display = 'none';
+      document.getElementById('forgot-step-reset').style.display = 'none';
+    }
+  } else {
+    if (window.gsap) {
+      window.gsap.to(forgotContainer, {autoAlpha: 0, y: -10, duration: 0.2, onComplete: function() {
+        forgotContainer.style.display = 'none';
+        normalForm.style.display = 'block';
+        window.gsap.fromTo(normalForm, {autoAlpha: 0, y: 10}, {autoAlpha: 1, y: 0, duration: 0.3});
+      }});
+    } else {
+      forgotContainer.style.display = 'none';
+      normalForm.style.display = 'block';
+    }
+  }
+}
+
+async function postFetchWithBody(url, bodyParams) {
+  var csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+  var csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+  var body = new URLSearchParams();
+  for (var k in bodyParams) {
+    body.append(k, bodyParams[k]);
+  }
+  return fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      [csrfHeader]: csrfToken
+    },
+    body: body.toString()
+  });
+}
+
+function startForgotOtpCountdown(seconds) {
+  clearInterval(forgotOtpTimer);
+  forgotOtpCountdownSeconds = seconds;
+  var countdownEl = document.getElementById('forgot-otp-countdown');
+  var resendBtn = document.getElementById('btn-forgot-otp-resend');
+  
+  resendBtn.disabled = true;
+  resendBtn.style.opacity = '0.6';
+  
+  var isVi = /*[[${#locale.language == 'vi'}]]*/ false;
+  
+  forgotOtpTimer = setInterval(function() {
+    forgotOtpCountdownSeconds--;
+    if (forgotOtpCountdownSeconds > 0) {
+      countdownEl.innerText = isVi ? `Gửi lại sau (${forgotOtpCountdownSeconds}s)` : `Resend in (${forgotOtpCountdownSeconds}s)`;
+    } else {
+      clearInterval(forgotOtpTimer);
+      countdownEl.innerText = '';
+      resendBtn.disabled = false;
+      resendBtn.style.opacity = '1';
+    }
+  }, 1000);
+}
+
+async function handleForgotEmail(event) {
+  event.preventDefault();
+  var email = document.getElementById('forgot-email-input').value.trim();
+  if (!email) return;
+  
+  var submitBtn = document.getElementById('btn-forgot-email-submit');
+  submitBtn.disabled = true;
+  
+  try {
+    var res = await postFetchWithBody('/user/profile/password/reset-send-code', { email: email });
+    var data = await res.json();
+    if (res.ok) {
+      showToast(data.message, 'success');
+      document.getElementById('otp-sent-email-label').innerText = email;
+      
+      var stepEmail = document.getElementById('forgot-step-email');
+      var stepOtp = document.getElementById('forgot-step-otp');
+      if (window.gsap) {
+        window.gsap.to(stepEmail, {autoAlpha: 0, duration: 0.2, onComplete: function() {
+          stepEmail.style.display = 'none';
+          stepOtp.style.display = 'block';
+          window.gsap.fromTo(stepOtp, {autoAlpha: 0}, {autoAlpha: 1, duration: 0.3});
+        }});
+      } else {
+        stepEmail.style.display = 'none';
+        stepOtp.style.display = 'block';
+      }
+      startForgotOtpCountdown(60);
+    } else {
+      showToast(data.error || 'Failed to send OTP code', 'error');
+    }
+  } catch (err) {
+    showToast('Connection error', 'error');
+  } finally {
+    submitBtn.disabled = false;
+  }
+}
+
+async function resendForgotOtp() {
+  var email = document.getElementById('forgot-email-input').value.trim();
+  if (!email) return;
+  
+  try {
+    var res = await postFetchWithBody('/user/profile/password/reset-send-code', { email: email });
+    var data = await res.json();
+    if (res.ok) {
+      showToast(data.message, 'success');
+      startForgotOtpCountdown(60);
+    } else {
+      showToast(data.error || 'Failed to resend OTP code', 'error');
+    }
+  } catch (err) {
+    showToast('Connection error', 'error');
+  }
+}
+
+async function handleForgotOtp(event) {
+  event.preventDefault();
+  var email = document.getElementById('forgot-email-input').value.trim();
+  var code = document.getElementById('forgot-otp-input').value.trim();
+  if (!email || !code) return;
+  
+  var submitBtn = document.getElementById('btn-forgot-otp-submit');
+  submitBtn.disabled = true;
+  
+  try {
+    var res = await postFetchWithBody('/user/profile/password/reset-verify-code', { email: email, code: code });
+    var data = await res.json();
+    if (res.ok) {
+      showToast(data.message, 'success');
+      
+      var stepOtp = document.getElementById('forgot-step-otp');
+      var stepReset = document.getElementById('forgot-step-reset');
+      if (window.gsap) {
+        window.gsap.to(stepOtp, {autoAlpha: 0, duration: 0.2, onComplete: function() {
+          stepOtp.style.display = 'none';
+          stepReset.style.display = 'block';
+          window.gsap.fromTo(stepReset, {autoAlpha: 0}, {autoAlpha: 1, duration: 0.3});
+        }});
+      } else {
+        stepOtp.style.display = 'none';
+        stepReset.style.display = 'block';
+      }
+    } else {
+      showToast(data.error || 'Invalid OTP code', 'error');
+    }
+  } catch (err) {
+    showToast('Connection error', 'error');
+  } finally {
+    submitBtn.disabled = false;
+  }
+}
+
+async function handleForgotReset(event) {
+  event.preventDefault();
+  var email = document.getElementById('forgot-email-input').value.trim();
+  var code = document.getElementById('forgot-otp-input').value.trim();
+  var newPassword = document.getElementById('forgot-new-password').value;
+  var confirmPassword = document.getElementById('forgot-confirm-password').value;
+  
+  var isVi = /*[[${#locale.language == 'vi'}]]*/ false;
+  
+  if (newPassword !== confirmPassword) {
+    showToast(isVi ? 'Mật khẩu xác nhận không khớp.' : 'Confirm password does not match.', 'error');
+    return;
+  }
+  
+  var submitBtn = document.getElementById('btn-forgot-reset-submit');
+  submitBtn.disabled = true;
+  
+  try {
+    var res = await postFetchWithBody('/user/profile/password/reset-submit', {
+      email: email, code: code, newPassword: newPassword, confirmPassword: confirmPassword
+    });
+    var data = await res.json();
+    if (res.ok) {
+      showToast(data.message, 'success');
+      
+      document.getElementById('forgot-email-input').value = '';
+      document.getElementById('forgot-otp-input').value = '';
+      document.getElementById('forgot-new-password').value = '';
+      document.getElementById('forgot-confirm-password').value = '';
+      
+      switchPasswordFlow('normal');
+    } else {
+      showToast(data.error || 'Failed to reset password', 'error');
+    }
+  } catch (err) {
+    showToast('Connection error', 'error');
+  } finally {
+    submitBtn.disabled = false;
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   manageCountdown('sendEmailBtn');
-  manageCountdown('sendPassBtn');
 
   // Handle active tab switching from Thymeleaf
   var initialTab = /*[[${activeTab}]]*/ 'edit-profile';

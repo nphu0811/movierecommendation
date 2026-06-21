@@ -86,19 +86,97 @@ public class UserController {
     public String changePassword(@AuthenticationPrincipal UserDetails userDetails,
                                  @RequestParam(name = "currentPassword") String currentPassword,
                                  @RequestParam(name = "newPassword") String newPassword,
-                                 @RequestParam(name = "verificationCode") String verificationCode,
+                                 @RequestParam(name = "confirmPassword") String confirmPassword,
                                  RedirectAttributes redirect) {
+        boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
         try {
             User user = userService.getCurrentUser(userDetails.getUsername());
-            // Delegate validation to service layer
-            userService.changePasswordWithVerification(user.getUserId(), currentPassword, newPassword, verificationCode);
-            redirect.addFlashAttribute("success", "Password changed successfully!");
+            if (!newPassword.equals(confirmPassword)) {
+                throw new IllegalArgumentException(isVi ? "Mật khẩu xác nhận không khớp." : "Confirm password does not match.");
+            }
+            userService.changePassword(user.getUserId(), currentPassword, newPassword);
+            redirect.addFlashAttribute("success", isVi ? "Thay đổi mật khẩu thành công!" : "Password changed successfully!");
         } catch (IllegalArgumentException e) {
             redirect.addFlashAttribute("error", e.getMessage());
         } catch (Exception e) {
-            redirect.addFlashAttribute("error", "Failed to change password");
+            redirect.addFlashAttribute("error", isVi ? "Không thể thay đổi mật khẩu" : "Failed to change password");
         }
-        return "redirect:/user/profile";
+        return "redirect:/user/profile?tab=change-password";
+    }
+
+    @PostMapping("/profile/password/reset-send-code")
+    @ResponseBody
+    public ResponseEntity<?> resetSendCode(@AuthenticationPrincipal UserDetails userDetails,
+                                           @RequestParam("email") String email) {
+        Map<String, Object> response = new HashMap<>();
+        boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
+        try {
+            User user = userService.getCurrentUser(userDetails.getUsername());
+            if (!user.getEmail().equalsIgnoreCase(email)) {
+                throw new IllegalArgumentException(isVi ? "Email không khớp với tài khoản hiện tại." : "Email does not match current account.");
+            }
+            String masked = userService.sendPasswordReset(email);
+            response.put("success", true);
+            response.put("message", isVi ? "Mã xác thực đã được gửi tới " + masked : "Verification code sent to " + masked);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    @PostMapping("/profile/password/reset-verify-code")
+    @ResponseBody
+    public ResponseEntity<?> resetVerifyCode(@AuthenticationPrincipal UserDetails userDetails,
+                                             @RequestParam("email") String email,
+                                             @RequestParam("code") String code) {
+        Map<String, Object> response = new HashMap<>();
+        boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
+        try {
+            User user = userService.getCurrentUser(userDetails.getUsername());
+            if (!user.getEmail().equalsIgnoreCase(email)) {
+                throw new IllegalArgumentException(isVi ? "Email không khớp với tài khoản hiện tại." : "Email does not match current account.");
+            }
+            userService.verifyResetCodeOnly(email, code);
+            response.put("success", true);
+            response.put("message", isVi ? "Xác thực thành công!" : "Verification successful!");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    @PostMapping("/profile/password/reset-submit")
+    @ResponseBody
+    public ResponseEntity<?> resetSubmit(@AuthenticationPrincipal UserDetails userDetails,
+                                         @RequestParam("email") String email,
+                                         @RequestParam("code") String code,
+                                         @RequestParam("newPassword") String newPassword,
+                                         @RequestParam("confirmPassword") String confirmPassword) {
+        Map<String, Object> response = new HashMap<>();
+        boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
+        if (!newPassword.equals(confirmPassword)) {
+            response.put("success", false);
+            response.put("error", isVi ? "Mật khẩu xác nhận không khớp." : "Confirm password does not match.");
+            return ResponseEntity.badRequest().body(response);
+        }
+        try {
+            User user = userService.getCurrentUser(userDetails.getUsername());
+            if (!user.getEmail().equalsIgnoreCase(email)) {
+                throw new IllegalArgumentException(isVi ? "Email không khớp với tài khoản hiện tại." : "Email does not match current account.");
+            }
+            userService.resetPassword(email, code, newPassword);
+            response.put("success", true);
+            response.put("message", isVi ? "Đổi mật khẩu thành công!" : "Password reset successful!");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
     }
 
     @PostMapping("/email/send-code")

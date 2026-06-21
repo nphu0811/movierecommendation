@@ -76,6 +76,24 @@ public class UserService {
         userRepository.save(user);
     }
 
+    @Transactional
+    public void changePassword(Integer userId, String currentPassword, String newPassword) {
+        boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
+        if (newPassword == null || newPassword.length() < 6) {
+            throw new IllegalArgumentException(isVi ? "Mật khẩu mới phải có ít nhất 6 ký tự" : "New password must be at least 6 characters");
+        }
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            throw new IllegalArgumentException(isVi ? "Mật khẩu hiện tại không chính xác" : "Current password is incorrect");
+        }
+        if (passwordEncoder.matches(newPassword, user.getPasswordHash())) {
+            throw new IllegalArgumentException(isVi ? "Mật khẩu mới không được trùng với mật khẩu cũ" : "New password cannot be the same as the old password");
+        }
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+    }
+
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
@@ -165,11 +183,15 @@ public class UserService {
 
     @Transactional
     public void resetPassword(String email, String code, String newPassword) {
+        boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
         if (newPassword == null || newPassword.length() < 6) {
-            throw new IllegalArgumentException("New password must be at least 6 characters");
+            throw new IllegalArgumentException(isVi ? "Mật khẩu mới phải có ít nhất 6 ký tự" : "New password must be at least 6 characters");
         }
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Account with this email was not found"));
+        if (passwordEncoder.matches(newPassword, user.getPasswordHash())) {
+            throw new IllegalArgumentException(isVi ? "Mật khẩu mới không được trùng với mật khẩu cũ" : "New password cannot be the same as the old password");
+        }
         verificationService.verifyOrThrow(user, code, VerificationPurpose.PASSWORD_RESET);
         user.setPasswordHash(passwordEncoder.encode(newPassword));
         user.setIsEmailVerified(true);
