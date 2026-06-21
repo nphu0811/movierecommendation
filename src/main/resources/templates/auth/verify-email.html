@@ -188,25 +188,41 @@
       }
     });
 
-    // Countdown logic for resend button
-    let cooldown = 60;
+    // Countdown logic for resend button using localStorage
+    const key = 'cooldown_auth_' + (/*[[${email}]]*/ '');
     const resendBtn = document.getElementById('resendBtn');
     const countdownSpan = document.getElementById('countdown');
+    let timerInterval = null;
 
-    function startTimer() {
-      resendBtn.disabled = true;
-      let interval = setInterval(() => {
-        cooldown--;
-        if (cooldown <= 0) {
-          clearInterval(interval);
+    function startTimer(forceStart) {
+      if (timerInterval) clearInterval(timerInterval);
+
+      const expires = localStorage.getItem(key);
+      if (forceStart || !expires) {
+        localStorage.setItem(key, Date.now() + 60000);
+      }
+
+      const updateBtn = () => {
+        const currentExpires = localStorage.getItem(key);
+        if (currentExpires) {
+          const remaining = Math.ceil((parseInt(currentExpires) - Date.now()) / 1000);
+          if (remaining > 0) {
+            resendBtn.disabled = true;
+            const text = /*[[${#locale.language == 'vi' ? 'Gửi lại sau ({0}s)' : 'Resend in ({0}s)'}]]*/ 'Resend in ({0}s)';
+            countdownSpan.innerText = text.replace('{0}', remaining);
+            timerInterval = setTimeout(updateBtn, 1000);
+          } else {
+            resendBtn.disabled = false;
+            countdownSpan.innerText = '';
+            localStorage.removeItem(key);
+          }
+        } else {
           resendBtn.disabled = false;
           countdownSpan.innerText = '';
-          cooldown = 60;
-        } else {
-          const text = /*[[${#locale.language == 'vi' ? 'Gửi lại sau ({0}s)' : 'Resend in ({0}s)'}]]*/ 'Resend in ({0}s)';
-          countdownSpan.innerText = text.replace('{0}', cooldown);
         }
-      }, 1000);
+      };
+
+      updateBtn();
     }
 
     // Expose resend logic to global scope
@@ -228,7 +244,7 @@
       .then(data => {
         if (data.success) {
           alert(/*[[${#locale.language == 'vi' ? 'Đã gửi lại mã xác minh mới!' : 'New verification code sent!'}]]*/ 'New verification code sent!');
-          startTimer();
+          startTimer(true);
         } else {
           alert(data.message || 'Error');
           resendBtn.disabled = false;
@@ -242,7 +258,7 @@
     };
 
     // Auto trigger timer on load if needed
-    startTimer();
+    startTimer(false);
   });
   /*]]>*/
 </script>
