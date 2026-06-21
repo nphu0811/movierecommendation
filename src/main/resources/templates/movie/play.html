@@ -324,7 +324,9 @@
       });
   }
 
-  let playerSupportsPostMessage = false;
+  let playerSupportsPostMessage = true; // Default to true to support direct seeking without reload
+  let lastSeekTime = 0;
+  let lastSeekSeconds = 0;
 
   // Message listener for Iframe Storage Proxy and seeking
   window.addEventListener('message', function(event) {
@@ -338,16 +340,8 @@
 
       const action = msg.key || msg.type || msg.action || msg.command;
       
-      // If the message has PlayerJS properties, mark it as supporting postMessage
-      if (msg.event && msg.event !== 'STORAGE_GET_ALL' && msg.event !== 'STORAGE_SET' && msg.event !== 'STORAGE_REMOVE') {
-          playerSupportsPostMessage = true;
-      }
-      if (msg.type && msg.type !== 'STORAGE_GET_ALL' && msg.type !== 'STORAGE_SET' && msg.type !== 'STORAGE_REMOVE') {
-          playerSupportsPostMessage = true;
-      }
-      if (msg.method && msg.method !== 'STORAGE_GET_ALL' && msg.method !== 'STORAGE_SET' && msg.method !== 'STORAGE_REMOVE') {
-          playerSupportsPostMessage = true;
-      }
+      // If we receive any message, the iframe is communication-capable
+      playerSupportsPostMessage = true;
 
       if (action === 'STORAGE_GET_ALL') {
           const storageData = {};
@@ -376,35 +370,46 @@
               value = msg.data.value;
           }
           if (key && value !== undefined) {
-              localStorage.setItem(key, value);
-              
-              // Sync our parent page progress tracking
+              // Parse seconds to check for progress reset protection
+              let seconds = null;
+              if (typeof value === 'number') {
+                  seconds = value;
+              } else if (typeof value === 'string') {
+                  if (value.trim().startsWith('{') || value.trim().startsWith('[')) {
+                      try {
+                          const parsed = JSON.parse(value);
+                          if (parsed && typeof parsed === 'object') {
+                              ['time', 'position', 'progress', 'current', 'seconds'].forEach(prop => {
+                                  if (parsed[prop] !== undefined && !isNaN(parsed[prop])) {
+                                      seconds = parseFloat(parsed[prop]);
+                                  }
+                              });
+                          }
+                      } catch (e) {}
+                  } else if (!isNaN(value)) {
+                      seconds = parseFloat(value);
+                  }
+              }
+
               const imdbId = /*[[${movieLink != null ? movieLink.imdbId : ''}]]*/ '';
               const tmdbId = /*[[${movieLink != null ? movieLink.tmdbId : ''}]]*/ '';
               const cleanImdbId = imdbId ? imdbId.replace(/^tt0*/, '') : '';
               const targets = [imdbId, tmdbId, cleanImdbId, MOVIE_ID.toString()].filter(Boolean);
-              
               const isMatch = targets.some(t => key.includes(t));
+
               if (isMatch && (key.startsWith('watch_') || key.startsWith('player_') || key.startsWith('va_'))) {
-                  let seconds = null;
-                  if (typeof value === 'number') {
-                      seconds = value;
-                  } else if (typeof value === 'string') {
-                      if (value.trim().startsWith('{') || value.trim().startsWith('[')) {
-                          try {
-                              const parsed = JSON.parse(value);
-                              if (parsed && typeof parsed === 'object') {
-                                  ['time', 'position', 'progress', 'current', 'seconds'].forEach(prop => {
-                                      if (parsed[prop] !== undefined && !isNaN(parsed[prop])) {
-                                          seconds = parseFloat(parsed[prop]);
-                                      }
-                                  });
-                              }
-                          } catch (e) {}
-                      } else if (!isNaN(value)) {
-                          seconds = parseFloat(value);
+                  if (seconds !== null && !isNaN(seconds)) {
+                      const now = Date.now();
+                      if (now - lastSeekTime < 10000 && seconds < lastSeekSeconds - 10) {
+                          console.log(`[StorageProxy] Ignored suspicious reset: received ${seconds}s, expected around ${lastSeekSeconds}s`);
+                          return; // Ignore completely to prevent resetting progress to 0
                       }
                   }
+              }
+
+              localStorage.setItem(key, value);
+              
+              if (isMatch && (key.startsWith('watch_') || key.startsWith('player_') || key.startsWith('va_'))) {
                   if (seconds !== null && !isNaN(seconds)) {
                       currentPlaybackBase = Math.floor(seconds);
                       activeSeconds = 0;
@@ -478,6 +483,8 @@
   // Resume Logic
   function resumeFromLast() {
     if (LAST_DURATION > 0) {
+      lastSeekTime = Date.now();
+      lastSeekSeconds = LAST_DURATION;
       const isYouTube = (ytPlayer !== null);
       if (isYouTube) {
           try {
@@ -497,6 +504,8 @@
   function fallbackResume() {
       const player = document.getElementById('mainPlayer');
       if (player) {
+          lastSeekTime = Date.now();
+          lastSeekSeconds = LAST_DURATION;
           updatePlayerStorageTime(LAST_DURATION);
           const currentSrc = player.src;
           let cleanSrc = currentSrc.replace(/[\?&#](?:start|t|time)=\d+(?:s)?/g, '');
@@ -950,6 +959,8 @@
   }
   
   function performSeek(seconds) {
+      lastSeekTime = Date.now();
+      lastSeekSeconds = seconds;
       currentPlaybackBase = seconds;
       activeSeconds = 0;
       
