@@ -182,7 +182,7 @@
           <form th:action="@{/user/profile/change-password}" method="post" class="profile-form">
             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
             <div class="form-group">
-              <label class="form-label" th:text="#{profile.currentPasswordLabel} + (${currentUser.updatedAt} != null ? ' (' + #{profile.passwordLastUpdated} + ': ' + ${#temporals.format(currentUser.updatedAt, 'dd/MM/yyyy')} + ')' : '')">Current Password</label>
+              <label class="form-label" th:text="#{profile.currentPasswordLabel}">Current Password</label>
               <div class="password-field">
                 <input type="password" name="currentPassword" class="form-control" th:classappend="${currentPasswordError} ? 'is-invalid' : ''" th:value="${currentPasswordVal}" required autocomplete="current-password"/>
                 <button type="button" class="password-toggle" aria-label="Show password" aria-pressed="false">
