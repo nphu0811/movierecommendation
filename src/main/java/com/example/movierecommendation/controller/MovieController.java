@@ -142,15 +142,12 @@ public class MovieController {
             }
             model.addAttribute("server1", localPlayerUrl);
 
-            // Server 2 (Secondary) - SuperEmbed (Multiembed) - Stable, does not redirect localhost
-            model.addAttribute("server2", buildSuperEmbedUrl(primaryId));
-
             if (streamImdbUrl != null) {
-                // Server 3 (Tertiary) - streamimdb.ru
-                model.addAttribute("server3", streamImdbUrl);
+                // Server 2 (Secondary) - streamimdb.ru
+                model.addAttribute("server2", streamImdbUrl);
             } else {
-                // Server 3 (Tertiary) - 2Embed (works with TMDB ID)
-                model.addAttribute("server3", "https://www.2embed.online/embed/movie/" + primaryId);
+                // Server 2 (Secondary) - 2Embed (works with TMDB ID)
+                model.addAttribute("server2", "https://www.2embed.online/embed/movie/" + primaryId);
             }
         }
 
@@ -231,33 +228,6 @@ public class MovieController {
         }
     }
 
-    @GetMapping("/movies/{id}/play/superembed")
-    public String redirectToSuperEmbed(@PathVariable("id") @Min(1) @Max(Integer.MAX_VALUE) Integer id,
-                                       @AuthenticationPrincipal UserDetails userDetails) {
-        String username = userDetails != null ? userDetails.getUsername() : null;
-        MovieDetailDTO dto = movieFacade.getMovieDetail(id, username);
-        if (dto == null || dto.getMovieLink() == null) {
-            return "redirect:/movies/" + id + "/play";
-        }
-
-        String imdbId = dto.getMovieLink().getImdbId();
-        Integer tmdbId = dto.getMovieLink().getTmdbId();
-        String primaryId = (imdbId != null && !imdbId.isBlank()) ? imdbId.trim() : (tmdbId != null ? String.valueOf(tmdbId) : null);
-
-        if (primaryId == null) {
-            return "redirect:/movies/" + id + "/play";
-        }
-
-        return "redirect:" + buildSuperEmbedUrl(primaryId);
-    }
-
-    private String buildSuperEmbedUrl(String imdbId) {
-        return UriComponentsBuilder
-                .fromHttpUrl("https://multiembed.mov/")
-                .queryParam("video_id", imdbId)
-                .build()
-                .toUriString();
-    }
 
     @PostMapping("/api/movies/{id}/rate")
     @ResponseBody
