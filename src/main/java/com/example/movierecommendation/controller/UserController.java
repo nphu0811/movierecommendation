@@ -37,6 +37,9 @@ public class UserController {
     @Autowired
     private MovieService movieService;
 
+    @Autowired
+    private CustomUserDetailsService userDetailsService;
+
     @GetMapping("/profile")
     public String profile(@AuthenticationPrincipal UserDetails userDetails,
                           @RequestParam(name = "tab", required = false, defaultValue = "edit-profile") String activeTab,
@@ -71,10 +74,27 @@ public class UserController {
     public String updateProfile(@AuthenticationPrincipal UserDetails userDetails,
                                 @RequestParam(name = "username") String username,
                                 @RequestParam(name = "email") String email,
+                                jakarta.servlet.http.HttpServletRequest request,
                                 RedirectAttributes redirect) {
         User user = userService.getCurrentUser(userDetails.getUsername());
         try {
+            boolean emailChanged = !user.getEmail().equalsIgnoreCase(email);
             userService.updateProfile(user.getUserId(), username, email);
+            
+            if (emailChanged) {
+                // Programmatically update the authentication in security context
+                UserDetails newUserDetails = userDetailsService.loadUserByUsername(email);
+                org.springframework.security.authentication.UsernamePasswordAuthenticationToken auth = 
+                    new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                        newUserDetails, null, newUserDetails.getAuthorities());
+                org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(auth);
+                
+                request.getSession().setAttribute(
+                    org.springframework.security.web.context.HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
+                    org.springframework.security.core.context.SecurityContextHolder.getContext()
+                );
+            }
+            
             redirect.addFlashAttribute("success", "Profile updated successfully");
         } catch (Exception e) {
             redirect.addFlashAttribute("error", e.getMessage());
