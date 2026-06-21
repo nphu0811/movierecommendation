@@ -18,6 +18,8 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import org.springframework.validation.annotation.Validated;
 
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -133,14 +135,22 @@ public class MovieController {
         }
 
         if (primaryId != null) {
-            // Server 1 (Primary) - SuperEmbed (Multiembed) - Stable, does not redirect localhost
-            model.addAttribute("server1", buildSuperEmbedUrl(primaryId));
+            // Server 1 (Primary) - Advanced local proxy player (se_player.php)
+            String localPlayerUrl = "/se_player.php?video_id=" + primaryId;
+            if (imdbId == null || imdbId.isBlank()) {
+                localPlayerUrl += "&tmdb=1";
+            }
+            model.addAttribute("server1", localPlayerUrl);
+
+            // Server 2 (Secondary) - SuperEmbed (Multiembed) - Stable, does not redirect localhost
+            model.addAttribute("server2", buildSuperEmbedUrl(primaryId));
+
             if (streamImdbUrl != null) {
-                // Server 2 (Secondary) - streamimdb.ru
-                model.addAttribute("server2", streamImdbUrl);
+                // Server 3 (Tertiary) - streamimdb.ru
+                model.addAttribute("server3", streamImdbUrl);
             } else {
-                // Server 2 (Secondary) - 2Embed (works with TMDB ID)
-                model.addAttribute("server2", "https://www.2embed.online/embed/movie/" + primaryId);
+                // Server 3 (Tertiary) - 2Embed (works with TMDB ID)
+                model.addAttribute("server3", "https://www.2embed.online/embed/movie/" + primaryId);
             }
         }
 
@@ -156,6 +166,56 @@ public class MovieController {
         model.addAttribute("similarMovies", dto.getSimilarMovies());
 
         return "movie/play";
+    }
+
+    @GetMapping("/se_player.php")
+    public void sePlayer(@RequestParam("video_id") String videoId,
+                         @RequestParam(value = "tmdb", defaultValue = "0") int tmdb,
+                         @RequestParam(value = "s", required = false) Integer s,
+                         @RequestParam(value = "e", required = false) Integer e,
+                         @RequestParam(value = "season", required = false) Integer season,
+                         @RequestParam(value = "episode", required = false) Integer episode,
+                         HttpServletResponse response) throws IOException {
+        
+        int finalSeason = (season != null) ? season : ((s != null) ? s : 0);
+        int finalEpisode = (episode != null) ? episode : ((e != null) ? e : 0);
+        
+        if (videoId == null || videoId.isBlank()) {
+            response.sendError(400, "Missing video_id");
+            return;
+        }
+
+        String requestUrl = UriComponentsBuilder
+                .fromHttpUrl("https://getsuperembed.link/")
+                .queryParam("video_id", videoId.trim())
+                .queryParam("tmdb", tmdb)
+                .queryParam("season", finalSeason)
+                .queryParam("episode", finalEpisode)
+                .queryParam("player_font", PLAYER_FONT)
+                .queryParam("player_bg_color", PLAYER_BG_COLOR)
+                .queryParam("player_font_color", PLAYER_FONT_COLOR)
+                .queryParam("player_primary_color", PLAYER_PRIMARY_COLOR)
+                .queryParam("player_secondary_color", PLAYER_SECONDARY_COLOR)
+                .queryParam("player_loader", PLAYER_LOADER)
+                .queryParam("preferred_server", PREFERRED_SERVER)
+                .queryParam("player_sources_toggle_type", PLAYER_SOURCES_TOGGLE_TYPE)
+                .build()
+                .toUriString();
+
+        try {
+            org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
+            String playerUrl = restTemplate.getForObject(requestUrl, String.class);
+            
+            if (playerUrl != null && playerUrl.contains("https://")) {
+                response.sendRedirect(playerUrl);
+            } else {
+                response.setContentType("text/html;charset=UTF-8");
+                response.getWriter().write("<span style='color:red'>" + (playerUrl != null ? playerUrl : "Request server didn't respond") + "</span>");
+            }
+        } catch (Exception ex) {
+            response.setContentType("text/html;charset=UTF-8");
+            response.getWriter().write("<span style='color:red'>Request server error: " + ex.getMessage() + "</span>");
+        }
     }
 
     @GetMapping("/movies/{id}/play/superembed")

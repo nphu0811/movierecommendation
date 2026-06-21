@@ -40,8 +40,9 @@
           <div class="server-switcher" style="margin-bottom: 0;">
             <button th:if="${server1 != null}" class="server-pill active" data-server="1" th:data-src="${server1}" onclick="switchServer(this)" th:text="#{play.server1}">Server 1</button>
             <button th:if="${server2 != null}" class="server-pill" data-server="2" th:data-src="${server2}" onclick="switchServer(this)" th:text="#{play.server2}">Server 2</button>
+            <button th:if="${server3 != null}" class="server-pill" data-server="3" th:data-src="${server3}" onclick="switchServer(this)" th:text="#{play.server3}">Server 3</button>
           </div>
-          <span th:if="${server2 != null}" style="font-size: 0.82rem; color: rgba(255,255,255,0.4); font-style: italic;" th:text="#{play.serverTip}">Tip: If Server 1 doesn't load, try switching to Server 2.</span>
+          <span th:if="${server2 != null or server3 != null}" style="font-size: 0.82rem; color: rgba(255,255,255,0.4); font-style: italic;" th:text="#{play.serverTip}">Tip: If Server 1 doesn't load, try switching to another server.</span>
         </div>
         
         <button id="lightsOutBtn" class="lights-out-btn" onclick="toggleLightsOut()">
