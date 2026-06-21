@@ -131,19 +131,112 @@ public class VerificationService {
     }
 
     private String bodyFor(VerificationPurpose purpose, String code) {
-        String purposeText = switch (purpose) {
+        String purposeTextEn = switch (purpose) {
             case EMAIL_VERIFY -> "verify your email address";
             case PASSWORD_CHANGE -> "confirm your password change request";
             case PASSWORD_RESET -> "reset your password";
         };
+        String purposeTextVi = switch (purpose) {
+            case EMAIL_VERIFY -> "xác thực địa chỉ email";
+            case PASSWORD_CHANGE -> "xác nhận yêu cầu thay đổi mật khẩu";
+            case PASSWORD_RESET -> "đặt lại mật khẩu";
+        };
         return """
-Hello,
-
-Your verification code is: %s
-
-This code is valid for %d minutes. If you did not make a request to %s, please ignore this email.
-
-Thank you for using MovieRec!
-""".formatted(code, codeExpirationMinutes, purposeText);
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #141414;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #ffffff;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrapper {
+      width: 100%%;
+      table-layout: fixed;
+      background-color: #141414;
+      padding: 40px 0;
+    }
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+      background-color: #1f1f1f;
+      border-radius: 16px;
+      border: 1px solid #2d2d2d;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+    .header {
+      padding: 30px;
+      text-align: center;
+      border-bottom: 1px solid #2d2d2d;
+      background: linear-gradient(135deg, #1f1f1f 0%%, #151515 100%%);
+    }
+    .logo {
+      font-size: 28px;
+      font-weight: 800;
+      color: #ffffff;
+      text-decoration: none;
+      letter-spacing: -0.5px;
+    }
+    .logo span {
+      color: #E50914;
+    }
+    .content {
+      padding: 40px 30px;
+      text-align: center;
+    }
+    .code-container {
+      margin: 30px 0;
+      padding: 20px;
+      background-color: #141414;
+      border-radius: 12px;
+      border: 1px dashed #E50914;
+      display: inline-block;
+    }
+    .code {
+      font-size: 36px;
+      font-weight: 800;
+      color: #E50914;
+      letter-spacing: 6px;
+      margin: 0;
+      padding-left: 6px;
+    }
+    .footer {
+      padding: 20px 30px;
+      background-color: #151515;
+      text-align: center;
+      border-top: 1px solid #2d2d2d;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="container">
+      <div class="header">
+        <div class="logo">Movie<span>Rec</span></div>
+      </div>
+      <div class="content">
+        <h2 style="margin-top: 0; color: #ffffff; font-size: 20px; font-weight: 700; margin-bottom: 20px;">Verification Code / Mã xác thực</h2>
+        <p style="color: #b3b3b3; font-size: 14px; line-height: 1.6; margin: 10px 0; text-align: left;">Hello / Xin chào,</p>
+        <p style="color: #b3b3b3; font-size: 14px; line-height: 1.6; margin: 10px 0; text-align: left;">You requested a verification code to <strong>%s</strong>.<br>Bạn đã yêu cầu mã xác thực để <strong>%s</strong>.</p>
+        <div class="code-container">
+          <div class="code">%s</div>
+        </div>
+        <p style="font-size: 12px; color: #8c8c8c; line-height: 1.6; margin-top: 20px; text-align: left;">This code is valid for <strong>%d minutes</strong>. If you did not make this request, please ignore this email.<br>Mã này có hiệu lực trong vòng <strong>%d phút</strong>. Nếu bạn không gửi yêu cầu này, vui lòng bỏ qua email.</p>
+      </div>
+      <div class="footer">
+        <p style="font-size: 12px; color: #777777; margin: 0;">Thank you for using MovieRec! / Cảm ơn bạn đã lựa chọn MovieRec!</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+""".formatted(purposeTextEn, purposeTextVi, code, codeExpirationMinutes, codeExpirationMinutes);
     }
 }
