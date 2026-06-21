@@ -324,7 +324,7 @@
       });
   }
 
-  let playerSupportsPostMessage = true; // Default to true to support direct seeking without reload
+  let playerSupportsPostMessage = false;
   let lastSeekTime = 0;
   let lastSeekSeconds = 0;
 
@@ -340,8 +340,16 @@
 
       const action = msg.key || msg.type || msg.action || msg.command;
       
-      // If we receive any message, the iframe is communication-capable
-      playerSupportsPostMessage = true;
+      // If the message has PlayerJS properties (excluding storage proxy events), mark it as supporting postMessage
+      if (msg.event && msg.event !== 'STORAGE_GET_ALL' && msg.event !== 'STORAGE_SET' && msg.event !== 'STORAGE_REMOVE') {
+          playerSupportsPostMessage = true;
+      }
+      if (msg.type && msg.type !== 'STORAGE_GET_ALL' && msg.type !== 'STORAGE_SET' && msg.type !== 'STORAGE_REMOVE') {
+          playerSupportsPostMessage = true;
+      }
+      if (msg.method && msg.method !== 'STORAGE_GET_ALL' && msg.method !== 'STORAGE_SET' && msg.method !== 'STORAGE_REMOVE') {
+          playerSupportsPostMessage = true;
+      }
 
       if (action === 'STORAGE_GET_ALL') {
           const storageData = {};
