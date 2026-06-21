@@ -210,15 +210,74 @@ public class AuthController {
                                 RedirectAttributes redirect) {
         try {
             String masked = userService.sendPasswordReset(email);
-            redirect.addFlashAttribute("step", "code");
-            redirect.addFlashAttribute("maskedEmail", masked);
             redirect.addFlashAttribute("email", email);
+            redirect.addFlashAttribute("maskedEmail", masked);
             boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
             redirect.addFlashAttribute("success", isVi ? "Đã gửi mã xác thực tới " + masked : "Verification code sent to " + masked);
+            return "redirect:/auth/forgot-password/verify?email=" + java.net.URLEncoder.encode(email, java.nio.charset.StandardCharsets.UTF_8);
         } catch (RuntimeException e) {
             redirect.addFlashAttribute("error", e.getMessage());
+            return "redirect:/auth/forgot-password";
         }
-        return "redirect:/auth/forgot-password";
+    }
+
+    @GetMapping("/forgot-password/verify")
+    public String verifyResetCodePage(@RequestParam(name = "email", required = false) String email,
+                                      @ModelAttribute("email") String flashEmail,
+                                      Model model) {
+        String finalEmail = (email != null && !email.isEmpty()) ? email : flashEmail;
+        model.addAttribute("email", finalEmail);
+        return "auth/verify-reset-code";
+    }
+
+    @PostMapping("/forgot-password/verify")
+    public String verifyResetCode(@RequestParam("email") String email,
+                                  @RequestParam("code") String code,
+                                  RedirectAttributes redirect,
+                                  Model model) {
+        try {
+            userService.verifyResetCodeOnly(email, code);
+            redirect.addFlashAttribute("email", email);
+            redirect.addFlashAttribute("code", code);
+            return "redirect:/auth/reset-password";
+        } catch (RuntimeException e) {
+            model.addAttribute("error", e.getMessage());
+            model.addAttribute("email", email);
+            return "auth/verify-reset-code";
+        }
+    }
+
+    @PostMapping("/forgot-password/resend")
+    @ResponseBody
+    public Map<String, Object> resendResetCode(@RequestParam("email") String email) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            userService.sendPasswordReset(email);
+            response.put("success", true);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", e.getMessage());
+        }
+        return response;
+    }
+
+    @GetMapping("/reset-password")
+    public String resetPasswordPage(@RequestParam(name = "email", required = false) String email,
+                                    @RequestParam(name = "code", required = false) String code,
+                                    @ModelAttribute("email") String flashEmail,
+                                    @ModelAttribute("code") String flashCode,
+                                    Model model,
+                                    RedirectAttributes redirect) {
+        String finalEmail = (email != null && !email.isEmpty()) ? email : flashEmail;
+        String finalCode = (code != null && !code.isEmpty()) ? code : flashCode;
+        if (finalEmail == null || finalEmail.isEmpty() || finalCode == null || finalCode.isEmpty()) {
+            boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
+            redirect.addFlashAttribute("error", isVi ? "Yêu cầu đặt lại mật khẩu không hợp lệ." : "Invalid password reset request.");
+            return "redirect:/auth/forgot-password";
+        }
+        model.addAttribute("email", finalEmail);
+        model.addAttribute("code", finalCode);
+        return "auth/reset-password";
     }
 
     @PostMapping("/reset-password")
@@ -229,10 +288,10 @@ public class AuthController {
                                 RedirectAttributes redirect) {
         boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
         if (!newPassword.equals(confirmPassword)) {
-            redirect.addFlashAttribute("error", isVi ? "Mật khẩu xác nhận không khớp" : "Confirm password does not match");
-            redirect.addFlashAttribute("step", "code");
+            redirect.addFlashAttribute("error", isVi ? "Mật khẩu xác nhận không khớp." : "Confirm password does not match.");
             redirect.addFlashAttribute("email", email);
-            return "redirect:/auth/forgot-password";
+            redirect.addFlashAttribute("code", code);
+            return "redirect:/auth/reset-password";
         }
         try {
             userService.resetPassword(email, code, newPassword);
@@ -240,10 +299,9 @@ public class AuthController {
             return "redirect:/auth/login";
         } catch (RuntimeException e) {
             redirect.addFlashAttribute("error", e.getMessage());
-            redirect.addFlashAttribute("step", "code");
             redirect.addFlashAttribute("email", email);
-            redirect.addFlashAttribute("maskedEmail", verificationService.maskEmail(email));
-            return "redirect:/auth/forgot-password";
+            redirect.addFlashAttribute("code", code);
+            return "redirect:/auth/reset-password";
         }
     }
 }

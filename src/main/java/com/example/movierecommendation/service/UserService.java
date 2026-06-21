@@ -176,4 +176,10 @@ public class UserService {
         userRepository.save(user);
     }
 
+    public void verifyResetCodeOnly(String email, String code) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Account with this email was not found"));
+        verificationService.checkCodeOnlyOrThrow(user, code, VerificationPurpose.PASSWORD_RESET);
+    }
+
 }

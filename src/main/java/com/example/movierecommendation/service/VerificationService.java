@@ -68,6 +68,20 @@ public class VerificationService {
         tokenRepository.save(token);
     }
 
+    public void checkCodeOnlyOrThrow(User user, String code, VerificationPurpose purpose) {
+        EmailVerificationToken token = tokenRepository
+                .findTopByUserUserIdAndPurposeAndUsedFalseOrderByCreatedAtDesc(
+                        user.getUserId(), purpose.name())
+                .orElseThrow(() -> new IllegalArgumentException("Verification code does not exist or has already been used."));
+
+        if (token.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Verification code has expired. Please request a new code.");
+        }
+        if (code == null || !passwordEncoder.matches(code, token.getCodeHash())) {
+            throw new IllegalArgumentException("Incorrect verification code.");
+        }
+    }
+
     public String maskEmail(String email) {
         if (email == null || !email.contains("@")) return "******";
         String[] parts = email.split("@", 2);
