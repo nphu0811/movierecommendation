@@ -103,7 +103,7 @@ public class UserController {
 
             String msg = e.getMessage();
             String lowerMsg = msg.toLowerCase();
-            if (lowerMsg.contains("mật khẩu hiện tại") || lowerMsg.contains("sai mật khẩu") || lowerMsg.contains("current password")) {
+            if (lowerMsg.contains("sai mật khẩu") || lowerMsg.contains("incorrect") || lowerMsg.equals("mật khẩu hiện tại không chính xác") || lowerMsg.equals("current password is incorrect")) {
                 redirect.addFlashAttribute("currentPasswordError", msg);
             } else if (lowerMsg.contains("xác nhận") || lowerMsg.contains("confirm")) {
                 redirect.addFlashAttribute("confirmPasswordError", msg);
