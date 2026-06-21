@@ -233,20 +233,7 @@
 
 </main>
 
-<!-- Resume Watch Modal -->
-<div id="resumeModal" class="resume-modal" th:if="${lastDuration != null and lastDuration > 10}">
-  <div class="resume-content">
-    <div class="resume-icon">
-      <i class="ph-fill ph-play"></i>
-    </div>
-    <div class="resume-text" th:text="#{play.resumeNotice}">We noticed you watched this movie before! Would you like to resume from:</div>
-    <div class="resume-timestamp" id="resumeTimestampDisplay">00:00:00</div>
-    <div class="resume-actions">
-      <button class="resume-btn resume-btn-primary" onclick="resumeFromLast()" th:text="#{play.resumeContinue}">Resume</button>
-      <button class="resume-btn resume-btn-secondary" onclick="startOver()" th:text="#{play.resumeStartOver}">Start Over</button>
-    </div>
-  </div>
-</div>
+<!-- Resume Watch Modal Removed -->
 
 <script th:src="@{/js/app.js}"></script>
 <script th:inline="javascript">
@@ -488,53 +475,7 @@
   setInterval(updateProgress, 30000);
   window.onbeforeunload = updateProgress;
 
-  // Resume Logic
-  function resumeFromLast() {
-    if (LAST_DURATION > 0) {
-      lastSeekTime = Date.now();
-      lastSeekSeconds = LAST_DURATION;
-      const isYouTube = (ytPlayer !== null);
-      if (isYouTube) {
-          try {
-              ytPlayer.seekTo(LAST_DURATION, true);
-              ytPlayer.playVideo();
-              showToast((/*[[#{play.toastSeeked}]]*/ '').replace('{0}', formatTime(LAST_DURATION)) + '! 🎥', 'success');
-          } catch (e) {
-              pendingSeekSeconds = LAST_DURATION;
-          }
-      } else {
-          fallbackResume();
-      }
-    }
-    closeResumeModal();
-  }
-
-  function fallbackResume() {
-      const player = document.getElementById('mainPlayer');
-      if (player) {
-          lastSeekTime = Date.now();
-          lastSeekSeconds = LAST_DURATION;
-          updatePlayerStorageTime(LAST_DURATION);
-          const currentSrc = player.src;
-          let cleanSrc = currentSrc.replace(/[\?&#](?:start|t|time)=\d+(?:s)?/g, '');
-          const connector = cleanSrc.includes('?') ? '&' : '?';
-          player.src = cleanSrc + connector + 't=' + LAST_DURATION + '&start=' + LAST_DURATION + '#t=' + LAST_DURATION;
-          showToast((/*[[#{play.toastResume}]]*/ '').replace('{0}', formatTime(LAST_DURATION)) + '! 🎥', 'success');
-      }
-  }
-
-  function closeResumeModal() {
-    document.getElementById('resumeModal').classList.remove('active');
-  }
-
-  document.addEventListener('DOMContentLoaded', () => {
-    if (LAST_DURATION > 10) {
-      document.getElementById('resumeTimestampDisplay').textContent = formatTime(LAST_DURATION);
-      setTimeout(() => {
-        document.getElementById('resumeModal').classList.add('active');
-      }, 1000);
-    }
-  });
+  // Resume Logic Removed
 
   function switchServer(btn) {
     const src = btn.dataset.src;
@@ -908,9 +849,16 @@
   }
   
   function linkifyTimestamps(text) {
-      return text.replace(/(?:\[)?(\d{1,3}):(\d{2})(?:\])?/g, (match, mins, secs) => {
-          const totalSeconds = parseInt(mins) * 60 + parseInt(secs);
-          return `<span class="timestamp-link" onclick="seekToSeconds(${totalSeconds})">${mins}:${secs}</span>`;
+      return text.replace(/(?:\[)?(?:(\d{1,2}):)?(\d{1,2}):(\d{2})(?:\])?/g, (match, hrs, mins, secs) => {
+          const h = hrs ? parseInt(hrs) : 0;
+          const m = parseInt(mins);
+          const s = parseInt(secs);
+          
+          const hStr = h < 10 ? '0' + h : h;
+          const mStr = m < 10 ? '0' + m : m;
+          const sStr = s < 10 ? '0' + s : s;
+          
+          return `${hStr}:${mStr}:${sStr}`;
       });
   }
 
@@ -1013,25 +961,6 @@
 
       fallbackSeek(seconds);
   }
-
-   function startOver() {
-       performSeek(0);
-       closeResumeModal();
-       
-       const body = new URLSearchParams();
-       body.append('duration', 0);
-       body.append('progress', 0);
-       const headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
-       const csrfMeta = document.querySelector('meta[name="_csrf"]');
-       const csrfHeader = document.querySelector('meta[name="_csrf_header"]');
-       if (csrfMeta && csrfHeader) headers[csrfHeader.content] = csrfMeta.content;
-
-       fetch(`/api/movies/${MOVIE_ID}/watch`, { 
-         method: 'POST', 
-         headers,
-         body: body
-       }).catch(console.error);
-   }
   
   function fallbackSeek(seconds) {
       const player = document.getElementById('mainPlayer');
