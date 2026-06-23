@@ -4,6 +4,7 @@ import com.example.movierecommendation.dto.RegisterRequest;
 import com.example.movierecommendation.entity.User;
 import com.example.movierecommendation.entity.UserPreference;
 import com.example.movierecommendation.service.*;
+import com.example.movierecommendation.service.EmailNotVerifiedException;
 import com.example.movierecommendation.repository.UserPreferenceRepository;
 import jakarta.validation.Valid;
 import jakarta.servlet.http.HttpServletRequest;
@@ -92,6 +93,12 @@ public class AuthController {
                                   Model model) {
         String finalEmail = (email != null && !email.isEmpty()) ? email : flashEmail;
         model.addAttribute("email", finalEmail);
+        try {
+            User user = userService.getCurrentUser(finalEmail);
+            model.addAttribute("hasPreviousEmail", user.getPreviousEmail() != null);
+        } catch (Exception e) {
+            model.addAttribute("hasPreviousEmail", false);
+        }
         return "auth/verify-email";
     }
 
@@ -215,10 +222,34 @@ public class AuthController {
             boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
             redirect.addFlashAttribute("success", isVi ? "Đã gửi mã xác thực tới " + masked : "Verification code sent to " + masked);
             return "redirect:/auth/forgot-password/verify?email=" + java.net.URLEncoder.encode(email, java.nio.charset.StandardCharsets.UTF_8);
+        } catch (EmailNotVerifiedException e) {
+            redirect.addFlashAttribute("email", email);
+            redirect.addFlashAttribute("unverifiedEmail", email);
+            redirect.addFlashAttribute("showCancelOption", true);
+            boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
+            redirect.addFlashAttribute("error", isVi 
+                ? "Email này chưa được xác thực. Bạn phải xác thực email trước khi đặt lại mật khẩu."
+                : "This email is not verified. You must verify your email before resetting the password.");
+            return "redirect:/auth/forgot-password";
         } catch (RuntimeException e) {
             redirect.addFlashAttribute("error", e.getMessage());
             return "redirect:/auth/forgot-password";
         }
+    }
+
+    @PostMapping("/forgot-password/cancel-email-change")
+    public String cancelEmailChange(@RequestParam("email") String email,
+                                    RedirectAttributes redirect) {
+        try {
+            String originalEmail = userService.revertEmailChange(email);
+            boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
+            redirect.addFlashAttribute("success", isVi 
+                ? "Đã huỷ thay đổi email. Email của bạn đã được khôi phục về " + originalEmail + " (đã xác thực)."
+                : "Email change cancelled. Your email has been reverted to " + originalEmail + " (verified).");
+        } catch (Exception e) {
+            redirect.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/auth/forgot-password";
     }
 
     @GetMapping("/forgot-password/verify")

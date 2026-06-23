@@ -62,6 +62,9 @@ public class UserService {
         }
         user.setUsername(username);
         if (!user.getEmail().equals(email)) {
+            if (Boolean.TRUE.equals(user.getIsEmailVerified())) {
+                user.setPreviousEmail(user.getEmail());
+            }
             user.setEmail(email);
             user.setIsEmailVerified(false);
         }
@@ -161,6 +164,9 @@ public class UserService {
     public void sendPasswordChangeCode(Integer userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+        if (Boolean.FALSE.equals(user.getIsEmailVerified())) {
+            throw new EmailNotVerifiedException("Email is not verified", user.getEmail());
+        }
         verificationService.sendCode(user, VerificationPurpose.PASSWORD_CHANGE);
     }
 
@@ -177,6 +183,9 @@ public class UserService {
     public String sendPasswordReset(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Account with this email was not found"));
+        if (Boolean.FALSE.equals(user.getIsEmailVerified())) {
+            throw new EmailNotVerifiedException("Email is not verified", email);
+        }
         verificationService.sendCode(user, VerificationPurpose.PASSWORD_RESET);
         return verificationService.maskEmail(user.getEmail());
     }
@@ -202,6 +211,29 @@ public class UserService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Account with this email was not found"));
         verificationService.checkCodeOnlyOrThrow(user, code, VerificationPurpose.PASSWORD_RESET);
+    }
+
+    @Transactional
+    public String revertEmailChange(String currentEmail) {
+        User user = userRepository.findByEmail(currentEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        String previous = user.getPreviousEmail();
+        if (previous == null || previous.trim().isEmpty()) {
+            throw new IllegalStateException("No previous email found to revert to.");
+        }
+        
+        // Safety check
+        Optional<User> existing = userRepository.findByEmail(previous);
+        if (existing.isPresent() && !existing.get().getUserId().equals(user.getUserId())) {
+            throw new IllegalStateException("The original email is now registered to another account.");
+        }
+        
+        user.setEmail(previous);
+        user.setIsEmailVerified(true);
+        user.setPreviousEmail(null);
+        userRepository.save(user);
+        return previous;
     }
 
 }

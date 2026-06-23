@@ -42,6 +42,9 @@ public class User {
     @Column(name = "is_email_verified")
     private Boolean isEmailVerified = false;
 
+    @Column(name = "previous_email", length = 100)
+    private String previousEmail;
+
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     private List<Rating> ratings;
 
@@ -97,6 +100,9 @@ public class User {
 
     public Boolean getIsEmailVerified() { return isEmailVerified; }
     public void setIsEmailVerified(Boolean isEmailVerified) { this.isEmailVerified = isEmailVerified; }
+
+    public String getPreviousEmail() { return previousEmail; }
+    public void setPreviousEmail(String previousEmail) { this.previousEmail = previousEmail; }
 
     public List<Rating> getRatings() { return ratings; }
     public void setRatings(List<Rating> ratings) { this.ratings = ratings; }

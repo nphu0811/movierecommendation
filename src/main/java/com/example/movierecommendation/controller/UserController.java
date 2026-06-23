@@ -2,6 +2,7 @@ package com.example.movierecommendation.controller;
 
 import com.example.movierecommendation.entity.*;
 import com.example.movierecommendation.service.*;
+import com.example.movierecommendation.service.EmailNotVerifiedException;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -154,6 +155,14 @@ public class UserController {
             response.put("success", true);
             response.put("message", isVi ? "Mã xác thực đã được gửi tới " + masked : "Verification code sent to " + masked);
             return ResponseEntity.ok(response);
+        } catch (EmailNotVerifiedException e) {
+            response.put("success", false);
+            response.put("unverified", true);
+            response.put("email", e.getEmail());
+            response.put("error", isVi 
+                ? "Email này chưa được xác thực. Bạn phải xác thực email trước khi đặt lại mật khẩu."
+                : "This email is not verified. You must verify your email before resetting the password.");
+            return ResponseEntity.badRequest().body(response);
         } catch (Exception e) {
             response.put("success", false);
             response.put("error", e.getMessage());
@@ -248,17 +257,51 @@ public class UserController {
     @PostMapping("/profile/password/send-code")
     @ResponseBody
     public ResponseEntity<?> sendPasswordChangeCode(@AuthenticationPrincipal UserDetails userDetails) {
-        Map<String, String> response = new HashMap<>();
+        Map<String, Object> response = new HashMap<>();
         try {
             User user = userService.getCurrentUser(userDetails.getUsername());
             userService.sendPasswordChangeCode(user.getUserId());
             boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
             response.put("message", isVi ? "Mã xác thực đổi mật khẩu đã được gửi tới email của bạn." : "Verification code for password change has been sent to your email.");
             return ResponseEntity.ok(response);
+        } catch (EmailNotVerifiedException e) {
+            response.put("error", e.getMessage());
+            response.put("unverified", "true");
+            return ResponseEntity.badRequest().body(response);
         } catch (Exception e) {
             response.put("error", e.getMessage());
             return ResponseEntity.badRequest().body(response);
         }
+    }
+
+    @PostMapping("/profile/cancel-email-change")
+    public String cancelEmailChange(@AuthenticationPrincipal UserDetails userDetails,
+                                    jakarta.servlet.http.HttpServletRequest request,
+                                    RedirectAttributes redirect) {
+        try {
+            User user = userService.getCurrentUser(userDetails.getUsername());
+            String originalEmail = userService.revertEmailChange(user.getEmail());
+            
+            // Programmatically update the authentication in security context
+            UserDetails newUserDetails = userDetailsService.loadUserByUsername(originalEmail);
+            org.springframework.security.authentication.UsernamePasswordAuthenticationToken auth = 
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                    newUserDetails, null, newUserDetails.getAuthorities());
+            org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(auth);
+            
+            request.getSession().setAttribute(
+                org.springframework.security.web.context.HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
+                org.springframework.security.core.context.SecurityContextHolder.getContext()
+            );
+            
+            boolean isVi = "vi".equalsIgnoreCase(org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
+            redirect.addFlashAttribute("success", isVi 
+                ? "Đã huỷ thay đổi email. Email đã được khôi phục về " + originalEmail + "."
+                : "Email change cancelled. Reverted back to " + originalEmail + ".");
+        } catch (Exception e) {
+            redirect.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/user/profile";
     }
 
     @GetMapping("/watchlist")
