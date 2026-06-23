@@ -65,7 +65,7 @@
 | **Backend Core** | Java, Spring Boot, Spring Data JPA | `21` / `3.4.5` | ![Spring](https://img.shields.io/badge/-Spring_Boot-6DB33F?style=flat-square&logo=spring-boot&logoColor=white) |
 | **Bảo Mật** | Spring Security, Session Management, BCrypt | `Latest` | ![Security](https://img.shields.io/badge/-Spring_Security-6DB33F?style=flat-square&logo=spring-security&logoColor=white) |
 | **Giao Diện** | Thymeleaf, HTML5, CSS3 (Netflix Design Style), JS | `Modern CSS` | ![Thymeleaf](https://img.shields.io/badge/-Thymeleaf-005F0F?style=flat-square&logo=thymeleaf&logoColor=white) |
-| **Cơ Sở Dữ Liệu** | PostgreSQL, Flyway (DB Migration) | `14+` | ![Postgres](https://img.shields.io/badge/-PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white) |
+| **Cơ Sở Dữ Liệu** | PostgreSQL | `14+` | ![Postgres](https://img.shields.io/badge/-PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white) |
 | **Bộ Nhớ Đệm** | Caffeine Cache | `Latest` | ![Caffeine](https://img.shields.io/badge/-Caffeine_Cache-Orange?style=flat-square) |
 | **Trí Tuệ Nhân Tạo** | OpenAI API Client | `gpt-4o-mini` | ![OpenAI](https://img.shields.io/badge/-OpenAI-412991?style=flat-square&logo=openai&logoColor=white) |
 | **Dữ Liệu Ngoài** | TMDB API, MovieLens 100K Dataset | `-` | ![TMDB](https://img.shields.io/badge/-TMDB_API-01B4E4?style=flat-square&logo=the-movie-database&logoColor=white) |
@@ -227,7 +227,6 @@ movierecommendation/
 │   ├── repository/          # 🔍 Spring Data JPA Database Repository Queries
 │   └── service/             # 💼 Logic nghiệp vụ chính (OpenAI, TMDB Sync, Mail)
 ├── src/main/resources/
-│   ├── db/migration/        # 🗄️ Database Schema Migrations (Flyway Script)
 │   ├── templates/           # 🎨 Thymeleaf View Pages (.html)
 │   │   ├── admin/           # Dashboard quản trị
 │   │   ├── movie/           # Chi tiết phim, danh sách phim

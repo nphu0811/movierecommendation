@@ -1,1 +1,0 @@
-DROP TABLE IF EXISTS similar_movies CASCADE;
