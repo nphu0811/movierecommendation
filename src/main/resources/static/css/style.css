@@ -924,6 +924,10 @@ body.home-page .hero-section + .section {
 }
 .form-control::placeholder { color: rgba(255,255,255,.2); }
 textarea.form-control { resize: vertical; min-height: 100px; }
+select option {
+  background-color: #141414;
+  color: var(--white);
+}
 
 .password-field {
   position: relative;
